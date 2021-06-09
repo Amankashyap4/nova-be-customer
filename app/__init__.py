@@ -27,7 +27,6 @@ db = SQLAlchemy()
 migrate = Migrate()
 ma = Marshmallow()
 
-
 # SWAGGER
 SWAGGER_URL = "/api/docs"
 API_URL = "/static/swagger.json"
