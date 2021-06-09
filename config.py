@@ -12,7 +12,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     """Set Flask configuration vars from .env file."""
 
-    DB_ENGINE = "mongodb"  # also this can be change from postgres to mongodb
+    DB_ENGINE = "postgres"  # also this can be change from postgres to mongodb
 
     # SQL database
     DB_SERVER = ""
@@ -69,10 +69,11 @@ class ProductionConfig(Config):
 
 
 class TestingConfig(Config):
-    MONGODB_HOST = "mongomock://localhost"
-    MONGODB_DB = os.getenv("MONGODB_DB")
+    DB_NAME = "test"
     TESTING = True
     DEBUG = True
     DEVELOPMENT = True
     LOG_BACKTRACE = True
     LOG_LEVEL = "DEBUG"
+    SQLALCHEMY_DATABASE_URI = \
+        "sqlite:///" + os.path.join(basedir, DB_NAME) + ".sqlite3"
