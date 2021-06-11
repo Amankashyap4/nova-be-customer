@@ -9,7 +9,8 @@ class BaseTestCase(TestCase):
         app = create_app("config.TestingConfig")
         self.customer_repository = CustomerRepository()
         self.customer_controller = CustomerController(
-            customer_repository=self.customer_repository)
+            customer_repository=self.customer_repository
+        )
         return app
 
     def setUp(self):

@@ -13,8 +13,7 @@ class TestCustomerRoutes(BaseTestCase):
 
     def test_create_route(self):
         with self.client:
-            customer = self.client.post("/api/v1/customers/",
-                                        json=self.customer_data)
+            customer = self.client.post("/api/v1/customers/", json=self.customer_data)
             self.assertStatus(customer, 201)
 
     def test_create_route_error(self):
@@ -24,14 +23,11 @@ class TestCustomerRoutes(BaseTestCase):
 
     def test_update_route(self):
         customer = self.customer_repository.create(self.customer_data)
-        self.assertEqual(customer.phone_number,
-                         self.customer_data["phone_number"]
-                         )
+        self.assertEqual(customer.phone_number, self.customer_data["phone_number"])
         with self.client:
-            customer_update = self.client \
-                .patch(f"/api/v1/customers/{customer.id}", json={
-                    "first_name": "Jane"
-                })
+            customer_update = self.client.patch(
+                f"/api/v1/customers/{customer.id}", json={"first_name": "Jane"}
+            )
 
             self.assert200(customer_update)
 
@@ -40,9 +36,7 @@ class TestCustomerRoutes(BaseTestCase):
 
     def test_delete_route(self):
         customer = self.customer_repository.create(self.customer_data)
-        self.assertEqual(customer.phone_number,
-                         self.customer_data["phone_number"]
-                         )
+        self.assertEqual(customer.phone_number, self.customer_data["phone_number"])
 
         with self.client:
             response = self.client.delete(f"/api/v1/customers/{customer.id}")
@@ -53,14 +47,13 @@ class TestCustomerRoutes(BaseTestCase):
 
     def test_show_route(self):
         customer = self.customer_repository.create(self.customer_data)
-        self.assertEqual(customer.phone_number,
-                         self.customer_data["phone_number"]
-                         )
+        self.assertEqual(customer.phone_number, self.customer_data["phone_number"])
 
         with self.client:
             response = self.client.get(f"/api/v1/customers/{customer.id}")
             self.assertStatus(response, 200)
             data = response.json
 
-            self.assertEqual(data.get("first_name"), self.customer_data.get("first_name"))
-
+            self.assertEqual(
+                data.get("first_name"), self.customer_data.get("first_name")
+            )

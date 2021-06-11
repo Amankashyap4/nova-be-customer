@@ -12,21 +12,17 @@ class TestConsumerRepository(BaseTestCase):
     }
 
     def test_create(self):
-        customer = self.customer_repository.create(
-            self.customer_data
-        )
+        customer = self.customer_repository.create(self.customer_data)
         self.assertEqual(customer.first_name, "John")
 
     def test_update(self):
-        customer = self.customer_repository.create(
-            self.customer_data
-        )
+        customer = self.customer_repository.create(self.customer_data)
 
         self.assertEqual(customer.first_name, "John")
 
-        updated_customer = self.customer_repository.update_by_id(customer.id, {
-            "first_name": "Joe"
-        })
+        updated_customer = self.customer_repository.update_by_id(
+            customer.id, {"first_name": "Joe"}
+        )
 
         self.assertEqual(updated_customer.first_name, "Joe")
 

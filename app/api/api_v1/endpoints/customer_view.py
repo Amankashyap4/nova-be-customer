@@ -4,8 +4,7 @@ from flask import Blueprint, request
 from app.controllers import CustomerController
 from app.definitions.service_result import handle_result
 from app.repositories import CustomerRepository
-from app.schema import CustomerCreateSchema, CustomerSchema, \
-    CustomerUpdateSchema
+from app.schema import CustomerCreateSchema, CustomerSchema, CustomerUpdateSchema
 from app.utils import validator
 
 customer = Blueprint("customer", __name__)

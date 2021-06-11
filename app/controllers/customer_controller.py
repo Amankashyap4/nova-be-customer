@@ -25,5 +25,3 @@ class CustomerController:
         self.repository.delete(customer_id)
         result = ServiceResult(Result({}, 204))
         return result
-
-

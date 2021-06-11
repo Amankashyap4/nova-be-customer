@@ -1,4 +1,3 @@
-from app.controllers import CustomerController
 from app.definitions.exceptions import AppException
 from tests.base_test_case import BaseTestCase
 
@@ -26,7 +25,7 @@ class TestCustomerController(BaseTestCase):
             {
                 "first_name": "Jane",
                 "last_name": "Dew",
-            }
+            },
         )
 
         updated_data = updated_customer.data.value
@@ -56,4 +55,3 @@ class TestCustomerController(BaseTestCase):
         self.assertEqual(customer_values.id, customer.id)
         self.assertEqual(customer_values.last_name, "Doe")
         self.assertEqual(customer_values.id_type, self.customer_data["id_type"])
-

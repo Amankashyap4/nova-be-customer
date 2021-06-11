@@ -32,13 +32,11 @@ class Customer(db.Model):
     last_name = db.Column(db.String(60), nullable=False)
     id_type = db.Column(db.String(20), nullable=False)
     id_number = db.Column(db.String(20), nullable=False)
-    status = db.Column(db.Enum(StatusEnum, name="status"),
-                       default=StatusEnum.inactive,
-                       nullable=False)
+    status = db.Column(
+        db.Enum(StatusEnum, name="status"), default=StatusEnum.inactive, nullable=False
+    )
     otp = db.Column(db.String(6))
     created = db.Column(
-        db.DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now()
+        db.DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     modified = db.Column(db.DateTime(timezone=True), onupdate=datetime.datetime.now)
