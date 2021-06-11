@@ -5,7 +5,7 @@ from werkzeug.exceptions import HTTPException
 
 
 class AppExceptionCase(Exception):
-    def __init__(self, status_code: int, context: dict):
+    def __init__(self, status_code: int, context):
         self.exception_case = self.__class__.__name__
         self.status_code = status_code
         self.context = context
@@ -39,9 +39,19 @@ def app_exception_handler(exc: AppExceptionCase):
 
 
 class AppException:
-    class ResourceCreationFailed(AppExceptionCase):
+    class OperationError(AppExceptionCase):
         """
-        Resource Creation Failed Exception
+        Generic Exception to catch failed operations
+        """
+
+        def __init__(self, context):
+
+            status_code = 500
+            AppExceptionCase.__init__(self, status_code, context)
+
+    class InternalServerError(AppExceptionCase):
+        """
+        Generic Exception to catch failed operations
         """
 
         def __init__(self, context):
@@ -60,7 +70,7 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, context)
 
     class ResourceDoesNotExist(AppExceptionCase):
-        def __init__(self, context: dict = None):
+        def __init__(self, context=None):
             """
             Resource does not exist
             """
@@ -68,7 +78,7 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, context)
 
     class Unauthorized(AppExceptionCase):
-        def __init__(self, context: dict = None):
+        def __init__(self, context=None):
             """
             Unauthorized
             :param context: extra dictionary object to give the error more context
@@ -87,7 +97,7 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, context)
 
     class KeyCloakAdminException(AppExceptionCase):
-        def __init__(self, context: dict = None, status_code=400):
+        def __init__(self, context=None, status_code=400):
             """
             Key Cloak Error. Error with regards to Keycloak authentication
             :param context: extra dictionary object to give the error more context
@@ -96,21 +106,11 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, context)
 
     class BadRequest(AppExceptionCase):
-        def __init__(self, context: dict = None):
+        def __init__(self, context=None):
             """
             Bad Request
 
             :param context:
             """
             status_code = 400
-            AppExceptionCase.__init__(self, status_code, context)
-
-    class ServerError(AppExceptionCase):
-        def __init__(self, context):
-            """
-            Bad Request
-
-            :param context:
-            """
-            status_code = 500
             AppExceptionCase.__init__(self, status_code, context)

@@ -13,6 +13,8 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import import_string
 
+from app.utils import GUID
+
 # load dotenv in the base root
 from app.api_spec import spec
 from app.definitions.exceptions.app_exceptions import (
@@ -26,6 +28,7 @@ dotenv_path = os.path.join(APP_ROOT, ".env")
 db = SQLAlchemy()
 migrate = Migrate()
 ma = Marshmallow()
+db.__setattr__("GUID", GUID)
 
 # SWAGGER
 SWAGGER_URL = "/api/docs"

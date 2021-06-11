@@ -1,1 +1,2 @@
-# from .factory import Seeder
+from .service_result import ServiceResult
+from .result import Result

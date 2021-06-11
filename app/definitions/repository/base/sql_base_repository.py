@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from app import db
 
 from app.definitions.exceptions.HTTPException import HTTPException
@@ -35,11 +36,14 @@ class SQLBaseRepository(CRUDRepositoryInterface):
         :param obj_in: the data you want to use to create the model
         :return: {object} - Returns an instance object of the model passed
         """
-        obj_data = dict(obj_in)
-        db_obj = self.model(**obj_data)
-        self.db.session.add(db_obj)
-        self.db.session.commit()
-        return db_obj
+        try:
+            obj_data = dict(obj_in)
+            db_obj = self.model(**obj_data)
+            self.db.session.add(db_obj)
+            self.db.session.commit()
+            return db_obj
+        except IntegrityError as e:
+            raise AppException.OperationError(context=e.orig.args[0])
 
     def update_by_id(self, obj_id, obj_in):
         """
@@ -66,6 +70,8 @@ class SQLBaseRepository(CRUDRepositoryInterface):
         :return: model_object - Returns an instance object of the model passed
         """
         db_obj = self.model.query.get(obj_id)
+        if db_obj is None:
+            raise AppException.ResourceDoesNotExist
         return db_obj
 
     def delete(self, obj_id):

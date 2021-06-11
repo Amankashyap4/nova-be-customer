@@ -1,3 +1,6 @@
+from .endpoints.customer_view import customer
+
+
 def init_app(app):
     """
     Register app blueprints over here
@@ -5,3 +8,4 @@ def init_app(app):
     :param app:
     :return:
     """
+    app.register_blueprint(customer, url_prefix="/api/v1/customers")

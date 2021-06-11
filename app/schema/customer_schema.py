@@ -68,7 +68,7 @@ class CustomerUpdateSchema(Schema):
     id_type = fields.Str(validate=validate.OneOf(
         ["national id", "drivers license", "passport", "voters id"]
     ))
-    id_number = fields.Str(required=True, validate=validate.Length(min=5))
+    id_number = fields.Str(validate=validate.Length(min=5))
     status = fields.Str(validate=validate.OneOf(
         ["active", "inactive", "blocked"]
     ))
