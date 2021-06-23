@@ -1,4 +1,5 @@
 import random
+from datetime import datetime, timedelta
 
 from app.definitions import Result, ServiceResult
 from app.definitions.exceptions import AppException
@@ -20,10 +21,15 @@ class CustomerController(Notifier):
         self.auth_service = auth_service
 
     def register(self, data):
-        otp = random.randint(100000, 999999)
-        data["otp"] = otp
+
         phone_number = data.get("phone_number")
         existing_customer = self.customer_repository.find_by_number(phone_number)
+        otp = random.randint(100000, 999999)
+        otp_expiration = datetime.now() + timedelta(minutes=5)
+
+        data["otp"] = otp
+        data["otp_expiration"] = otp_expiration
+
         if existing_customer:
             raise AppException.ResourceExists(
                 f"Customer with phone number {phone_number} exists"
@@ -41,6 +47,7 @@ class CustomerController(Notifier):
         otp = data.get("token")
         user = self.lead_repository.find_by_otp(id=uuid, otp=otp)
         if user:
+            self.lead_repository.update_by_id(user.id, {""})
             user_data = {
                 "id": user.id,
                 "phone_number": user.phone_number,

@@ -1,24 +1,11 @@
 import datetime
-import enum
 from sqlalchemy.sql import func
 from dataclasses import dataclass
 
 from app import db
 import uuid
 
-
-class StatusEnum(enum.Enum):
-    active = "active"
-    inactive = "inactive"
-    blocked = "blocked"
-    first_time = "first_time"
-
-
-class IDEnum(enum.Enum):
-    national_id = "national id"
-    drivers_license = "drivers license"
-    passport = "passport"
-    voters_id = "voters id"
+from app.utils import IDEnum, StatusEnum
 
 
 @dataclass
@@ -38,7 +25,7 @@ class Customer(db.Model):
     first_name = db.Column(db.String(60), nullable=False)
     last_name = db.Column(db.String(60), nullable=False)
     id_type = db.Column(
-        db.Enum(IDEnum, name="id_type"), default=StatusEnum.inactive, nullable=False
+        db.Enum(IDEnum, name="id_type"), default=IDEnum.national_id, nullable=False
     )
     id_number = db.Column(db.String(20), nullable=False)
     status = db.Column(
