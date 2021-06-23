@@ -11,6 +11,14 @@ class StatusEnum(enum.Enum):
     active = "active"
     inactive = "inactive"
     blocked = "blocked"
+    first_time = "first_time"
+
+
+class IDEnum(enum.Enum):
+    national_id = "national id"
+    drivers_license = "drivers license"
+    passport = "passport"
+    voters_id = "voters id"
 
 
 @dataclass
@@ -22,7 +30,6 @@ class Customer(db.Model):
     id_type: str
     id_number: str
     status: str
-    otp: str
     created: datetime.datetime
     modified: datetime.datetime
     __tablename__ = "customer"
@@ -30,12 +37,13 @@ class Customer(db.Model):
     phone_number = db.Column(db.String(0), unique=True)
     first_name = db.Column(db.String(60), nullable=False)
     last_name = db.Column(db.String(60), nullable=False)
-    id_type = db.Column(db.String(20), nullable=False)
+    id_type = db.Column(
+        db.Enum(IDEnum, name="id"), default=StatusEnum.inactive, nullable=False
+    )
     id_number = db.Column(db.String(20), nullable=False)
     status = db.Column(
         db.Enum(StatusEnum, name="status"), default=StatusEnum.inactive, nullable=False
     )
-    otp = db.Column(db.String(6))
     created = db.Column(
         db.DateTime(timezone=True), nullable=False, server_default=func.now()
     )
