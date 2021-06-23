@@ -1,17 +1,16 @@
 """empty message
 
-Revision ID: 65e142f9cf19
+Revision ID: bd765364a9d7
 Revises:
-Create Date: 2021-06-23 10:54:06.374923
+Create Date: 2021-06-23 14:20:23.734262
 
 """
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
 
-
 # revision identifiers, used by Alembic.
-revision = "65e142f9cf19"
+revision = "bd765364a9d7"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -57,6 +56,11 @@ def upgrade():
         sa.Column("id_type", sa.String(length=20), nullable=False),
         sa.Column("id_number", sa.String(length=20), nullable=False),
         sa.Column("otp", sa.String(length=6), nullable=False),
+        sa.Column("otp_expiration", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("password_token", sa.String(), nullable=True),
+        sa.Column(
+            "password_token_expiration", sa.DateTime(timezone=True), nullable=True
+        ),
         sa.Column(
             "created",
             sa.DateTime(timezone=True),

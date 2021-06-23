@@ -22,6 +22,9 @@ class Lead(db.Model):
     id_type = db.Column(db.String(20), nullable=False)
     id_number = db.Column(db.String(20), nullable=False)
     otp = db.Column(db.String(6), nullable=False)
+    otp_expiration = db.Column(db.DateTime(timezone=True))
+    password_token = db.Column(db.String(), default=False)
+    password_token_expiration = db.Column(db.DateTime(timezone=True))
     created = db.Column(
         db.DateTime(timezone=True), nullable=False, server_default=func.now()
     )
