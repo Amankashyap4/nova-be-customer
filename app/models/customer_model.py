@@ -38,7 +38,7 @@ class Customer(db.Model):
     first_name = db.Column(db.String(60), nullable=False)
     last_name = db.Column(db.String(60), nullable=False)
     id_type = db.Column(
-        db.Enum(IDEnum, name="id"), default=StatusEnum.inactive, nullable=False
+        db.Enum(IDEnum, name="id_type"), default=StatusEnum.inactive, nullable=False
     )
     id_number = db.Column(db.String(20), nullable=False)
     status = db.Column(
