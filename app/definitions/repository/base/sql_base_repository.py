@@ -53,7 +53,7 @@ class SQLBaseRepository(CRUDRepositoryInterface):
         """
         db_obj = self.find_by_id(obj_id)
         if not db_obj:
-            raise AppException.ResourceDoesNotExist(
+            raise AppException.NotFoundException(
                 {"error": f"Resource of id {obj_id} does not exist"}
             )
         for field in obj_in:
@@ -71,7 +71,11 @@ class SQLBaseRepository(CRUDRepositoryInterface):
         """
         db_obj = self.model.query.get(obj_id)
         if db_obj is None:
-            raise AppException.ResourceDoesNotExist
+            raise AppException.NotFoundException
+        return db_obj
+
+    def find(self, data):
+        db_obj = self.model.query.filter_by(**data).first()
         return db_obj
 
     def delete(self, obj_id):

@@ -3,10 +3,6 @@ from marshmallow_enum import EnumField
 from app.utils import StatusEnum, IDEnum
 
 
-ID_TYPE = ["national id", "drivers license", "passport", "voters id"]
-CONSUMER_STATUS = ["active", "inactive", "blocked"]
-
-
 class CustomerSchema(Schema):
     id = fields.UUID()
     phone_number = fields.Str(validate=validate.Length(min=10))
@@ -38,7 +34,7 @@ class CustomerCreateSchema(Schema):
     phone_number = fields.Str(required=True, validate=validate.Length(min=10))
     first_name = fields.Str(required=True, validate=validate.Length(min=2))
     last_name = fields.Str(required=True, validate=validate.Length(min=2))
-    id_type = fields.Str(required=True, validate=validate.OneOf(ID_TYPE))
+    id_type = EnumField(IDEnum)
     id_number = fields.Str(required=True, validate=validate.Length(min=5))
 
     class Meta:

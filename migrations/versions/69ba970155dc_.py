@@ -1,16 +1,18 @@
 """empty message
 
-Revision ID: 643d7d6894d3
+Revision ID: 69ba970155dc
 Revises:
-Create Date: 2021-06-23 14:33:53.670868
+Create Date: 2021-06-23 22:29:43.221060
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
 
 # revision identifiers, used by Alembic.
-revision = "643d7d6894d3"
+revision = "69ba970155dc"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -40,10 +42,16 @@ def upgrade():
         sa.Column(
             "created",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=func.now(),
             nullable=False,
         ),
-        sa.Column("modified", sa.DateTime(timezone=True), nullable=True),
+        sa.Column(
+            "modified",
+            sa.DateTime(timezone=True),
+            server_default=func.now(),
+            nullable=False,
+            onupdate=func.now(),
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("phone_number"),
     )
@@ -64,7 +72,7 @@ def upgrade():
         sa.Column(
             "created",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=func.now(),
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),

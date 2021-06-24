@@ -42,7 +42,7 @@ class TestCustomerRoutes(BaseTestCase):
             response = self.client.delete(f"/api/v1/customers/{customer.id}")
             self.assertStatus(response, 204)
 
-        with self.assertRaises(AppException.ResourceDoesNotExist):
+        with self.assertRaises(AppException.NotFoundException):
             self.customer_repository.find_by_id(customer.id)
 
     def test_show_route(self):

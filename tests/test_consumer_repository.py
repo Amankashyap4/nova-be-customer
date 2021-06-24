@@ -35,7 +35,7 @@ class TestConsumerRepository(BaseTestCase):
 
         self.customer_repository.delete(customer.id)
 
-        with self.assertRaises(AppException.ResourceDoesNotExist):
+        with self.assertRaises(AppException.NotFoundException):
             self.customer_repository.find_by_id(customer.id)
 
     def test_required_fields(self):

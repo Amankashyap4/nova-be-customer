@@ -10,6 +10,7 @@ from app.schema import (
     CustomerUpdateSchema,
     ConfirmTokenSchema,
     AddPinSchema,
+    ResendTokenSchema,
 )
 from app.services import RedisService, AuthService
 from app.utils import validator
@@ -39,11 +40,11 @@ def create_customer():
       requestBody:
         required: true
         content:
-            application/json:
-                schema: CustomerCreate
+          application/json:
+            schema: CustomerCreate
       responses:
         '201':
-          description: returns a customer
+          description: returns a customer id
           content:
             application/json:
               schema:
@@ -78,14 +79,51 @@ def confirm_token():
           description: returns a customer
           content:
             application/json:
-              schema: Customer
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: m8bQ5_P8o_4eojNs4xUB6w
       tags:
           - Authentication
     """
 
     data = request.json
     result = customer_controller.confirm_token(data)
-    return handle_result(result, schema=CustomerSchema)
+    return handle_result(result)
+
+
+@customer.route("/resend-token", methods=["POST"])
+@validator(schema=ResendTokenSchema)
+def resend_token():
+    """
+    ---
+    post:
+      description: creates a new token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: ResendTokenData
+      responses:
+        '200':
+          description: resends a token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: uuid
+                    example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      tags:
+          - Authentication
+    """
+
+    data = request.json
+    result = customer_controller.resend_token(data)
+    return handle_result(result)
 
 
 @customer.route("/add-pin", methods=["POST"])

@@ -9,7 +9,7 @@ class StatusEnum(enum.Enum):
 
 
 class IDEnum(enum.Enum):
-    national_id = "national id"
-    drivers_license = "drivers license"
+    national_id = "national_id"
+    drivers_license = "drivers_license"
     passport = "passport"
-    voters_id = "voters id"
+    voters_id = "voters_id"

@@ -27,7 +27,7 @@ class MongoBaseRepository(CRUDRepositoryInterface):
             db_obj = self.model.objects.get(pk=obj_id)
             return db_obj
         except mongoengine.DoesNotExist:
-            raise AppException.ResourceDoesNotExist(
+            raise AppException.NotFoundException(
                 {"error": f"Resource of id {obj_id} does not exist"}
             )
 

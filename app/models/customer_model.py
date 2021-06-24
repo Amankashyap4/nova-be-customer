@@ -34,4 +34,9 @@ class Customer(db.Model):
     created = db.Column(
         db.DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    modified = db.Column(db.DateTime(timezone=True), onupdate=datetime.datetime.now)
+    modified = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
