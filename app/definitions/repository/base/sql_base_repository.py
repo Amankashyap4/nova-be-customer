@@ -1,4 +1,4 @@
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, DBAPIError
 from app import db
 
 from app.definitions.exceptions.HTTPException import HTTPException
@@ -53,15 +53,18 @@ class SQLBaseRepository(CRUDRepositoryInterface):
         """
         db_obj = self.find_by_id(obj_id)
         if not db_obj:
-            raise AppException.ResourceDoesNotExist(
-                {"error": f"Resource of id {obj_id} does not exist"}
+            raise AppException.NotFoundException(
+                f"Resource of id {obj_id} does not exist"
             )
-        for field in obj_in:
-            if hasattr(db_obj, field):
-                setattr(db_obj, field, obj_in[field])
-        self.db.session.add(db_obj)
-        self.db.session.commit()
-        return db_obj
+        try:
+            for field in obj_in:
+                if hasattr(db_obj, field):
+                    setattr(db_obj, field, obj_in[field])
+            self.db.session.add(db_obj)
+            self.db.session.commit()
+            return db_obj
+        except DBAPIError as e:
+            raise AppException.OperationError(context=e.orig.args[0])
 
     def find_by_id(self, obj_id: int):
         """
@@ -71,7 +74,15 @@ class SQLBaseRepository(CRUDRepositoryInterface):
         """
         db_obj = self.model.query.get(obj_id)
         if db_obj is None:
-            raise AppException.ResourceDoesNotExist
+            raise AppException.NotFoundException
+        return db_obj
+
+    def find(self, data):
+        db_obj = self.model.query.filter_by(**data).first()
+        return db_obj
+
+    def find_all(self, data):
+        db_obj = self.model.query.filter_by(**data).all()
         return db_obj
 
     def delete(self, obj_id):

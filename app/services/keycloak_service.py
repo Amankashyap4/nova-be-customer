@@ -14,8 +14,14 @@ AUTH_ENDPOINT = "/protocol/openid-connect/token/"
 
 
 class AuthService(AuthServiceInterface):
-    def get_token(self, request_data):
+    headers = None
 
+    def get_token(self, request_data):
+        """
+        Login to keycloak and return token
+        :param request_data: {dict} a dictionary containing username and password
+        :return: {dict} a dictionary containing token and refresh token
+        """
         data = {
             "grant_type": "password",
             "client_id": CLIENT_ID,
@@ -24,9 +30,13 @@ class AuthService(AuthServiceInterface):
             "password": request_data.get("password"),
         }
 
+        # create keycloak uri for token login
         url = URI + REALM_PREFIX + REALM + AUTH_ENDPOINT
 
         response = requests.post(url, data=data)
+
+        # handle error if its anything more than a 200 as a 200 response is the
+        # only expected response
         if response.status_code != 200:
             raise AppException.KeyCloakAdminException(
                 context={"message": "Error in username or password"},
@@ -42,6 +52,11 @@ class AuthService(AuthServiceInterface):
         return result
 
     def refresh_token(self, refresh_token):
+        """
+
+        :param refresh_token: a {str} containing the refresh token
+        :return: {dict} a dictionary containing the token and refresh token
+        """
         request_data = {
             "grant_type": "refresh_token",
             "client_id": CLIENT_ID,
@@ -78,12 +93,60 @@ class AuthService(AuthServiceInterface):
                 }
             ],
             "enabled": True,
-            "emailVerified": False,
+            "emailVerified": True,
+            "access": {
+                "manageGroupMembership": True,
+                "view": True,
+                "mapRoles": True,
+                "impersonate": True,
+                "manage": True,
+            },
         }
 
         endpoint = "/users"
+        # create user
         self.keycloak_post(endpoint, data)
-        return True
+
+        # get user details from keycloak
+        user = self.get_keycloak_user(request_data.get("username"))
+        user_id = user.get("id")
+
+        # assign keycloak role
+        self.assign_role(user_id)
+
+        # login user and return token
+        token_data = self.get_token(
+            {
+                "username": request_data.get("username"),
+                "password": request_data.get("password"),
+            }
+        )
+        token_data["id"] = user_id
+        return token_data
+
+    def get_keycloak_user(self, username):
+        url = URI + "/auth/admin/realms/" + REALM + "/users?username=" + username
+        response = requests.get(url, headers=self.headers or self.get_keycloak_headers())
+        if response.status_code >= 300:
+            raise AppException.KeyCloakAdminException(
+                context={"message": response.json().get("errorMessage")},
+                status_code=response.status_code,
+            )
+        user = response.json()
+        if len(user) == 0:
+            return None
+        else:
+            return user[0]
+
+    def assign_role(self, user_id):
+        url = "/users/" + user_id + "/role-mappings/realm"
+        data = [
+            {
+                "id": "7735d317-c224-4c97-978d-47cc4aaa2ac6",
+                "name": "customer",
+            }
+        ]
+        self.keycloak_post(url, data)
 
     def keycloak_post(self, endpoint, data):
         """
@@ -93,10 +156,9 @@ class AuthService(AuthServiceInterface):
         :return {Response} request response object
         """
         url = URI + "/auth/admin/realms/" + REALM + endpoint
-        headers = self.get_keycloak_headers()
+        headers = self.headers or self.get_keycloak_headers()
         response = requests.post(url, headers=headers, json=data)
         if response.status_code >= 300:
-            # app.logger.error(response.text)
             raise AppException.KeyCloakAdminException(
                 context={"message": response.json().get("errorMessage")},
                 status_code=response.status_code,
@@ -133,7 +195,9 @@ class AuthService(AuthServiceInterface):
 
         :return {object}  Object of keycloak headers
         """
-        return {
+        headers = {
             "Authorization": "Bearer " + self.get_keycloak_access_token(),
             "Content-Type": "application/json",
         }
+        self.headers = headers
+        return headers

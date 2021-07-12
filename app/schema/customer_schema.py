@@ -1,20 +1,19 @@
 from marshmallow import Schema, fields, validate
-
-ID_TYPE = ["national id", "drivers license", "passport", "voters id"]
-CONSUMER_STATUS = ["active", "inactive", "blocked"]
+from marshmallow_enum import EnumField
+from app.utils import StatusEnum, IDEnum
 
 
 class CustomerSchema(Schema):
-    id = fields.Str()
-    phone_number = fields.Str(required=True, validate=validate.Length(min=10))
-    first_name = fields.Str(required=True, validate=validate.Length(min=2))
-    last_name = fields.Str(required=True, validate=validate.Length(min=2))
-    id_type = fields.Str(required=True, validate=validate.OneOf(ID_TYPE))
-    id_number = fields.Str(required=True, validate=validate.Length(min=5))
-    status = fields.Str(required=True, validate=validate.OneOf(CONSUMER_STATUS))
+    id = fields.UUID()
+    phone_number = fields.Str(validate=validate.Length(min=10))
+    first_name = fields.Str(validate=validate.Length(min=2))
+    last_name = fields.Str(validate=validate.Length(min=2))
+    id_type = EnumField(IDEnum)
+    id_number = fields.Str(validate=validate.Length(min=5))
+    status = EnumField(StatusEnum)
     otp = fields.Str(validate=validate.Length(min=6, max=6))
-    created = fields.DateTime(required=True)
-    modified = fields.DateTime(required=True)
+    created = fields.DateTime()
+    modified = fields.DateTime()
 
     class Meta:
         fields = [
@@ -35,9 +34,8 @@ class CustomerCreateSchema(Schema):
     phone_number = fields.Str(required=True, validate=validate.Length(min=10))
     first_name = fields.Str(required=True, validate=validate.Length(min=2))
     last_name = fields.Str(required=True, validate=validate.Length(min=2))
-    id_type = fields.Str(required=True, validate=validate.OneOf(ID_TYPE))
+    id_type = EnumField(IDEnum, required=True)
     id_number = fields.Str(required=True, validate=validate.Length(min=5))
-    status = fields.Str(validate=validate.OneOf(CONSUMER_STATUS))
 
     class Meta:
         fields = [
@@ -46,10 +44,6 @@ class CustomerCreateSchema(Schema):
             "last_name",
             "id_type",
             "id_number",
-            "status",
-            "otp",
-            "created",
-            "modified",
         ]
 
 
@@ -57,13 +51,9 @@ class CustomerUpdateSchema(Schema):
     phone_number = fields.Str(validate=validate.Length(min=10))
     first_name = fields.Str(validate=validate.Length(min=2))
     last_name = fields.Str(validate=validate.Length(min=2))
-    id_type = fields.Str(
-        validate=validate.OneOf(
-            ["national id", "drivers license", "passport", "voters id"]
-        )
-    )
+    id_type = EnumField(IDEnum)
     id_number = fields.Str(validate=validate.Length(min=5))
-    status = fields.Str(validate=validate.OneOf(["active", "inactive", "blocked"]))
+    status = EnumField(StatusEnum)
 
     class Meta:
         fields = [
@@ -74,7 +64,4 @@ class CustomerUpdateSchema(Schema):
             "id_type",
             "id_number",
             "status",
-            "otp",
-            "created",
-            "modified",
         ]

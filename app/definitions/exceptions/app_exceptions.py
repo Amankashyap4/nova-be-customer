@@ -69,7 +69,7 @@ class AppException:
             status_code = 400
             AppExceptionCase.__init__(self, status_code, context)
 
-    class ResourceDoesNotExist(AppExceptionCase):
+    class NotFoundException(AppExceptionCase):
         def __init__(self, context=None):
             """
             Resource does not exist
@@ -100,7 +100,7 @@ class AppException:
         def __init__(self, context=None, status_code=400):
             """
             Key Cloak Error. Error with regards to Keycloak authentication
-            :param context: extra dictionary object to give the error more context
+            :param context: extra data to give the error more context
             """
 
             AppExceptionCase.__init__(self, status_code, context)
@@ -112,5 +112,15 @@ class AppException:
 
             :param context:
             """
+            status_code = 400
+            AppExceptionCase.__init__(self, status_code, context)
+
+    class ExpiredTokenException(AppExceptionCase):
+        def __init__(self, context=None):
+            """
+            Expired Token
+            :param context:
+            """
+
             status_code = 400
             AppExceptionCase.__init__(self, status_code, context)
