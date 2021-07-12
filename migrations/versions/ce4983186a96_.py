@@ -1,18 +1,16 @@
 """empty message
 
-Revision ID: 69ba970155dc
+Revision ID: ce4983186a96
 Revises:
-Create Date: 2021-06-23 22:29:43.221060
+Create Date: 2021-07-08 15:18:10.244031
 
 """
-
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
 
 # revision identifiers, used by Alembic.
-revision = "69ba970155dc"
+revision = "ce4983186a96"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -34,6 +32,7 @@ def upgrade():
             nullable=False,
         ),
         sa.Column("id_number", sa.String(length=20), nullable=False),
+        sa.Column("auth_service_id", UUID(), nullable=False),
         sa.Column(
             "status",
             sa.Enum("active", "inactive", "blocked", "first_time", name="status"),
@@ -42,15 +41,14 @@ def upgrade():
         sa.Column(
             "created",
             sa.DateTime(timezone=True),
-            server_default=func.now(),
+            server_default=sa.text("now()"),
             nullable=False,
         ),
         sa.Column(
             "modified",
             sa.DateTime(timezone=True),
-            server_default=func.now(),
+            server_default=sa.text("now()"),
             nullable=False,
-            onupdate=func.now(),
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("phone_number"),
@@ -72,7 +70,7 @@ def upgrade():
         sa.Column(
             "created",
             sa.DateTime(timezone=True),
-            server_default=func.now(),
+            server_default=sa.text("now()"),
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),

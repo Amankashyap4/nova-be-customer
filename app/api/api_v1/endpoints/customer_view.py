@@ -11,6 +11,8 @@ from app.schema import (
     ConfirmTokenSchema,
     AddPinSchema,
     ResendTokenSchema,
+    LoginSchema,
+    TokenSchema,
 )
 from app.services import RedisService, AuthService
 from app.utils import validator
@@ -143,14 +145,41 @@ def add_pin():
           description: returns a customer
           content:
             application/json:
-              schema: Customer
+              schema: TokenData
       tags:
           - Authentication
     """
 
     data = request.json
     result = customer_controller.add_pin(data)
-    return handle_result(result, schema=CustomerSchema)
+    return handle_result(result, schema=TokenSchema)
+
+
+@customer.route("/token_login", methods=["POST"])
+@validator(schema=LoginSchema)
+def login_user():
+    """
+    ---
+    post:
+      description: logs in a customer
+      requestBody:
+        required: true
+        content:
+            application/json:
+                schema: LoginSchema
+      responses:
+        '200':
+          description: call successful
+          content:
+            application/json:
+              schema: TokenData
+      tags:
+          - Authentication
+    """
+
+    data = request.json
+    result = customer_controller.login(data)
+    return handle_result(result, schema=TokenSchema)
 
 
 @customer.route("/accounts/<string:customer_id>", methods=["PATCH"])

@@ -1,4 +1,4 @@
-from marshmallow import fields, Schema
+from marshmallow import fields, Schema, validate
 
 
 class ConfirmTokenSchema(Schema):
@@ -13,3 +13,17 @@ class AddPinSchema(Schema):
 
 class ResendTokenSchema(Schema):
     id = fields.UUID(required=True)
+
+
+class LoginSchema(Schema):
+    phone_number = fields.Str(
+        validate=validate.Regexp(
+            r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$"
+        )
+    )
+    pin = fields.Str(validate=validate.Length(min=4, max=4))
+
+
+class TokenSchema(Schema):
+    access_token = fields.Str()
+    refresh_token = fields.Str()

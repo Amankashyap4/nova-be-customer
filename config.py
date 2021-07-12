@@ -75,4 +75,6 @@ class TestingConfig(Config):
     DEVELOPMENT = True
     LOG_BACKTRACE = True
     LOG_LEVEL = "DEBUG"
-    SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, DB_NAME) + ".sqlite3"
+    SQLALCHEMY_DATABASE_URI = (
+        "sqlite:///" + os.path.join(basedir, DB_NAME) + ".db?check_same_thread=False"
+    )

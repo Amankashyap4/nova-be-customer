@@ -15,7 +15,17 @@ class CRUDRepositoryInterface(metaclass=abc.ABCMeta):
             and callable(subclass.find_by_id)
             and hasattr(subclass, "delete")
             and callable(subclass.delete)
+            and hasattr(subclass, "model")
         )
+
+    @property
+    def model(self):
+        """
+        the model that is bound to this repository. This model will be used for
+        further queries and actions that will be done by the repository that
+        inherits from this abstract class/interface mock
+        """
+        raise NotImplementedError
 
     @abc.abstractmethod
     def index(self):

@@ -13,6 +13,8 @@ from app.schema import (
     ConfirmTokenSchema,
     AddPinSchema,
     ResendTokenSchema,
+    LoginSchema,
+    TokenSchema,
 )
 
 spec = APISpec(
@@ -30,7 +32,8 @@ spec.components.schema("CustomerUpdate", schema=CustomerUpdateSchema)
 spec.components.schema("ConfirmToken", schema=ConfirmTokenSchema)
 spec.components.schema("PinData", schema=AddPinSchema)
 spec.components.schema("ResendTokenData", schema=ResendTokenSchema)
-
+spec.components.schema("LoginData", schema=LoginSchema)
+spec.components.schema("TokenData", schema=TokenSchema)
 
 # add swagger tags that are used for endpoint annotation
 tags = [

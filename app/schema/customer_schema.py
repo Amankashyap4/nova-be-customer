@@ -34,7 +34,7 @@ class CustomerCreateSchema(Schema):
     phone_number = fields.Str(required=True, validate=validate.Length(min=10))
     first_name = fields.Str(required=True, validate=validate.Length(min=2))
     last_name = fields.Str(required=True, validate=validate.Length(min=2))
-    id_type = EnumField(IDEnum)
+    id_type = EnumField(IDEnum, required=True)
     id_number = fields.Str(required=True, validate=validate.Length(min=5))
 
     class Meta:

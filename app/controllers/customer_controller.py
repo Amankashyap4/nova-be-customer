@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from app.definitions import Result, ServiceResult
 from app.definitions.exceptions import AppException
 from app.definitions.notifier import Notifier
+from app.definitions.service_interfaces import AuthServiceInterface
 from app.repositories import CustomerRepository, LeadRepository
-from app.services import AuthService
 from app.notifications import SMSNotificationHandler
 
 
@@ -19,7 +19,7 @@ class CustomerController(Notifier):
         self,
         customer_repository: CustomerRepository,
         lead_repository: LeadRepository,
-        auth_service: AuthService,
+        auth_service: AuthServiceInterface,
     ):
         self.lead_repository = lead_repository
         self.customer_repository = customer_repository
@@ -52,8 +52,7 @@ class CustomerController(Notifier):
     def confirm_token(self, data):
         uuid = data.get("id")
         otp = data.get("token")
-        lead = self.lead_repository.find_by_otp(id=uuid, otp=otp)
-
+        lead = self.lead_repository.find({"id": uuid, "otp": otp})
         if not lead:
             raise AppException.BadRequest("Invalid authentication token")
 
@@ -89,12 +88,14 @@ class CustomerController(Notifier):
         token = data.get("password_token")
         pin = data.get("pin")
 
+        # find if password_token exists
         user = self.lead_repository.find({"password_token": token})
 
         if not user:
             raise AppException.NotFoundException("User does not exist")
 
-        if utc.localize(dt=datetime.now()) > user.otp_expiration:
+        # Check if password_token is valid or expired
+        if utc.localize(dt=datetime.now()) > user.password_token_expiration:
             raise AppException.ExpiredTokenException("token expired")
 
         user_data = {
@@ -103,8 +104,10 @@ class CustomerController(Notifier):
             "last_name": user.last_name,
             "password": pin,
         }
-        self.auth_service.create_user(user_data)
+        # Create user in auth service
+        auth_result = self.auth_service.create_user(user_data)
 
+        # Create user in customer table
         customer_data = {
             "id": user.id,
             "phone_number": user.phone_number,
@@ -113,13 +116,31 @@ class CustomerController(Notifier):
             "id_type": user.id_type,
             "id_number": user.id_number,
             "status": "active",
+            "auth_service_id": auth_result.get("id"),
         }
-        return self.create(customer_data)
 
-    def create(self, data):
-        customer = self.customer_repository.create(data)
-        result = ServiceResult(Result(customer, 201))
-        return result
+        self.customer_repository.create(customer_data)
+        # Remove id from auth_result
+        auth_result.pop("id", None)
+        return ServiceResult(Result(auth_result, 200))
+
+    def find_customer_by_phone(self, phone_number):
+        assert phone_number, "Missing phone number"
+        customer = self.customer_repository.find({"phone_number": phone_number})
+        return customer
+
+    def login(self, data):
+        phone_number = data.get("phone_number")
+        pin = data.get("pin")
+        customer = self.customer_repository.find({"phone_number": phone_number})
+        if not customer:
+            raise AppException.NotFoundException("User does not exist")
+
+        access_token = self.auth_service.get_token(
+            {"username": customer.id, "password": pin}
+        )
+
+        return ServiceResult(Result(access_token, 200))
 
     def show(self, customer_id):
         customer = self.customer_repository.find_by_id(customer_id)

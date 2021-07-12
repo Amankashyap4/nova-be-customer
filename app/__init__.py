@@ -39,7 +39,9 @@ class InterceptHandler(logging.Handler):
 
 def create_app(config="config.DevelopmentConfig"):
     """Construct the core application"""
-    app = Flask(__name__, instance_relative_config=False)
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.join(basedir, "../instance")
+    app = Flask(__name__, instance_relative_config=False, instance_path=path)
     with app.app_context():
         environment = os.getenv("FLASK_ENV")
         cfg = import_string(config)()

@@ -28,6 +28,7 @@ class Customer(db.Model):
         db.Enum(IDEnum, name="id_type"), default=IDEnum.national_id, nullable=False
     )
     id_number = db.Column(db.String(20), nullable=False)
+    auth_service_id = db.Column(db.GUID(), nullable=False)
     status = db.Column(
         db.Enum(StatusEnum, name="status"), default=StatusEnum.inactive, nullable=False
     )
