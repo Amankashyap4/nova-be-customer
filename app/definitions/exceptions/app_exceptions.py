@@ -70,7 +70,7 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, context)
 
     class NotFoundException(AppExceptionCase):
-        def __init__(self, context=None):
+        def __init__(self, context="Resource does not exists"):
             """
             Resource does not exist
             """
@@ -78,7 +78,7 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, context)
 
     class Unauthorized(AppExceptionCase):
-        def __init__(self, context=None):
+        def __init__(self, context="Unauthorized"):
             """
             Unauthorized
             :param context: extra dictionary object to give the error more context

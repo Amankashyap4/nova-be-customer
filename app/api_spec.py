@@ -15,6 +15,9 @@ from app.schema import (
     ResendTokenSchema,
     LoginSchema,
     TokenSchema,
+    PinChangeSchema,
+    PinResetSchema,
+    PinResetRequestSchema,
 )
 
 spec = APISpec(
@@ -23,6 +26,12 @@ spec = APISpec(
     openapi_version="3.0.2",
     plugins=[FlaskPlugin(), MarshmallowPlugin()],
 )
+
+# Security
+api_key_scheme = {"type": "apiKey", "in": "header", "name": "X-API-Key"}
+bearer_scheme = {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
+spec.components.security_scheme("ApiKeyAuth", api_key_scheme)
+spec.components.security_scheme("bearerAuth", bearer_scheme)
 
 # register schemas with spec
 # example
@@ -34,6 +43,10 @@ spec.components.schema("PinData", schema=AddPinSchema)
 spec.components.schema("ResendTokenData", schema=ResendTokenSchema)
 spec.components.schema("LoginData", schema=LoginSchema)
 spec.components.schema("TokenData", schema=TokenSchema)
+spec.components.schema("PinChange", schema=PinChangeSchema)
+spec.components.schema("PinReset", schema=PinResetSchema)
+spec.components.schema("PinResetRequest", schema=PinResetRequestSchema)
+
 
 # add swagger tags that are used for endpoint annotation
 tags = [

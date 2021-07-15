@@ -5,4 +5,7 @@ from .auth_schema import (
     ResendTokenSchema,
     LoginSchema,
     TokenSchema,
+    PinChangeSchema,
+    PinResetSchema,
+    PinResetRequestSchema,
 )

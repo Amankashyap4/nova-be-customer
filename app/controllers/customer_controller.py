@@ -25,6 +25,21 @@ class CustomerController(Notifier):
         self.customer_repository = customer_repository
         self.auth_service = auth_service
 
+    def show(self, customer_id):
+        customer = self.customer_repository.find_by_id(customer_id)
+        result = ServiceResult(Result(customer, 200))
+        return result
+
+    def update(self, customer_id, data):
+        customer = self.customer_repository.update_by_id(customer_id, data)
+        result = ServiceResult(Result(customer, 200))
+        return result
+
+    def delete(self, customer_id):
+        self.customer_repository.delete(customer_id)
+        result = ServiceResult(Result({}, 204))
+        return result
+
     def register(self, data):
 
         phone_number = data.get("phone_number")
@@ -55,6 +70,8 @@ class CustomerController(Notifier):
         lead = self.lead_repository.find({"id": uuid, "otp": otp})
         if not lead:
             raise AppException.BadRequest("Invalid authentication token")
+
+        assert lead.otp == otp, "Wrong token"
 
         if utc.localize(dt=datetime.now()) > lead.otp_expiration:
             raise AppException.ExpiredTokenException("token expired")
@@ -142,17 +159,67 @@ class CustomerController(Notifier):
 
         return ServiceResult(Result(access_token, 200))
 
-    def show(self, customer_id):
+    def change_password(self, data):
+        customer_id = data.get("customer_id")
+        new_pin = data.get("new_pin")
+        old_pin = data.get("old_pin")
         customer = self.customer_repository.find_by_id(customer_id)
-        result = ServiceResult(Result(customer, 200))
-        return result
+        if not customer:
+            raise AppException.NotFoundException("User does not exist")
+        self.auth_service.get_token({"username": str(customer.id), "password": old_pin})
+        self.auth_service.reset_password(
+            {
+                "user_id": str(customer.auth_service_id),
+                "new_password": new_pin,
+            }
+        )
+        return ServiceResult(Result({}, 204))
 
-    def update(self, customer_id, data):
-        customer = self.customer_repository.update_by_id(customer_id, data)
-        result = ServiceResult(Result(customer, 200))
-        return result
+    def request_password_reset(self, data):
+        phone_number = data.get("phone_number")
+        customer = self.customer_repository.find({"phone_number": phone_number})
 
-    def delete(self, customer_id):
-        self.customer_repository.delete(customer_id)
-        result = ServiceResult(Result({}, 204))
-        return result
+        if not customer:
+            raise AppException.NotFoundException("User not found")
+
+        auth_token = random.randint(100000, 999999)
+        auth_token_expiration = datetime.now() + timedelta(minutes=5)
+        self.customer_repository.update_by_id(
+            customer.id,
+            {"auth_token": auth_token, "auth_token_expiration": auth_token_expiration},
+        )
+        self.notify(
+            SMSNotificationHandler(customer.phone_number, {"otp": auth_token}, "sms_otp")
+        )
+        return ServiceResult(Result({"id": customer.id}, 200))
+
+    def reset_password(self, data):
+        auth_token = data.get("auth_token")
+        new_pin = data.get("new_pin")
+        customer_id = data.get("id")
+
+        customer = self.customer_repository.find_by_id(customer_id)
+        if not customer:
+            raise AppException.NotFoundException("Account does not exist")
+
+        assert customer.auth_token == auth_token, "Wrong token"
+
+        if utc.localize(dt=datetime.now()) > customer.auth_token_expiration:
+            raise AppException.ExpiredTokenException("token expired")
+
+        self.auth_service.reset_password(
+            {"user_id": str(customer.auth_service_id), "new_password": new_pin}
+        )
+        self.notify(
+            SMSNotificationHandler(
+                customer.phone_number,
+                {
+                    "message": "Your pin has been changed successfully. "
+                    "Please notify customer support if you did not "
+                    "request your pin be reset"
+                },
+                "sms_notification",
+            )
+        )
+
+        return ServiceResult(Result("", 204))
