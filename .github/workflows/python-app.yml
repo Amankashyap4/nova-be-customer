@@ -33,7 +33,7 @@ jobs:
         FLASK_ENV: testing
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v1
     - name: Build the Docker Image 
       run: docker build --tag manalirahate/nova-gas-customer:1.0.0 . 
       env:
