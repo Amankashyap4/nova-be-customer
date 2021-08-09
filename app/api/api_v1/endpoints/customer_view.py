@@ -222,8 +222,8 @@ def update_customer(customer_id):
     return handle_result(result, schema=CustomerSchema)
 
 
-@customer.route("/accounts/<string:customer_id>")
-@auth_required("customer|admin")
+@customer.route("/accounts/<string:customer_id>", methods=["GET"])
+@auth_required()
 def show_customer(customer_id):
     """
     ---

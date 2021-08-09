@@ -67,6 +67,22 @@ class CRUDRepositoryInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def find(self, data):
+        """
+        when inherited, should find a record by the parameters passed
+        :param data:
+        :return: a model object
+        """
+
+    @abc.abstractmethod
+    def find_all(self, data):
+        """
+        when inherited, should find all records by the parameters passed
+        :param data:
+        :return: a model object
+        """
+
+    @abc.abstractmethod
     def delete(self, id):
         """
         takes in an id, finds and deletes the record

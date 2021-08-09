@@ -17,7 +17,7 @@ class AppExceptionCase(Exception):
         )
 
 
-def app_exception_handler(exc: AppExceptionCase):
+def app_exception_handler(exc):
     if isinstance(exc, DBAPIError):
         return Response(
             json.dumps(

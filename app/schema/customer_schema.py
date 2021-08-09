@@ -5,7 +5,11 @@ from app.utils import StatusEnum, IDEnum
 
 class CustomerSchema(Schema):
     id = fields.UUID()
-    phone_number = fields.Str(validate=validate.Length(min=10))
+    phone_number = fields.Str(
+        validate=validate.Regexp(
+            r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$"
+        )
+    )
     first_name = fields.Str(validate=validate.Length(min=2))
     last_name = fields.Str(validate=validate.Length(min=2))
     id_type = EnumField(IDEnum)
@@ -31,7 +35,11 @@ class CustomerSchema(Schema):
 
 
 class CustomerCreateSchema(Schema):
-    phone_number = fields.Str(required=True, validate=validate.Length(min=10))
+    phone_number = fields.Str(
+        validate=validate.Regexp(
+            r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$"
+        )
+    )
     first_name = fields.Str(required=True, validate=validate.Length(min=2))
     last_name = fields.Str(required=True, validate=validate.Length(min=2))
     id_type = EnumField(IDEnum, required=True)
@@ -48,7 +56,11 @@ class CustomerCreateSchema(Schema):
 
 
 class CustomerUpdateSchema(Schema):
-    phone_number = fields.Str(validate=validate.Length(min=10))
+    phone_number = fields.Str(
+        validate=validate.Regexp(
+            r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$"
+        )
+    )
     first_name = fields.Str(validate=validate.Length(min=2))
     last_name = fields.Str(validate=validate.Length(min=2))
     id_type = EnumField(IDEnum)

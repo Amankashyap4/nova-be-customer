@@ -27,8 +27,7 @@ class CustomerController(Notifier):
 
     def show(self, customer_id):
         customer = self.customer_repository.find_by_id(customer_id)
-        result = ServiceResult(Result(customer, 200))
-        return result
+        return ServiceResult(Result(customer, 200))
 
     def update(self, customer_id, data):
         customer = self.customer_repository.update_by_id(customer_id, data)
@@ -50,16 +49,20 @@ class CustomerController(Notifier):
                 f"Customer with phone number {phone_number} exists"
             )
 
-        otp = random.randint(100000, 999999)
+        auth_token = random.randint(100000, 999999)
         otp_expiration = datetime.now() + timedelta(minutes=5)
 
-        data["otp"] = otp
+        data["otp"] = auth_token
         data["otp_expiration"] = otp_expiration
 
         customer = self.lead_repository.create(data)
 
         self.notify(
-            SMSNotificationHandler(customer.phone_number, {"otp": otp}, "sms_otp")
+            SMSNotificationHandler(
+                recipient=customer.phone_number,
+                details={"verification_code": auth_token},
+                meta={"type": "sms", "subtype": "otp"},
+            )
         )
 
         return ServiceResult(Result({"id": customer.id}, 201))
@@ -91,14 +94,20 @@ class CustomerController(Notifier):
 
     def resend_token(self, lead_id):
         lead = self.lead_repository.find_by_id(lead_id)
-        otp = random.randint(100000, 999999)
+        auth_token = random.randint(100000, 999999)
         otp_expiration = datetime.now() + timedelta(minutes=5)
 
         updated_lead = self.lead_repository.update_by_id(
-            lead_id, {"otp": otp, "otp_expiration": otp_expiration}
+            lead_id, {"otp": auth_token, "otp_expiration": otp_expiration}
         )
 
-        self.notify(SMSNotificationHandler(lead.phone_number, {"otp": otp}, "sms_otp"))
+        self.notify(
+            SMSNotificationHandler(
+                recipient=lead.phone_number,
+                details={"verification_code": auth_token},
+                meta={"type": "sms", "subtype": "otp"},
+            )
+        )
         return ServiceResult(Result({"id": updated_lead.id}, 201))
 
     def add_pin(self, data):
@@ -189,7 +198,11 @@ class CustomerController(Notifier):
             {"auth_token": auth_token, "auth_token_expiration": auth_token_expiration},
         )
         self.notify(
-            SMSNotificationHandler(customer.phone_number, {"otp": auth_token}, "sms_otp")
+            SMSNotificationHandler(
+                recipient=customer.phone_number,
+                details={"verification_code": auth_token},
+                meta={"type": "sms", "subtype": "otp"},
+            )
         )
         return ServiceResult(Result({"id": customer.id}, 200))
 
@@ -212,13 +225,9 @@ class CustomerController(Notifier):
         )
         self.notify(
             SMSNotificationHandler(
-                customer.phone_number,
-                {
-                    "message": "Your pin has been changed successfully. "
-                    "Please notify customer support if you did not "
-                    "request your pin be reset"
-                },
-                "sms_notification",
+                recipient=customer.phone_number,
+                details={"name": customer.first_name},
+                meta={"type": "sms", "subtype": "pin_change"},
             )
         )
 

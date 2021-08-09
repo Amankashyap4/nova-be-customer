@@ -16,15 +16,15 @@ class SMSNotificationHandler(NotificationHandler):
     Check out https://github.com/theQuantumGroup/nova-be-notification for more info
     """
 
-    def __init__(self, recipient, message, sms_type):
+    def __init__(self, recipient, details, meta):
         self.recipient = recipient
-        self.message = message
-        self.sms_type = sms_type
+        self.details = details
+        self.meta = meta
 
     def send(self):
         data = {
-            "sms_type": self.sms_type,
-            "message": self.message,
+            "meta": self.meta,
+            "details": self.details,
             "recipient": self.recipient,
         }
 

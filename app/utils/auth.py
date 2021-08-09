@@ -12,7 +12,7 @@ from jwt.exceptions import (
 from app.definitions.exceptions import AppException
 
 
-def auth_required(authorized_roles):
+def auth_required(authorized_roles=None):
     def authorize_user(func):
         """
         A wrapper to authorize an action using
@@ -37,7 +37,10 @@ def auth_required(authorized_roles):
                     issuer=os.getenv("JWT_ISSUER"),
                 )  # noqa E501
                 available_roles = payload.get("realm_access").get("roles")
+                service_name = os.getenv("SERVICE_NAME")
+                func_name = service_name + "_" + func.__name__
                 access_roles = authorized_roles.split("|")
+                access_roles.append(func_name)
                 for role in access_roles:
                     if role in available_roles:
                         if "user_id" in inspect.getfullargspec(func).args:
@@ -46,9 +49,9 @@ def auth_required(authorized_roles):
                             )  # noqa E501
                         return func(*args, **kwargs)
             except ExpiredSignatureError:
-                AppException.ExpiredTokenException("Token Expired")
+                raise AppException.ExpiredTokenException("Token Expired")
             except InvalidTokenError:
-                AppException.OperationError("Invalid Token")
+                raise AppException.OperationError("Invalid Token")
             raise AppException.Unauthorized()
 
         return view_wrapper
