@@ -21,7 +21,7 @@ class Customer(db.Model):
     modified: datetime.datetime
     __tablename__ = "customer"
     id = db.Column(db.GUID(), primary_key=True, default=uuid.uuid4)
-    phone_number = db.Column(db.String(0), unique=True)
+    phone_number = db.Column(db.String(), unique=True)
     first_name = db.Column(db.String(60), nullable=False)
     last_name = db.Column(db.String(60), nullable=False)
     id_type = db.Column(
@@ -32,6 +32,8 @@ class Customer(db.Model):
     status = db.Column(
         db.Enum(StatusEnum, name="status"), default=StatusEnum.inactive, nullable=False
     )
+    auth_token = db.Column(db.String(6))
+    auth_token_expiration = db.Column(db.DateTime(timezone=True))
     created = db.Column(
         db.DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -13,9 +13,12 @@ from app.schema import (
     ResendTokenSchema,
     LoginSchema,
     TokenSchema,
+    PinChangeSchema,
+    PinResetSchema,
+    PinResetRequestSchema,
 )
 from app.services import RedisService, AuthService
-from app.utils import validator
+from app.utils import validator, auth_required
 
 customer = Blueprint("customer", __name__)
 
@@ -184,6 +187,7 @@ def login_user():
 
 @customer.route("/accounts/<string:customer_id>", methods=["PATCH"])
 @validator(schema=CustomerUpdateSchema)
+@auth_required("customer|admin")
 def update_customer(customer_id):
     """
     ---
@@ -201,6 +205,8 @@ def update_customer(customer_id):
         content:
             application/json:
                 schema: CustomerUpdate
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: returns a customer
@@ -216,7 +222,8 @@ def update_customer(customer_id):
     return handle_result(result, schema=CustomerSchema)
 
 
-@customer.route("/accounts/<string:customer_id>")
+@customer.route("/accounts/<string:customer_id>", methods=["GET"])
+@auth_required()
 def show_customer(customer_id):
     """
     ---
@@ -229,6 +236,8 @@ def show_customer(customer_id):
           schema:
             type: string
           description: The customer ID
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: returns a customer
@@ -243,6 +252,7 @@ def show_customer(customer_id):
 
 
 @customer.route("/accounts/<string:customer_id>", methods=["DELETE"])
+@auth_required("admin")
 def delete_customer(customer_id):
     """
     ---
@@ -255,6 +265,8 @@ def delete_customer(customer_id):
           schema:
             type: string
           description: The customer ID
+      security:
+        - bearerAuth: []
       responses:
         '204':
           description: returns nil
@@ -262,4 +274,85 @@ def delete_customer(customer_id):
           - Customer
     """
     result = customer_controller.delete(customer_id)
+    return handle_result(result)
+
+
+@customer.route("/change-password", methods=["POST"])
+@validator(schema=PinChangeSchema)
+@auth_required("customer|admin")
+def change_password(user_id):
+    """
+    ---
+    post:
+      description: changes a customer's password
+      requestBody:
+        required: true
+        content:
+            application/json:
+                schema: PinChange
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: returns nil
+      tags:
+          - Authentication
+    """
+    data = request.json
+    data["customer_id"] = user_id
+    result = customer_controller.change_password(data)
+    return handle_result(result)
+
+
+@customer.route("/request-reset", methods=["POST"])
+@validator(schema=PinResetRequestSchema)
+def forgot_password():
+    """
+    ---
+    post:
+      description: requests a reset of a customer's password
+      requestBody:
+        required: true
+        content:
+            application/json:
+                schema: PinResetRequest
+      responses:
+        '200':
+          description: returns a uuid (customer's id)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: uuid
+                    example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      tags:
+          - Authentication
+    """
+    data = request.json
+    result = customer_controller.request_password_reset(data)
+    return handle_result(result)
+
+
+@customer.route("/reset-password", methods=["POST"])
+@validator(schema=PinResetSchema)
+def reset_password():
+    """
+    ---
+    post:
+      description: confirms reset of a customer's password
+      requestBody:
+        required: true
+        content:
+            application/json:
+                schema: PinReset
+      responses:
+        '204':
+          description: returns nil
+      tags:
+          - Authentication
+    """
+    data = request.json
+    result = customer_controller.reset_password(data)
     return handle_result(result)

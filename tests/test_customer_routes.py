@@ -1,16 +1,19 @@
+import uuid
 from unittest import mock
 from app.definitions.exceptions import AppException
 from tests.base_test_case import BaseTestCase
 
 
 class TestCustomerRoutes(BaseTestCase):
+    auth_service_id = str(uuid.uuid4())
+
     customer_data = {
-        "phone_number": "00233242583061",
+        "phone_number": "0242583061",
         "first_name": "John",
         "last_name": "Doe",
         "id_type": "passport",
         "id_number": "4829h9445839",
-        "auth_service_id": "d9247e56-7ad4-434d-8524-606e69d784c3",
+        "auth_service_id": auth_service_id,
     }
 
     account_creation_data = {

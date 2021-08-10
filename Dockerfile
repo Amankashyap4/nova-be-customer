@@ -14,6 +14,6 @@ COPY pyproject.toml poetry.lock* /app/
 ARG INSTALL_DEV=true
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --no-dev ; fi"
 
-COPY ./app /app
-#CMD python /app/main/main.py 0.0.0.0:8000
 
+COPY . /app
+CMD "./gunicorn_starter.sh"

@@ -140,13 +140,25 @@ class AuthService(AuthServiceInterface):
 
     def assign_role(self, user_id):
         url = "/users/" + user_id + "/role-mappings/realm"
+        customer_role_id = os.getenv("KEYCLOAK_CUSTOMER_ROLE_ID")
         data = [
             {
-                "id": "7735d317-c224-4c97-978d-47cc4aaa2ac6",
+                "id": customer_role_id,
                 "name": "customer",
             }
         ]
         self.keycloak_post(url, data)
+
+    def reset_password(self, data):
+        user_id = data.get("user_id")
+        new_password = data.get("new_password")
+        assert user_id, "user_id is required"
+        assert new_password, "new_password is required"
+        url = "/users/" + user_id + "/reset-password"
+
+        data = {"type": "password", "value": new_password, "temporary": False}
+
+        self.keycloak_put(url, data)
 
     def keycloak_post(self, endpoint, data):
         """
@@ -158,6 +170,23 @@ class AuthService(AuthServiceInterface):
         url = URI + "/auth/admin/realms/" + REALM + endpoint
         headers = self.headers or self.get_keycloak_headers()
         response = requests.post(url, headers=headers, json=data)
+        if response.status_code >= 300:
+            raise AppException.KeyCloakAdminException(
+                context={"message": response.json().get("errorMessage")},
+                status_code=response.status_code,
+            )
+        return response
+
+    def keycloak_put(self, endpoint, data):
+        """
+        Make a POST request to Keycloak
+        :param {string} endpoint Keycloak endpoint
+        :data {object} data Keycloak data object
+        :return {Response} request response object
+        """
+        url = URI + "/auth/admin/realms/" + REALM + endpoint
+        headers = self.headers or self.get_keycloak_headers()
+        response = requests.put(url, headers=headers, json=data)
         if response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
                 context={"message": response.json().get("errorMessage")},

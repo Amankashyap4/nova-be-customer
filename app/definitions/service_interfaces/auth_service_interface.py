@@ -11,6 +11,8 @@ class AuthServiceInterface(metaclass=abc.ABCMeta):
             and callable(subclass.refresh_token)
             and hasattr(subclass, "create_user")
             and callable(subclass.create_user)
+            and hasattr(subclass, "reset_password")
+            and callable(subclass.reset_password)
         )
 
     @abc.abstractmethod
@@ -33,6 +35,16 @@ class AuthServiceInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def create_user(self, data):
+        """
+
+        :param data: data to create user with
+        :return:
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def reset_password(self, data):
         """
 
         :param data: data to create user with

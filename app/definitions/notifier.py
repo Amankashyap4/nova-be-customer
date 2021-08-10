@@ -8,7 +8,6 @@ class Notifier:
     signal = notification_signals.signal("notify")
 
     def notify(self, notification_listener: NotificationHandler):
-        # notification_listener.send()
         self.signal.send(self, notification=notification_listener)
 
     @signal.connect

@@ -47,16 +47,12 @@ def handle_result(result, schema=None, many=False):
             logger.error(f"{exception} | caller={caller_info()}")
             raise exception
     with result as result:
-
         if schema:
-            return Response(
-                schema(many=many).dumps(result.value),
-                status=result.status_code,
-                mimetype="application/json",
-            )
+            json_data = schema(many=many).dumps(result.value)
         else:
-            return Response(
-                json.dumps(result.value),
-                status=result.status_code,
-                mimetype="application/json",
-            )
+            json_data = json.dumps(result.value)
+        return Response(
+            json_data,
+            status=result.status_code,
+            mimetype="application/json",
+        )
