@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 services:
   backend:
 #    image: "joeymaclean/nova-be-customer"
@@ -64,3 +64,7 @@ services:
 #      - $PWD/.dbdata:/var/lib/postgres
     ports:
       - 5435:5432
+
+networks:
+    frontend:
+    backend:
