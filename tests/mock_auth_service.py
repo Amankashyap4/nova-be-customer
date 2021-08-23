@@ -1,4 +1,4 @@
-from app.definitions.service_interfaces import AuthServiceInterface
+from app.core.service_interfaces import AuthServiceInterface
 
 
 class MockAuthService(AuthServiceInterface):

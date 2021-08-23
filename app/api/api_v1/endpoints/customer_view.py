@@ -2,7 +2,7 @@ import pinject
 from flask import Blueprint, request
 
 from app.controllers import CustomerController
-from app.definitions.service_result import handle_result
+from app.core.service_result import handle_result
 from app.repositories import CustomerRepository, LeadRepository
 from app.schema import (
     CustomerCreateSchema,

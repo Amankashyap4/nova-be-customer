@@ -1,5 +1,5 @@
 import uuid
-from app.definitions.exceptions import AppException
+from app.core.exceptions import AppException
 from app.utils import IDEnum
 from tests.base_test_case import BaseTestCase
 

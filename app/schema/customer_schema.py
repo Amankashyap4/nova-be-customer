@@ -38,7 +38,8 @@ class CustomerCreateSchema(Schema):
     phone_number = fields.Str(
         validate=validate.Regexp(
             r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$"
-        )
+        ),
+        required=True,
     )
     first_name = fields.Str(required=True, validate=validate.Length(min=2))
     last_name = fields.Str(required=True, validate=validate.Length(min=2))

@@ -1,6 +1,6 @@
 import uuid
 from unittest import mock
-from app.definitions.exceptions import AppException
+from app.core.exceptions import AppException
 from tests.base_test_case import BaseTestCase
 
 

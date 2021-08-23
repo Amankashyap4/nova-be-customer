@@ -3,15 +3,16 @@ import secrets
 import pytz
 from datetime import datetime, timedelta
 
-from app.definitions import Result, ServiceResult
-from app.definitions.exceptions import AppException
-from app.definitions.notifier import Notifier
-from app.definitions.service_interfaces import AuthServiceInterface
+from app.core import Result, ServiceResult
+from app.core.exceptions import AppException
+from app.core.notifier import Notifier
+from app.core.service_interfaces import AuthServiceInterface
 from app.repositories import CustomerRepository, LeadRepository
 from app.notifications import SMSNotificationHandler
 
-
 utc = pytz.UTC
+
+USER_DOES_NOT_EXIST = "user does not exist"
 
 
 class CustomerController(Notifier):
@@ -40,7 +41,6 @@ class CustomerController(Notifier):
         return result
 
     def register(self, data):
-
         phone_number = data.get("phone_number")
         existing_customer = self.customer_repository.find({"phone_number": phone_number})
 
@@ -61,7 +61,7 @@ class CustomerController(Notifier):
             SMSNotificationHandler(
                 recipient=customer.phone_number,
                 details={"verification_code": auth_token},
-                meta={"type": "sms", "subtype": "otp"},
+                meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
 
@@ -77,7 +77,7 @@ class CustomerController(Notifier):
         assert lead.otp == otp, "Wrong token"
 
         if utc.localize(dt=datetime.now()) > lead.otp_expiration:
-            raise AppException.ExpiredTokenException("token expired")
+            raise AppException.ExpiredTokenException("the token you passed is expired")
 
         password_token = secrets.token_urlsafe(16)
 
@@ -105,7 +105,7 @@ class CustomerController(Notifier):
             SMSNotificationHandler(
                 recipient=lead.phone_number,
                 details={"verification_code": auth_token},
-                meta={"type": "sms", "subtype": "otp"},
+                meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
         return ServiceResult(Result({"id": updated_lead.id}, 201))
@@ -118,7 +118,7 @@ class CustomerController(Notifier):
         user = self.lead_repository.find({"password_token": token})
 
         if not user:
-            raise AppException.NotFoundException("User does not exist")
+            raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
 
         # Check if password_token is valid or expired
         if utc.localize(dt=datetime.now()) > user.password_token_expiration:
@@ -160,7 +160,7 @@ class CustomerController(Notifier):
         pin = data.get("pin")
         customer = self.customer_repository.find({"phone_number": phone_number})
         if not customer:
-            raise AppException.NotFoundException("User does not exist")
+            raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
 
         access_token = self.auth_service.get_token(
             {"username": customer.id, "password": pin}
@@ -174,7 +174,7 @@ class CustomerController(Notifier):
         old_pin = data.get("old_pin")
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
-            raise AppException.NotFoundException("User does not exist")
+            raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
         self.auth_service.get_token({"username": str(customer.id), "password": old_pin})
         self.auth_service.reset_password(
             {
@@ -201,7 +201,7 @@ class CustomerController(Notifier):
             SMSNotificationHandler(
                 recipient=customer.phone_number,
                 details={"verification_code": auth_token},
-                meta={"type": "sms", "subtype": "otp"},
+                meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
         return ServiceResult(Result({"id": customer.id}, 200))
@@ -213,7 +213,7 @@ class CustomerController(Notifier):
 
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
-            raise AppException.NotFoundException("Account does not exist")
+            raise AppException.NotFoundException("User not found")
 
         assert customer.auth_token == auth_token, "Wrong token"
 
@@ -227,7 +227,7 @@ class CustomerController(Notifier):
             SMSNotificationHandler(
                 recipient=customer.phone_number,
                 details={"name": customer.first_name},
-                meta={"type": "sms", "subtype": "pin_change"},
+                meta={"type": "sms_notification", "subtype": "pin_change"},
             )
         )
 
