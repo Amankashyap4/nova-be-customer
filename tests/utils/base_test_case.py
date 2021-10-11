@@ -4,6 +4,8 @@ from app import create_app, db
 from app.controllers import CustomerController
 from app.repositories import CustomerRepository, LeadRepository
 from tests import MockAuthService
+from config import Config
+from unittest.mock import patch
 
 
 class BaseTestCase(TestCase):
@@ -13,10 +15,16 @@ class BaseTestCase(TestCase):
             SQLALCHEMY_DATABASE_URI="sqlite:///"
             + os.path.join(app.instance_path, "test.db?check_same_thread=False"),
         )
-        try:
-            os.makedirs(app.instance_path)
-        except OSError:
-            pass
+
+        self.access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"  # noqa: E501
+        self.headers = {"Authorization": f"Bearer {self.access_token}"}
+
+        patcher = patch(
+            "app.core.utils.auth.jwt.decode", self.required_roles_side_effect
+        )
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
         self.customer_repository = CustomerRepository()
         self.lead_repository = LeadRepository()
         self.auth_service = MockAuthService()
@@ -46,3 +54,17 @@ class BaseTestCase(TestCase):
 
     def dummy_kafka_method(self, topic, value):
         return True
+
+    def required_roles_side_effect(  # noqa
+        self, token, key, algorithms, audience, issuer
+    ):
+        return {
+            "realm_access": {
+                "roles": [
+                    f"{Config.APP_NAME}_change_password",
+                    f"{Config.APP_NAME}_delete_customer",
+                    f"{Config.APP_NAME}_show_customer",
+                    f"{Config.APP_NAME}_update_customer",
+                ]
+            },
+        }

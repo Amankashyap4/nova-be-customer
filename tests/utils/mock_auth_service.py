@@ -16,3 +16,6 @@ class MockAuthService(AuthServiceInterface):
     def create_user(self, data):
         token = self.tokens
         token["id"] = "d9247e56-7ad4-434d-8524-606e69d784c3"
+
+    def reset_password(self, data):
+        return True

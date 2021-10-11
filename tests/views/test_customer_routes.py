@@ -1,7 +1,7 @@
 import uuid
 from unittest import mock
 from app.core.exceptions import AppException
-from tests.base_test_case import BaseTestCase
+from tests.utils.base_test_case import BaseTestCase
 
 
 class TestCustomerRoutes(BaseTestCase):
@@ -44,7 +44,9 @@ class TestCustomerRoutes(BaseTestCase):
         self.assertEqual(customer.phone_number, self.customer_data["phone_number"])
         with self.client:
             customer_update = self.client.patch(
-                f"/api/v1/customers/accounts/{customer.id}", json={"first_name": "Jane"}
+                f"/api/v1/customers/accounts/{customer.id}",
+                json={"first_name": "Jane"},
+                headers=self.headers,
             )
 
             self.assert200(customer_update)
@@ -57,7 +59,9 @@ class TestCustomerRoutes(BaseTestCase):
         self.assertEqual(customer.phone_number, self.customer_data["phone_number"])
 
         with self.client:
-            response = self.client.delete(f"/api/v1/customers/accounts/{customer.id}")
+            response = self.client.delete(
+                f"/api/v1/customers/accounts/{customer.id}", headers=self.headers
+            )
             self.assertStatus(response, 204)
 
         with self.assertRaises(AppException.NotFoundException):
@@ -68,7 +72,9 @@ class TestCustomerRoutes(BaseTestCase):
         self.assertEqual(customer.phone_number, self.customer_data["phone_number"])
 
         with self.client:
-            response = self.client.get(f"/api/v1/customers/accounts/{customer.id}")
+            response = self.client.get(
+                f"/api/v1/customers/accounts/{customer.id}", headers=self.headers
+            )
             self.assertStatus(response, 200)
             data = response.json
 

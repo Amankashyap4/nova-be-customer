@@ -1,7 +1,7 @@
 import uuid
 from app.core.exceptions import AppException
-from app.utils import IDEnum
-from tests.base_test_case import BaseTestCase
+from app.core.utils import IDEnum
+from tests.utils.base_test_case import BaseTestCase
 
 
 class TestCustomerRepository(BaseTestCase):
