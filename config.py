@@ -12,6 +12,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     """Set Flask configuration vars from .env file."""
 
+    APP_NAME = "customer"
     FLASK_ENV = os.getenv("FLASK_ENV")
 
     DB_ENGINE = os.getenv("DB_ENGINE", default="POSTGRES")
