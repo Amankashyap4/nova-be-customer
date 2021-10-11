@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from app import db
 import uuid
 
-from app.utils import IDEnum, StatusEnum
+from app.core.utils import IDEnum, StatusEnum
 
 
 @dataclass

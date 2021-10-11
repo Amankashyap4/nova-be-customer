@@ -18,7 +18,7 @@ from app.schema import (
     PinResetRequestSchema,
 )
 from app.services import RedisService, AuthService
-from app.utils import validator, auth_required
+from app.core.utils import validator, auth_required
 
 customer = Blueprint("customer", __name__)
 
@@ -187,7 +187,7 @@ def login_user():
 
 @customer.route("/accounts/<string:customer_id>", methods=["PATCH"])
 @validator(schema=CustomerUpdateSchema)
-@auth_required("customer|admin")
+@auth_required()
 def update_customer(customer_id):
     """
     ---
@@ -252,7 +252,7 @@ def show_customer(customer_id):
 
 
 @customer.route("/accounts/<string:customer_id>", methods=["DELETE"])
-@auth_required("admin")
+@auth_required()
 def delete_customer(customer_id):
     """
     ---
@@ -279,7 +279,7 @@ def delete_customer(customer_id):
 
 @customer.route("/change-password", methods=["POST"])
 @validator(schema=PinChangeSchema)
-@auth_required("customer|admin")
+@auth_required()
 def change_password(user_id):
     """
     ---

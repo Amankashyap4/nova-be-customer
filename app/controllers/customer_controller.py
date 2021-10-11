@@ -129,6 +129,7 @@ class CustomerController(Notifier):
             "first_name": user.first_name,
             "last_name": user.last_name,
             "password": pin,
+            "group": "customer",
         }
         # Create user in auth service
         auth_result = self.auth_service.create_user(user_data)
