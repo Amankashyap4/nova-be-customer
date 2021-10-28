@@ -6,7 +6,7 @@ from functools import wraps
 from flask import request
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError, PyJWTError
 
-from app.core.exceptions import AppException
+from core.exceptions import AppException
 
 
 def auth_required(other_roles=None):

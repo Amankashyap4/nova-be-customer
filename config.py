@@ -42,6 +42,14 @@ class Config:
     TESTING = False
     LOGFILE = "log.log"
 
+    # Other Config
+    KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
+    KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
+    KEYCLOAK_URI = os.getenv("KEYCLOAK_URI")
+    KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM")
+    KEYCLOAK_ADMIN_USER = os.getenv("KEYCLOAK_ADMIN_USER")
+    KEYCLOAK_ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD")
+
     @property
     def SQLALCHEMY_DATABASE_URI(self):  # noqa
         return "postgresql+psycopg2://{db_user}:{password}@{host}:{port}/{db_name}".format(  # noqa

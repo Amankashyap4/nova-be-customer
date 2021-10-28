@@ -1,22 +1,29 @@
-import os
 import requests
-
+import config
+from dataclasses import dataclass
 from app import constants
-from app.core.exceptions import AppException
-from app.core.service_interfaces.auth_service_interface import (
+from core.exceptions import AppException
+from core.service_interfaces.auth_service_interface import (
     AuthServiceInterface,
 )
 
-CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
-CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
-URI = os.getenv("KEYCLOAK_URI")
-REALM = os.getenv("KEYCLOAK_REALM")
+CLIENT_ID = config.Config.KEYCLOAK_CLIENT_ID or ""
+CLIENT_SECRET = config.Config.KEYCLOAK_CLIENT_SECRET or ""
+URI = config.Config.KEYCLOAK_URI or ""
+REALM = config.Config.KEYCLOAK_REALM or ""
 REALM_PREFIX = "/auth/realms/"
 AUTH_ENDPOINT = "/protocol/openid-connect/token/"
 REALM_URL = "/auth/admin/realms/"
 
 
+@dataclass
 class AuthService(AuthServiceInterface):
+    """
+    This class is an intermediary between this service and the IAM service i.e Keycloak.
+    It makes authentication and authorization api calls to the IAM service on
+    behalf of the application. Use this class when authenticating an entity
+    """
+
     headers = None
     roles = []
 
@@ -47,10 +54,10 @@ class AuthService(AuthServiceInterface):
                 status_code=response.status_code,
             )
 
-        tokens_data = response.json()
+        tokens_data: dict = response.json()
         result = {
-            "access_token": tokens_data["access_token"],
-            "refresh_token": tokens_data["refresh_token"],
+            "access_token": tokens_data.get("access_token"),
+            "refresh_token": tokens_data.get("refresh_token"),
         }
 
         return result
@@ -61,6 +68,8 @@ class AuthService(AuthServiceInterface):
         :param refresh_token: a {str} containing the refresh token
         :return: {dict} a dictionary containing the token and refresh token
         """
+        assert refresh_token, "refresh token cannot be None"
+
         request_data = {
             "grant_type": "refresh_token",
             "client_id": CLIENT_ID,
@@ -75,13 +84,13 @@ class AuthService(AuthServiceInterface):
         if response.status_code != requests.codes.ok:
             raise AppException.BadRequest({"error": ["Error in refresh token"]})
 
-        data = response.json()
+        data: dict = response.json()
         return {
-            "access_token": data["access_token"],
-            "refresh_token": data["refresh_token"],
+            "access_token": data.get("access_token"),
+            "refresh_token": data.get("refresh_token"),
         }
 
-    def create_user(self, request_data):
+    def create_user(self, request_data: dict):
         assert request_data.get("group"), "Entity must belong to a group"
 
         data = {
@@ -107,15 +116,15 @@ class AuthService(AuthServiceInterface):
             },
         }
 
-        endpoint = "/users"
+        endpoint: str = "/users"
         # create user
         self.keycloak_post(endpoint, data)
 
         # get user details from keycloak
         user = self.get_keycloak_user(request_data.get("username"))
-        user_id = user.get("id")
+        user_id: str = user.get("id")
 
-        # assign keycloak role
+        # assign keycloak group
         group = request_data.get("group")
         iam_groups = self.get_all_groups()
         required_groups = list(filter(lambda x: x.get("name") == group, iam_groups))
@@ -137,24 +146,6 @@ class AuthService(AuthServiceInterface):
         token_data["id"] = user_id
         return token_data
 
-    def filter_func(self, val):
-        if val.get("name") in self.roles:
-            return val
-
-    def map_func(self, val):  # noqa
-        return {"id": val.get("id"), "name": val.get("name")}
-
-    def get_all_roles(self):
-        url = URI + REALM_URL + REALM + "/roles"
-        response = requests.get(url, headers=self.get_keycloak_headers())
-
-        if response.status_code >= 300:
-            raise AppException.KeyCloakAdminException(
-                {"message": [response.json().get("errorMessage")]},
-                status_code=response.status_code,
-            )
-        return response.json()
-
     def get_all_groups(self):
         url = URI + REALM_URL + REALM + "/groups"
         response = requests.get(url, headers=self.get_keycloak_headers())
@@ -167,6 +158,12 @@ class AuthService(AuthServiceInterface):
         return response.json()
 
     def get_keycloak_user(self, username):
+        """
+
+        :param username: username of keycloak user which is normally the uuid
+        of the user in the database
+        :return:
+        """
         url = URI + REALM_URL + REALM + "/users?username=" + username
         response = requests.get(url, headers=self.get_keycloak_headers())
         if response.status_code >= 300:
@@ -180,11 +177,6 @@ class AuthService(AuthServiceInterface):
         else:
             return user[0]
 
-    def assign_role(self, user_id, roles):
-        url = "/users/" + user_id + "/role-mappings/realm"
-        data = roles
-        self.keycloak_post(url, data)
-
     def assign_group(self, user_id, group):
         endpoint = "/users/" + user_id + "/groups/" + group.get("id")
         url = URI + REALM_URL + REALM + endpoint
@@ -195,7 +187,7 @@ class AuthService(AuthServiceInterface):
                 {constants.KEYCLOAK_ERROR: [response.json().get("errorMessage")]},
                 status_code=response.status_code,
             )
-        return response
+        return True
 
     def reset_password(self, data):
         user_id = data.get("user_id")
@@ -207,6 +199,7 @@ class AuthService(AuthServiceInterface):
         data = {"type": "password", "value": new_password, "temporary": False}
 
         self.keycloak_put(url, data)
+        return True
 
     def keycloak_post(self, endpoint, data):
         """
@@ -250,8 +243,8 @@ class AuthService(AuthServiceInterface):
         data = {
             "grant_type": "password",
             "client_id": "admin-cli",
-            "username": os.getenv("KEYCLOAK_ADMIN_USER"),
-            "password": os.getenv("KEYCLOAK_ADMIN_PASSWORD"),
+            "username": config.Config.KEYCLOAK_ADMIN_USER,
+            "password": config.Config.KEYCLOAK_ADMIN_PASSWORD,
         }
 
         url = URI + REALM_PREFIX + REALM + AUTH_ENDPOINT
@@ -269,7 +262,8 @@ class AuthService(AuthServiceInterface):
 
     def get_keycloak_headers(self):
         """
-
+        login as an admin user into keycloak and use the access token as an
+        authentication user.
         :return {object}  Object of keycloak headers
         """
 

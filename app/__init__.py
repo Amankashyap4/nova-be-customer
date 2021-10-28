@@ -5,7 +5,7 @@ from loguru import logger
 from flask import Flask, jsonify
 from flask_mongoengine import MongoEngine
 from sqlalchemy.exc import DBAPIError
-from app.core.extensions import db, migrate, ma
+from core.extensions import db, migrate, ma
 
 from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import HTTPException
@@ -13,7 +13,7 @@ from werkzeug.utils import import_string
 
 # load dotenv in the base root
 from app.api_spec import spec
-from app.core.exceptions.app_exceptions import (
+from core.exceptions.app_exceptions import (
     app_exception_handler,
     AppExceptionCase,
 )
@@ -59,7 +59,7 @@ def create_app(config="config.DevelopmentConfig"):
 
 def register_extensions(flask_app):
     """Register Flask extensions."""
-    from app.core.factory import factory
+    from core.factory import factory
 
     if flask_app.config["DB_ENGINE"] == "MONGODB":
         me = MongoEngine()

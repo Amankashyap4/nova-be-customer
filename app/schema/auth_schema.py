@@ -26,7 +26,7 @@ class PinResetRequestSchema(Schema):
 
 
 class PinResetSchema(Schema):
-    auth_token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
+    token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
     new_pin = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
     id = fields.UUID(required=True)
 

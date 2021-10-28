@@ -3,10 +3,10 @@ import secrets
 import pytz
 from datetime import datetime, timedelta
 
-from app.core import Result, ServiceResult
-from app.core.exceptions import AppException
-from app.core.notifier import Notifier
-from app.core.service_interfaces import AuthServiceInterface
+from core import Result
+from core.exceptions import AppException
+from core.notifier import Notifier
+from core.service_interfaces import AuthServiceInterface
 from app.repositories import CustomerRepository, LeadRepository
 from app.notifications import SMSNotificationHandler
 
@@ -28,16 +28,16 @@ class CustomerController(Notifier):
 
     def show(self, customer_id):
         customer = self.customer_repository.find_by_id(customer_id)
-        return ServiceResult(Result(customer, 200))
+        return Result(customer, 200)
 
     def update(self, customer_id, data):
         customer = self.customer_repository.update_by_id(customer_id, data)
-        result = ServiceResult(Result(customer, 200))
+        result = Result(customer, 200)
         return result
 
     def delete(self, customer_id):
         self.customer_repository.delete(customer_id)
-        result = ServiceResult(Result({}, 204))
+        result = Result({}, 204)
         return result
 
     def register(self, data):
@@ -55,17 +55,17 @@ class CustomerController(Notifier):
         data["otp"] = auth_token
         data["otp_expiration"] = otp_expiration
 
-        customer = self.lead_repository.create(data)
+        lead = self.lead_repository.create(data)
 
         self.notify(
             SMSNotificationHandler(
-                recipient=customer.phone_number,
+                recipient=lead.phone_number,
                 details={"verification_code": auth_token},
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
 
-        return ServiceResult(Result({"id": customer.id}, 201))
+        return Result({"id": lead.id}, 201)
 
     def confirm_token(self, data):
         uuid = data.get("id")
@@ -76,7 +76,7 @@ class CustomerController(Notifier):
 
         assert lead.otp == otp, "Wrong token"
 
-        if utc.localize(dt=datetime.now()) > lead.otp_expiration:
+        if utc.localize(datetime.now()) > lead.otp_expiration:
             raise AppException.ExpiredTokenException("the token you passed is expired")
 
         password_token = secrets.token_urlsafe(16)
@@ -90,7 +90,7 @@ class CustomerController(Notifier):
         )
 
         token_data = {"password_token": updated_lead.password_token}
-        return ServiceResult(Result(token_data, 200))
+        return Result(token_data, 200)
 
     def resend_token(self, lead_id):
         lead = self.lead_repository.find_by_id(lead_id)
@@ -108,7 +108,7 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
-        return ServiceResult(Result({"id": updated_lead.id}, 201))
+        return Result({"id": updated_lead.id}, 200)
 
     def add_pin(self, data):
         token = data.get("password_token")
@@ -121,7 +121,7 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
 
         # Check if password_token is valid or expired
-        if utc.localize(dt=datetime.now()) > user.password_token_expiration:
+        if utc.localize(datetime.now()) > user.password_token_expiration:
             raise AppException.ExpiredTokenException("token expired")
 
         user_data = {
@@ -149,12 +149,7 @@ class CustomerController(Notifier):
         self.customer_repository.create(customer_data)
         # Remove id from auth_result
         auth_result.pop("id", None)
-        return ServiceResult(Result(auth_result, 200))
-
-    def find_customer_by_phone(self, phone_number):
-        assert phone_number, "Missing phone number"
-        customer = self.customer_repository.find({"phone_number": phone_number})
-        return customer
+        return Result(auth_result, 201)
 
     def login(self, data):
         phone_number = data.get("phone_number")
@@ -167,7 +162,7 @@ class CustomerController(Notifier):
             {"username": customer.id, "password": pin}
         )
 
-        return ServiceResult(Result(access_token, 200))
+        return Result(access_token, 200)
 
     def change_password(self, data):
         customer_id = data.get("customer_id")
@@ -183,7 +178,7 @@ class CustomerController(Notifier):
                 "new_password": new_pin,
             }
         )
-        return ServiceResult(Result({}, 204))
+        return Result({}, 204)
 
     def request_password_reset(self, data):
         phone_number = data.get("phone_number")
@@ -205,10 +200,10 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
-        return ServiceResult(Result({"id": customer.id}, 200))
+        return Result({"id": customer.id}, 200)
 
     def reset_password(self, data):
-        auth_token = data.get("auth_token")
+        auth_token = data.get("token")
         new_pin = data.get("new_pin")
         customer_id = data.get("id")
 
@@ -218,7 +213,7 @@ class CustomerController(Notifier):
 
         assert customer.auth_token == auth_token, "Wrong token"
 
-        if utc.localize(dt=datetime.now()) > customer.auth_token_expiration:
+        if utc.localize(datetime.now()) > customer.auth_token_expiration:
             raise AppException.ExpiredTokenException("token expired")
 
         self.auth_service.reset_password(
@@ -232,4 +227,4 @@ class CustomerController(Notifier):
             )
         )
 
-        return ServiceResult(Result("", 204))
+        return Result("", 204)

@@ -2,7 +2,7 @@ from marshmallow import Schema, fields, validate
 from marshmallow_enum import EnumField
 
 from app import constants
-from app.core.utils import StatusEnum, IDEnum
+from app.utils import StatusEnum, IDEnum
 
 
 class CustomerSchema(Schema):

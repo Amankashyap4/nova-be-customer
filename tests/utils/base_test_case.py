@@ -9,22 +9,36 @@ from unittest.mock import patch
 
 
 class BaseTestCase(TestCase):
+    required_roles = {
+        "realm_access": {
+            "roles": [
+                f"{Config.APP_NAME}_change_password",
+                f"{Config.APP_NAME}_delete_customer",
+                f"{Config.APP_NAME}_show_customer",
+                f"{Config.APP_NAME}_update_customer",
+            ]
+        },
+    }
+
     def create_app(self):
         app = create_app("config.TestingConfig")
         app.config.from_mapping(
             SQLALCHEMY_DATABASE_URI="sqlite:///"
-            + os.path.join(app.instance_path, "test.db?check_same_thread=False"),
+            + os.path.join(app.instance_path, "test.sqlite3?check_same_thread=False"),
         )
 
+        # dummy access token
         self.access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"  # noqa: E501
+        # dummy refresh token same as access token
+        self.refresh_token = self.access_token
+
         self.headers = {"Authorization": f"Bearer {self.access_token}"}
 
-        patcher = patch(
-            "app.core.utils.auth.jwt.decode", self.required_roles_side_effect
-        )
-        self.addCleanup(patcher.stop)
-        patcher.start()
+        self.setup_patches()
+        self.instantiate_classes()
+        return app
 
+    def instantiate_classes(self):
         self.customer_repository = CustomerRepository()
         self.lead_repository = LeadRepository()
         self.auth_service = MockAuthService()
@@ -33,7 +47,22 @@ class BaseTestCase(TestCase):
             auth_service=self.auth_service,
             lead_repository=self.lead_repository,
         )
-        return app
+
+    def setup_patches(self):
+        kafka_patcher = patch(
+            "app.notifications.sms_notification_handler.publish_to_kafka",
+            self.dummy_kafka_method,
+        )
+        self.addCleanup(kafka_patcher.stop)
+        kafka_patcher.start()
+        patcher = patch("core.utils.auth.jwt.decode", self.required_roles_side_effect)
+        self.addCleanup(patcher.stop)
+        patcher.start()
+        utc_patcher = patch(
+            "app.controllers.customer_controller.utc.localize", self.utc_side_effect
+        )
+        self.addCleanup(utc_patcher.stop)
+        utc_patcher.start()
 
     def setUp(self):
         """
@@ -49,7 +78,7 @@ class BaseTestCase(TestCase):
         db.drop_all()
 
         path = self.app.instance_path
-        file = os.path.join(path, "test.db")
+        file = os.path.join(path, "test.sqlite3")
         os.remove(file)
 
     def dummy_kafka_method(self, topic, value):
@@ -58,13 +87,7 @@ class BaseTestCase(TestCase):
     def required_roles_side_effect(  # noqa
         self, token, key, algorithms, audience, issuer
     ):
-        return {
-            "realm_access": {
-                "roles": [
-                    f"{Config.APP_NAME}_change_password",
-                    f"{Config.APP_NAME}_delete_customer",
-                    f"{Config.APP_NAME}_show_customer",
-                    f"{Config.APP_NAME}_update_customer",
-                ]
-            },
-        }
+        return self.required_roles
+
+    def utc_side_effect(self, args):  # noqa
+        return args
