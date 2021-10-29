@@ -48,6 +48,6 @@ jobs:
       run: poetry install
     - name: Run pre-commit
       uses: pre-commit/action@v2.0.2
-    - name: Test with pytesta
+    - name: Test with pytest
       run: |
         poetry run python -m pytest -v tests
