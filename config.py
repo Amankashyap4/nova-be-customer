@@ -1,12 +1,8 @@
 import os
-import sys
 from app import dotenv_path
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path)
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 class Config:
@@ -89,5 +85,7 @@ class TestingConfig(Config):
     LOG_BACKTRACE = True
     LOG_LEVEL = "DEBUG"
     SQLALCHEMY_DATABASE_URI = (
-        "sqlite:///" + os.path.join(basedir, DB_NAME) + ".db?check_same_thread=False"
+        "sqlite:///"
+        + os.path.join("..", "instance", DB_NAME)
+        + ".sqlite3?check_same_thread=False"
     )

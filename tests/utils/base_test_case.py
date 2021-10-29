@@ -22,10 +22,6 @@ class BaseTestCase(TestCase):
 
     def create_app(self):
         app = create_app("config.TestingConfig")
-        app.config.from_mapping(
-            SQLALCHEMY_DATABASE_URI="sqlite:///"
-            + os.path.join(app.instance_path, "test.sqlite3?check_same_thread=False"),
-        )
 
         # dummy access token
         self.access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"  # noqa: E501
