@@ -3,8 +3,8 @@ services:
   backend:
 #    image: "joeymaclean/nova-be-customer"
     build:
-      context: .
-      dockerfile: Dockerfile
+     context: .
+     dockerfile: Dockerfile
     environment:
       DB_ENGINE: ${DB_ENGINE}
       DB_USER: ${DB_USER}
@@ -30,7 +30,7 @@ services:
       SMS_CLIENT_SECRET: ${SMS_CLIENT_SECRET}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_ISSUER: ${JWT_ISSUER}
-    command: "/app/gunicorn_starter.sh"
+#    command: "./gunicorn_starter.sh"
     ports:
       - 8000:5000
     volumes:
@@ -62,9 +62,9 @@ services:
       POSTGRES_DB: ${DB_NAME}
 #    volumes:
 #      - $PWD/.dbdata:/var/lib/postgres
-    ports:
-      - 5435:5432
+#    ports:
+#      - 5435:5432
 
-networks:
-    frontend:
-    backend:
+#networks:
+#    frontend:
+#    backend:

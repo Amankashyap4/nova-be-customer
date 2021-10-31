@@ -1,17 +1,14 @@
 import os
-import sys
 from app import dotenv_path
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path)
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-basedir = os.path.abspath(os.path.dirname(__file__))
-
 
 class Config:
     """Set Flask configuration vars from .env file."""
 
+    APP_NAME = "customer"
     FLASK_ENV = os.getenv("FLASK_ENV")
 
     DB_ENGINE = os.getenv("DB_ENGINE", default="POSTGRES")
@@ -40,6 +37,14 @@ class Config:
     FLASK_RUN_PORT = 6000
     TESTING = False
     LOGFILE = "log.log"
+
+    # Other Config
+    KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
+    KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
+    KEYCLOAK_URI = os.getenv("KEYCLOAK_URI")
+    KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM")
+    KEYCLOAK_ADMIN_USER = os.getenv("KEYCLOAK_ADMIN_USER")
+    KEYCLOAK_ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD")
 
     @property
     def SQLALCHEMY_DATABASE_URI(self):  # noqa
@@ -73,12 +78,15 @@ class ProductionConfig(Config):
 
 
 class TestingConfig(Config):
-    DB_NAME = "test"
     TESTING = True
     DEBUG = True
     DEVELOPMENT = True
     LOG_BACKTRACE = True
     LOG_LEVEL = "DEBUG"
-    SQLALCHEMY_DATABASE_URI = (
-        "sqlite:///" + os.path.join(basedir, DB_NAME) + ".db?check_same_thread=False"
-    )
+
+    @property
+    def SQLALCHEMY_DATABASE_URI(self):
+        return (
+            f"sqlite:///{os.path.join('..', self.SQL_DB_NAME)}"
+            f".sqlite3?check_same_thread=False"
+        )

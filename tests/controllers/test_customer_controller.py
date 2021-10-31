@@ -1,7 +1,7 @@
 import uuid
-from app.definitions.exceptions import AppException
+from core.exceptions import AppException
 from app.utils import IDEnum
-from tests.base_test_case import BaseTestCase
+from tests.utils.base_test_case import BaseTestCase
 
 
 class TestCustomerController(BaseTestCase):
@@ -27,7 +27,7 @@ class TestCustomerController(BaseTestCase):
             },
         )
 
-        updated_data = updated_customer.data.value
+        updated_data = updated_customer.value
 
         self.assertEqual(updated_data.id, customer.id)
         self.assertEqual(updated_data.last_name, "Dew")
@@ -50,7 +50,7 @@ class TestCustomerController(BaseTestCase):
         customer = self.customer_repository.create(self.customer_data)
         customer_search = self.customer_controller.show(customer.id)
 
-        customer_values = customer_search.data.value
+        customer_values = customer_search.value
         self.assertEqual(customer_values.id, customer.id)
         self.assertEqual(customer_values.last_name, "Doe")
         self.assertEqual(customer_values.id_type, IDEnum.passport)

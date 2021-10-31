@@ -1,11 +1,11 @@
-import logging
 import os
+import logging
 
-from loguru import logger
-from flask import Flask, jsonify
+from flask import Flask, jsonify, has_request_context, request
+from flask.logging import default_handler
 from flask_mongoengine import MongoEngine
 from sqlalchemy.exc import DBAPIError
-from app.extensions import db, migrate, ma
+from core.extensions import db, migrate, ma
 
 from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import HTTPException
@@ -13,11 +13,10 @@ from werkzeug.utils import import_string
 
 # load dotenv in the base root
 from app.api_spec import spec
-from app.definitions.exceptions.app_exceptions import (
+from core.exceptions.app_exceptions import (
     app_exception_handler,
     AppExceptionCase,
 )
-
 
 APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to application_top
 dotenv_path = os.path.join(APP_ROOT, ".env")
@@ -31,10 +30,25 @@ SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
 )
 
 
-class InterceptHandler(logging.Handler):
-    def emit(self, record):
-        logger_opt = logger.opt(depth=6, exception=record.exc_info)
-        logger_opt.log(record.levelno, record.getMessage())
+class RequestFormatter(logging.Formatter):
+    def format(self, record):
+        if has_request_context():
+            record.url = request.url
+            record.remote_addr = request.remote_addr
+        else:
+            record.url = None
+            record.remote_addr = None
+
+        return super().format(record)
+
+
+formatter = RequestFormatter(
+    "[%(asctime)s] %(remote_addr)s requested %(url)s\n"
+    "%(levelname)s in %(module)s: %(message)s"
+)
+default_handler.setFormatter(formatter)
+default_handler.setLevel(logging.ERROR)
+default_handler.setLevel(logging.INFO)
 
 
 def create_app(config="config.DevelopmentConfig"):
@@ -42,6 +56,8 @@ def create_app(config="config.DevelopmentConfig"):
     basedir = os.path.abspath(os.path.dirname(__file__))
     path = os.path.join(basedir, "../instance")
     app = Flask(__name__, instance_relative_config=False, instance_path=path)
+
+    app.logger.addHandler(default_handler)
     with app.app_context():
         environment = os.getenv("FLASK_ENV")
         cfg = import_string(config)()
@@ -51,36 +67,35 @@ def create_app(config="config.DevelopmentConfig"):
 
         # add extensions
         register_extensions(app)
-        app.logger.addHandler(InterceptHandler())
         register_blueprints(app)
         register_swagger_definitions(app)
         return app
 
 
-def register_extensions(app):
+def register_extensions(flask_app):
     """Register Flask extensions."""
-    from app.definitions.factory import factory
+    from core.factory import factory
 
-    if app.config["DB_ENGINE"] == "MONGODB":
+    if flask_app.config["DB_ENGINE"] == "MONGODB":
         me = MongoEngine()
-        me.init_app(app)
-    elif app.config["DB_ENGINE"] == "POSTGRES":
-        db.init_app(app)
-        migrate.init_app(app, db)
-        # with app.app_context():
-        db.create_all()
-    factory.init_app(app, db)
-    ma.init_app(app)
+        me.init_app(flask_app)
+    elif flask_app.config["DB_ENGINE"] == "POSTGRES":
+        db.init_app(flask_app)
+        migrate.init_app(flask_app, db)
+        with flask_app.app_context():
+            db.create_all()
+    factory.init_app(flask_app, db)
+    ma.init_app(flask_app)
 
-    @app.errorhandler(HTTPException)
+    @flask_app.errorhandler(HTTPException)
     def handle_http_exception(e):
         return app_exception_handler(e)
 
-    @app.errorhandler(DBAPIError)
+    @flask_app.errorhandler(DBAPIError)
     def handle_db_exception(e):
         return app_exception_handler(e)
 
-    @app.errorhandler(AppExceptionCase)
+    @flask_app.errorhandler(AppExceptionCase)
     def handle_app_exceptions(e):
         return app_exception_handler(e)
 

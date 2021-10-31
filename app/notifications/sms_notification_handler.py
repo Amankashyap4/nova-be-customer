@@ -1,4 +1,4 @@
-from app.definitions import NotificationHandler
+from core import NotificationHandler
 from app.producer import publish_to_kafka
 
 

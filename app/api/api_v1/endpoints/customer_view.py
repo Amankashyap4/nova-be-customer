@@ -2,7 +2,7 @@ import pinject
 from flask import Blueprint, request
 
 from app.controllers import CustomerController
-from app.definitions.service_result import handle_result
+from core.service_result import handle_result
 from app.repositories import CustomerRepository, LeadRepository
 from app.schema import (
     CustomerCreateSchema,
@@ -17,8 +17,8 @@ from app.schema import (
     PinResetSchema,
     PinResetRequestSchema,
 )
-from app.services import RedisService, AuthService
-from app.utils import validator, auth_required
+from app.services import AuthService
+from core.utils import validator, auth_required
 
 customer = Blueprint("customer", __name__)
 
@@ -27,7 +27,6 @@ obj_graph = pinject.new_object_graph(
     classes=[
         CustomerController,
         CustomerRepository,
-        RedisService,
         AuthService,
         LeadRepository,
     ],
@@ -158,7 +157,7 @@ def add_pin():
     return handle_result(result, schema=TokenSchema)
 
 
-@customer.route("/token_login", methods=["POST"])
+@customer.route("/token-login", methods=["POST"])
 @validator(schema=LoginSchema)
 def login_user():
     """
@@ -187,7 +186,7 @@ def login_user():
 
 @customer.route("/accounts/<string:customer_id>", methods=["PATCH"])
 @validator(schema=CustomerUpdateSchema)
-@auth_required("customer|admin")
+@auth_required()
 def update_customer(customer_id):
     """
     ---
@@ -252,7 +251,7 @@ def show_customer(customer_id):
 
 
 @customer.route("/accounts/<string:customer_id>", methods=["DELETE"])
-@auth_required("admin")
+@auth_required()
 def delete_customer(customer_id):
     """
     ---
@@ -279,7 +278,7 @@ def delete_customer(customer_id):
 
 @customer.route("/change-password", methods=["POST"])
 @validator(schema=PinChangeSchema)
-@auth_required("customer|admin")
+@auth_required()
 def change_password(user_id):
     """
     ---

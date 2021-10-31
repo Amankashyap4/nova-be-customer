@@ -1,4 +1,5 @@
 from marshmallow import fields, Schema, validate
+from app import constants
 
 
 class ConfirmTokenSchema(Schema):
@@ -21,25 +22,17 @@ class PinChangeSchema(Schema):
 
 
 class PinResetRequestSchema(Schema):
-    phone_number = fields.Str(
-        validate=validate.Regexp(
-            r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$"
-        )
-    )
+    phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
 
 
 class PinResetSchema(Schema):
-    auth_token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
+    token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
     new_pin = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
     id = fields.UUID(required=True)
 
 
 class LoginSchema(Schema):
-    phone_number = fields.Str(
-        validate=validate.Regexp(
-            r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$"
-        )
-    )
+    phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
     pin = fields.Str(validate=validate.Length(min=4, max=4))
 
 

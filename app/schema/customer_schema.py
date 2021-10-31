@@ -1,15 +1,13 @@
 from marshmallow import Schema, fields, validate
 from marshmallow_enum import EnumField
+
+from app import constants
 from app.utils import StatusEnum, IDEnum
 
 
 class CustomerSchema(Schema):
     id = fields.UUID()
-    phone_number = fields.Str(
-        validate=validate.Regexp(
-            r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$"
-        )
-    )
+    phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
     first_name = fields.Str(validate=validate.Length(min=2))
     last_name = fields.Str(validate=validate.Length(min=2))
     id_type = EnumField(IDEnum)
@@ -36,9 +34,8 @@ class CustomerSchema(Schema):
 
 class CustomerCreateSchema(Schema):
     phone_number = fields.Str(
-        validate=validate.Regexp(
-            r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$"
-        )
+        validate=validate.Regexp(constants.PHONE_NUMBER_REGEX),
+        required=True,
     )
     first_name = fields.Str(required=True, validate=validate.Length(min=2))
     last_name = fields.Str(required=True, validate=validate.Length(min=2))
@@ -56,11 +53,7 @@ class CustomerCreateSchema(Schema):
 
 
 class CustomerUpdateSchema(Schema):
-    phone_number = fields.Str(
-        validate=validate.Regexp(
-            r"^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$"
-        )
-    )
+    phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
     first_name = fields.Str(validate=validate.Length(min=2))
     last_name = fields.Str(validate=validate.Length(min=2))
     id_type = EnumField(IDEnum)

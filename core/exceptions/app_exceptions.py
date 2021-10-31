@@ -69,6 +69,14 @@ class AppException:
             status_code = 400
             AppExceptionCase.__init__(self, status_code, context)
 
+    class ResourceDoesNotExist(AppExceptionCase):
+        def __init__(self, context=None):
+            """
+            Resource does not exist
+            """
+            status_code = 404
+            AppExceptionCase.__init__(self, status_code, context)
+
     class NotFoundException(AppExceptionCase):
         def __init__(self, context="Resource does not exists"):
             """

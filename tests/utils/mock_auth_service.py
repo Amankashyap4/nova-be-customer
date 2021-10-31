@@ -1,7 +1,10 @@
-from app.definitions.service_interfaces import AuthServiceInterface
+import uuid
+
+from core.service_interfaces import AuthServiceInterface
 
 
 class MockAuthService(AuthServiceInterface):
+
     tokens = {
         "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",  # noqa: E501
         "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",  # noqa: E501
@@ -15,4 +18,11 @@ class MockAuthService(AuthServiceInterface):
 
     def create_user(self, data):
         token = self.tokens
-        token["id"] = "d9247e56-7ad4-434d-8524-606e69d784c3"
+        token["id"] = str(uuid.uuid4())
+        return token
+
+    def get_keycloak_access_token(self):
+        return
+
+    def reset_password(self, param):
+        return True
