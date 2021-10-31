@@ -28,7 +28,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
         DB_NAME: test
-        TEST_DB_SERVER: .
         FLASK_ENV: testing
 
     steps:

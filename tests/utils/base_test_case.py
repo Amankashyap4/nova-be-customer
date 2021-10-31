@@ -73,8 +73,7 @@ class BaseTestCase(TestCase):
         db.session.remove()
         db.drop_all()
 
-        path = self.app.instance_path
-        file = os.path.join(path, "test.sqlite3")
+        file = f"{Config.SQL_DB_NAME}.sqlite3"
         os.remove(file)
 
     def dummy_kafka_method(self, topic, value):
