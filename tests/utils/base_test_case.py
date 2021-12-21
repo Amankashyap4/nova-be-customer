@@ -30,8 +30,8 @@ class BaseTestCase(TestCase):
 
         self.headers = {"Authorization": f"Bearer {self.access_token}"}
 
-        self.setup_patches()
-        self.instantiate_classes()
+        # self.setup_patches()
+        # self.instantiate_classes()
         return app
 
     def instantiate_classes(self):
@@ -43,22 +43,22 @@ class BaseTestCase(TestCase):
             auth_service=self.auth_service,
             lead_repository=self.lead_repository,
         )
-
-    def setup_patches(self):
-        kafka_patcher = patch(
-            "app.notifications.sms_notification_handler.publish_to_kafka",
-            self.dummy_kafka_method,
-        )
-        self.addCleanup(kafka_patcher.stop)
-        kafka_patcher.start()
-        patcher = patch("core.utils.auth.jwt.decode", self.required_roles_side_effect)
-        self.addCleanup(patcher.stop)
-        patcher.start()
-        utc_patcher = patch(
-            "app.controllers.customer_controller.utc.localize", self.utc_side_effect
-        )
-        self.addCleanup(utc_patcher.stop)
-        utc_patcher.start()
+    #
+    # def setup_patches(self):
+    #     kafka_patcher = patch(
+    #         "app.notifications.sms_notification_handler.publish_to_kafka",
+    #         self.dummy_kafka_method,
+    #     )
+    #     self.addCleanup(kafka_patcher.stop)
+    #     kafka_patcher.start()
+    #     patcher = patch("core.utils.auth.jwt.decode", self.required_roles_side_effect)
+    #     self.addCleanup(patcher.stop)
+    #     patcher.start()
+    #     utc_patcher = patch(
+    #         "app.controllers.customer_controller.utc.localize", self.utc_side_effect
+    #     )
+    #     self.addCleanup(utc_patcher.stop)
+    #     utc_patcher.start()
 
     def setUp(self):
         """
@@ -70,18 +70,15 @@ class BaseTestCase(TestCase):
         """
         Will be called after every test
         """
-        db.session.remove()
-        db.drop_all()
-
-        file = f"{Config.SQL_DB_NAME}.sqlite3"
-        os.remove(file)
+        # db.session.remove()
+        # db.drop_all()
+        pass
 
     def dummy_kafka_method(self, topic, value):
         return True
 
-    def required_roles_side_effect(  # noqa
-        self, token, key, algorithms, audience, issuer
-    ):
+    def required_roles_side_effect(self, token, key, algorithms,
+                                   audience, issuer):
         return self.required_roles
 
     def utc_side_effect(self, args):  # noqa

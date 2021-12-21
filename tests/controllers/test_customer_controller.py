@@ -2,17 +2,23 @@ import uuid
 from core.exceptions import AppException
 from app.utils import IDEnum
 from tests.utils.base_test_case import BaseTestCase
+from app.repositories import CustomerRepository, LeadRepository
 
 
 class TestCustomerController(BaseTestCase):
 
     auth_service_id = str(uuid.uuid4())
+
+    from datetime import datetime
+    lead_repository = LeadRepository()
+    customer_repository = CustomerRepository()
     customer_data = {
-        "phone_number": "00233242583061",
-        "first_name": "John",
-        "last_name": "Doe",
+        "phone_number": "00233242583555",
+        "full_name": "John",
+        "birth_date": datetime.strptime("2021-06-22", '%Y-%m-%d'),
+        "id_expiry_date": datetime.strptime("2021-06-22", '%Y-%m-%d'),
         "id_type": "passport",
-        "id_number": "4829h9445839",
+        "id_number": "4829h94458312",
         "auth_service_id": auth_service_id,
     }
 
@@ -22,21 +28,19 @@ class TestCustomerController(BaseTestCase):
         updated_customer = self.customer_controller.update(
             customer.id,
             {
-                "first_name": "Jane",
-                "last_name": "Dew",
+                "full_name": "Jane"
             },
         )
 
         updated_data = updated_customer.value
 
         self.assertEqual(updated_data.id, customer.id)
-        self.assertEqual(updated_data.last_name, "Dew")
-        self.assertEqual(updated_data.first_name, "Jane")
+        self.assertEqual(updated_data.full_name, "Jane")
 
         customer_search = self.customer_repository.find_by_id(updated_data.id)
 
         self.assertEqual(customer_search.id, updated_data.id)
-        self.assertEqual(customer_search.last_name, "Dew")
+        self.assertEqual(customer_search.full_name, "Jane")
 
     def test_delete_customer(self):
         customer = self.customer_repository.create(self.customer_data)
@@ -52,5 +56,5 @@ class TestCustomerController(BaseTestCase):
 
         customer_values = customer_search.value
         self.assertEqual(customer_values.id, customer.id)
-        self.assertEqual(customer_values.last_name, "Doe")
+        self.assertEqual(customer_values.full_name, "John")
         self.assertEqual(customer_values.id_type, IDEnum.passport)

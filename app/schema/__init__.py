@@ -1,4 +1,12 @@
-from .customer_schema import CustomerCreateSchema, CustomerUpdateSchema, CustomerSchema
+from .customer_schema import (
+    CustomerInfoSchema,
+    CustomerSignUpSchema,
+    CustomerCreateSchema,
+    CustomerUpdateSchema,
+    CustomerSchema,
+    UpdatePhoneSchema,
+)
+
 from .auth_schema import (
     ConfirmTokenSchema,
     AddPinSchema,
@@ -8,4 +16,5 @@ from .auth_schema import (
     PinChangeSchema,
     PinResetSchema,
     PinResetRequestSchema,
+    TokenLoginSchema,
 )

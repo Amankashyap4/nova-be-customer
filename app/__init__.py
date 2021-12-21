@@ -1,12 +1,14 @@
-import os
+import os, sys
 import logging
 
 from flask import Flask, jsonify, has_request_context, request
 from flask.logging import default_handler
 from flask_mongoengine import MongoEngine
 from sqlalchemy.exc import DBAPIError
+base_dir = os.getcwd()
+sys.path.append(base_dir)
+# sys.path.append('/home/neosoft/quantum_group_ghana/nova_be_customer/')
 from core.extensions import db, migrate, ma
-
 from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import import_string
@@ -22,7 +24,7 @@ APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to applicatio
 dotenv_path = os.path.join(APP_ROOT, ".env")
 
 # SWAGGER
-SWAGGER_URL = "/api/docs"
+SWAGGER_URL = "/api/customer/docs"
 API_URL = "/static/swagger.json"
 
 SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(

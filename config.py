@@ -22,7 +22,7 @@ class Config:
 
     # MONGO database
     MONGODB_DB = os.getenv("DB_NAME")
-    MONGODB_PORT = int(os.getenv("DB_PORT", default=27017))
+    MONGODB_PORT = 27017 # int(os.getenv("DB_PORT", default=27017))
     MONGODB_USERNAME = os.getenv("DB_USER")
     MONGODB_PASSWORD = os.getenv("DB_PASSWORD")
     MONGODB_CONNECT = False
