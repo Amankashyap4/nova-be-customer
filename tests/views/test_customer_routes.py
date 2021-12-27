@@ -4,16 +4,23 @@ from core.exceptions import AppException
 from tests.utils.base_test_case import BaseTestCase
 from app.repositories import CustomerRepository, LeadRepository
 
+import random
+
+phone_number = random.randint(1000000000, 9999999999)
+
 
 class TestCustomerRoutes(BaseTestCase):
+
     auth_service_id = str(uuid.uuid4())
 
     lead_repository = LeadRepository()
     customer_repository = CustomerRepository()
 
-    customer_data = {
-        "phone_number": "9890225747"
-    }
+    customer_data = {}
+    if not customer_data:
+        customer_data = {
+            "phone_number": str(phone_number)
+        }
 
     token_data = {
         "id": "991d6ed53abc4fa4b579a2abcab4bbc7",
@@ -84,7 +91,7 @@ class TestCustomerRoutes(BaseTestCase):
         with self.client:
             response = self.client.post(
                 "/api/v1/customers/token-login", json={
-                    "pin": "1414",
+                    "pin": "6666",
                     "phone_number": self.customer_data.get('phone_number')
                 }
             )
@@ -97,28 +104,28 @@ class TestCustomerRoutes(BaseTestCase):
             self.user_data['full_name'] = data.get('full_name')
             return data
 
-    def test_f_update_phone(self):
-        with self.client:
-            response = self.client.post(
-                "/api/v1/customers/reset-phone/{}".format(self.user_data['id']),
-                headers={
-                    "Authorization": f"Bearer {self.user_data['access_token']}"},
-                json={"phone_number": "9890225747"},
-            )
-            self.assert_status(response, 200)
-            data = response.json
-            self.user_data['id'] = data.get('id')
-
-    def test_g_update_phone(self):
-        customer = self.customer_repository.find_by_id(self.user_data['id'])
-        with self.client:
-            response = self.client.post(
-                "/api/v1/customers/update-phone/{}".format(self.user_data['id']),
-                headers={
-                    "Authorization": f"Bearer {self.user_data['access_token']}"},
-                json={"token": customer.auth_token},
-            )
-            self.assert_status(response, 204)
+    # def test_f_update_phone(self):
+    #     with self.client:
+    #         response = self.client.post(
+    #             "/api/v1/customers/reset-phone/{}".format(self.user_data['id']),
+    #             headers={
+    #                 "Authorization": f"Bearer {self.user_data['access_token']}"},
+    #             json={"phone_number": "9890225747"},
+    #         )
+    #         self.assert_status(response, 200)
+    #         data = response.json
+    #         self.user_data['id'] = data.get('id')
+    #
+    # def test_g_update_phone(self):
+    #     customer = self.customer_repository.find_by_id(self.user_data['id'])
+    #     with self.client:
+    #         response = self.client.post(
+    #             "/api/v1/customers/update-phone/{}".format(self.user_data['id']),
+    #             headers={
+    #                 "Authorization": f"Bearer {self.user_data['access_token']}"},
+    #             json={"token": customer.auth_token},
+    #         )
+    #         self.assert_status(response, 204)
 
     def test_h_change_password(self):
         with self.client:
@@ -212,3 +219,15 @@ class TestCustomerRoutes(BaseTestCase):
                       },
             )
             self.assert_status(response, 200)
+
+
+    def test_o_remove_user(self):
+        with self.client:
+            response = self.client.delete(
+                "/api/v1/customers/accounts/{}".format(
+                    self.user_data['id']),
+                headers={
+                    "Authorization": f"Bearer {self.user_data['access_token']}"
+                }
+            )
+            self.assert_status(response, 204)

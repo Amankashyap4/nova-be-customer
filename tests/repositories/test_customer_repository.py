@@ -20,22 +20,22 @@ class TestCustomerRepository(BaseTestCase):
         "auth_service_id": auth_service_id,
     }
 
-    def test_create(self):
+    def test_1_create(self):
         customer = self.customer_repository.create(self.customer_data)
         self.assertEqual(customer.full_name, "John")
+        self.customer_repository.delete(customer.id)
 
-    def test_update(self):
+
+    def test_2_update(self):
         customer = self.customer_repository.create(self.customer_data)
-
         self.assertEqual(customer.full_name, "John")
-
         updated_customer = self.customer_repository.update_by_id(
-            customer.id, {"full_name": "Joe"}
+            customer.id, {"full_name": "John Joe"}
         )
+        self.assertEqual(updated_customer.full_name, "John Joe")
+        self.customer_repository.delete(customer.id)
 
-        self.assertEqual(updated_customer.full_name, "Joe")
-
-    def test_delete(self):
+    def test_3_delete(self):
         customer = self.customer_repository.create(self.customer_data)
         customer_search = self.customer_repository.find_by_id(customer.id)
 
@@ -47,7 +47,7 @@ class TestCustomerRepository(BaseTestCase):
         with self.assertRaises(AppException.NotFoundException):
             self.customer_repository.find_by_id(customer.id)
 
-    def test_required_fields(self):
+    def test_4_required_fields(self):
         customer_data = {
             "full_name": "Doe",
             "id_type": "passport",
@@ -57,8 +57,9 @@ class TestCustomerRepository(BaseTestCase):
         with self.assertRaises(AppException.OperationError):
             self.customer_repository.create(customer_data)
 
-    def test_duplicates(self):
-        self.customer_repository.create(self.customer_data)
+    def test_5_duplicates(self):
+        customer = self.customer_repository.create(self.customer_data)
 
         with self.assertRaises(AppException.OperationError):
             self.customer_repository.create(self.customer_data)
+        self.customer_repository.delete(customer.id)

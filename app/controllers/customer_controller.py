@@ -56,6 +56,7 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException("User not found")
         self.auth_service.delete_user(str(customer.auth_service_id))
         self.customer_repository.delete(customer_id)
+        self.lead_repository.delete(customer_id)
         result = Result({}, 204)
         return result
 
