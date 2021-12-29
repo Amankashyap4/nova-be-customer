@@ -203,8 +203,9 @@ class AuthService(AuthServiceInterface):
 
     def update_user(self, user_id, data):
         import json
+
         assert user_id, "user_id is required"
-        endpoint = "/users/"+user_id
+        endpoint = "/users/" + user_id
         url = URI + REALM_URL + REALM + endpoint
         headers = self.get_keycloak_headers()
         # headers = self.headers or self.get_keycloak_headers()
@@ -218,7 +219,7 @@ class AuthService(AuthServiceInterface):
 
     def delete_user(self, user_id):
         assert user_id, "user_id is required"
-        endpoint = "/users/"+user_id
+        endpoint = "/users/" + user_id
         url = URI + REALM_URL + REALM + endpoint
         # headers = self.headers or self.get_keycloak_headers()
         headers = self.get_keycloak_headers()

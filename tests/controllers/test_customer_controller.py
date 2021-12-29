@@ -10,13 +10,14 @@ class TestCustomerController(BaseTestCase):
     auth_service_id = str(uuid.uuid4())
 
     from datetime import datetime
+
     lead_repository = LeadRepository()
     customer_repository = CustomerRepository()
     customer_data = {
         "phone_number": "00233242583555",
         "full_name": "John",
-        "birth_date": datetime.strptime("2021-06-22", '%Y-%m-%d'),
-        "id_expiry_date": datetime.strptime("2021-06-22", '%Y-%m-%d'),
+        "birth_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
+        "id_expiry_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
         "id_type": "passport",
         "id_number": "4829h94458312",
         "auth_service_id": auth_service_id,
@@ -27,9 +28,7 @@ class TestCustomerController(BaseTestCase):
 
         updated_customer = self.customer_repository.update_by_id(
             customer.id,
-            {
-                "full_name": "Jane"
-            },
+            {"full_name": "Jane"},
         )
 
         updated_data = updated_customer

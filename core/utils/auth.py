@@ -1,5 +1,3 @@
-import os
-
 import jwt
 import inspect
 import requests
@@ -23,15 +21,17 @@ def auth_required(other_roles=None):
         def view_wrapper(*args, **kwargs):
             """line 25 to 32 shift in utf of keycloak service"""
             from config import Config
-            uri = Config.KEYCLOAK_URI+"/auth/realms/"+Config.KEYCLOAK_REALM+"/"
+
+            uri = Config.KEYCLOAK_URI + "/auth/realms/" + Config.KEYCLOAK_REALM + "/"
             x = requests.get(uri)
 
             x.json()["public_key"]
 
-            key = "-----BEGIN PUBLIC KEY-----\n" + x.json()[
-                "public_key"] + "\n-----END PUBLIC KEY-----"
-
-
+            key = (
+                "-----BEGIN PUBLIC KEY-----\n"
+                + x.json()["public_key"]
+                + "\n-----END PUBLIC KEY-----"
+            )
 
             authorization_header = request.headers.get("Authorization")
             if not authorization_header:
@@ -48,13 +48,16 @@ def auth_required(other_roles=None):
                 #     issuer=os.getenv("JWT_ISSUER"),
                 # )  # noqa E501
                 # # Get realm roles from payload
-                payload = jwt.decode(token, key, algorithms=['HS256', 'RS256'],
-                                     options={"verify_signature": False})
+                payload = jwt.decode(
+                    token,
+                    key,
+                    algorithms=["HS256", "RS256"],
+                    options={"verify_signature": False},
+                )
                 available_roles = payload.get("realm_access").get("roles")
 
                 # Append service name to function name to form role
                 # e.g customer_update_user
-
 
                 service_name = Config.APP_NAME
                 generated_role = service_name + "_" + func.__name__

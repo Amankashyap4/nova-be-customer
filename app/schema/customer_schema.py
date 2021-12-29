@@ -23,9 +23,8 @@ class CustomerInfoSchema(Schema):
     birth_date = fields.Date(required=True)
     id_expiry_date = fields.Date(required=True)
     id_type = EnumField(IDEnum)
-    id_number = fields.Str(validate=validate.Length(min=5)),
-    conformation_token = fields.Str(validate=validate.Length(min=5)),
-
+    id_number = (fields.Str(validate=validate.Length(min=5)),)
+    conformation_token = (fields.Str(validate=validate.Length(min=5)),)
 
     class Meta:
         fields = [
@@ -45,7 +44,6 @@ class CustomerCreateSchema(Schema):
 
 class UpdatePhoneSchema(Schema):
     token = fields.Str(required=True)
-
 
 
 class CustomerSchema(Schema):
@@ -110,5 +108,5 @@ class CustomerAddInfoSchema(Schema):
             "id_type",
             "id_number",
             "id",
-            "conformation_token"
+            "conformation_token",
         ]

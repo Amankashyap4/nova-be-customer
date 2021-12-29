@@ -1,13 +1,12 @@
-import os, sys
+import os
+import sys
 import logging
 
 from flask import Flask, jsonify, has_request_context, request
 from flask.logging import default_handler
 from flask_mongoengine import MongoEngine
 from sqlalchemy.exc import DBAPIError
-base_dir = os.getcwd()
-sys.path.append(base_dir)
-# sys.path.append('/home/neosoft/quantum_group_ghana/nova_be_customer/')
+
 from core.extensions import db, migrate, ma
 from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import HTTPException
@@ -19,6 +18,9 @@ from core.exceptions.app_exceptions import (
     app_exception_handler,
     AppExceptionCase,
 )
+
+base_dir = os.getcwd()
+sys.path.append(base_dir)
 
 APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to application_top
 dotenv_path = os.path.join(APP_ROOT, ".env")

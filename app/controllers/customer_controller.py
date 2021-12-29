@@ -32,19 +32,17 @@ class CustomerController(Notifier):
 
     def update(self, customer_id, data):
         customer = self.customer_repository.find_by_id(customer_id)
-        phone_number = data.get('phone_number')
+        phone_number = data.get("phone_number")
         if phone_number and customer.phone_number != phone_number:
             raise AppException.NotFoundException(
-                "User not allowed to perform this action")
+                "User not allowed to perform this action"
+            )
 
         if not customer:
             raise AppException.NotFoundException("User not found")
-        if data.get('full_name'):
-            user_data = {
-                "firstName": data.get("full_name", customer.full_name)
-            }
-            self.auth_service.update_user(str(customer.auth_service_id),
-                                          user_data)
+        if data.get("full_name"):
+            user_data = {"firstName": data.get("full_name", customer.full_name)}
+            self.auth_service.update_user(str(customer.auth_service_id), user_data)
         customer = self.customer_repository.update_by_id(customer_id, data)
         """update keycloack user"""
         result = Result(customer, 200)
@@ -62,8 +60,7 @@ class CustomerController(Notifier):
 
     def register(self, data):
         phone_number = data.get("phone_number")
-        existing_customer = self.customer_repository.find(
-            {"phone_number": phone_number})
+        existing_customer = self.customer_repository.find({"phone_number": phone_number})
 
         if existing_customer:
             raise AppException.ResourceExists(
@@ -78,10 +75,7 @@ class CustomerController(Notifier):
         if existing_leader:
             lead = self.lead_repository.update_by_id(
                 existing_leader.id,
-                {
-                    "otp": auth_token,
-                    "otp_expiration": otp_expiration
-                },
+                {"otp": auth_token, "otp_expiration": otp_expiration},
             )
         else:
             lead = self.lead_repository.create(data)
@@ -116,13 +110,11 @@ class CustomerController(Notifier):
             lead.id,
             {
                 "password_token": password_token,
-                "password_token_expiration": datetime.now() + timedelta(
-                    minutes=5),
+                "password_token_expiration": datetime.now() + timedelta(minutes=5),
             },
         )
 
-        token_data = {"conformation_token": updated_lead.password_token,
-                      "id": uuid}
+        token_data = {"conformation_token": updated_lead.password_token, "id": uuid}
         return Result(token_data, 200)
 
     def add_customer_information(self, data):
@@ -139,22 +131,18 @@ class CustomerController(Notifier):
         updated_lead = self.lead_repository.update_by_id(
             lead.id,
             {
-                "full_name": data.get('full_name'),
-                "birth_date": data.get('birth_date'),
-                "id_type": data.get('id_type'),
-                "id_number": data.get('id_number'),
-                "id_expiry_date": data.get('id_expiry_date'),
+                "full_name": data.get("full_name"),
+                "birth_date": data.get("birth_date"),
+                "id_type": data.get("id_type"),
+                "id_number": data.get("id_number"),
+                "id_expiry_date": data.get("id_expiry_date"),
                 "password_token": password_token,
-                "password_token_expiration": datetime.now() + timedelta(
-                    minutes=10),
+                "password_token_expiration": datetime.now() + timedelta(minutes=10),
             },
         )
 
-        token_data = {"password_token": updated_lead.password_token,
-                      "id": uuid}
+        token_data = {"password_token": updated_lead.password_token, "id": uuid}
         return Result(token_data, 200)
-
-
 
     def resend_token(self, lead_id):
         lead = self.lead_repository.find_by_id(lead_id)
@@ -210,7 +198,7 @@ class CustomerController(Notifier):
             "id_number": user.id_number,
             "status": "active",
             "auth_service_id": auth_result.get("id"),
-            "id_expiry_date": user.id_expiry_date
+            "id_expiry_date": user.id_expiry_date,
         }
 
         self.customer_repository.create(customer_data)
@@ -222,21 +210,20 @@ class CustomerController(Notifier):
         customer_data = {}
         phone_number = data.get("phone_number")
         pin = data.get("pin")
-        customer = self.customer_repository.find(
-            {"phone_number": phone_number})
+        customer = self.customer_repository.find({"phone_number": phone_number})
         if not customer:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
-        customer_data['full_name'] = customer.full_name
-        customer_data['birth_date'] = customer.birth_date
-        customer_data['id_number'] = customer.id_number
-        customer_data['id_type'] = customer.id_type
-        customer_data['phone_number'] = customer.phone_number
-        customer_data['id'] = customer.id
+        customer_data["full_name"] = customer.full_name
+        customer_data["birth_date"] = customer.birth_date
+        customer_data["id_number"] = customer.id_number
+        customer_data["id_type"] = customer.id_type
+        customer_data["phone_number"] = customer.phone_number
+        customer_data["id"] = customer.id
         access_token = self.auth_service.get_token(
             {"username": customer.id, "password": pin}
         )
-        customer_data['access_token'] = access_token.get('access_token')
-        customer_data['refresh_token'] = access_token.get('refresh_token')
+        customer_data["access_token"] = access_token.get("access_token")
+        customer_data["refresh_token"] = access_token.get("refresh_token")
         return Result(customer_data, 200)
 
     def change_password(self, data):
@@ -246,8 +233,7 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
-        self.auth_service.get_token({"username": str(customer.id),
-                                     "password": old_pin})
+        self.auth_service.get_token({"username": str(customer.id), "password": old_pin})
         self.auth_service.reset_password(
             {
                 "user_id": str(customer.auth_service_id),
@@ -258,8 +244,7 @@ class CustomerController(Notifier):
 
     def request_password_reset(self, data):
         phone_number = data.get("phone_number")
-        customer = self.customer_repository.find(
-            {"phone_number": phone_number})
+        customer = self.customer_repository.find({"phone_number": phone_number})
 
         if not customer:
             raise AppException.NotFoundException("User not found")
@@ -267,8 +252,9 @@ class CustomerController(Notifier):
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
         self.customer_repository.update_by_id(
-            customer.id, {"auth_token": auth_token,
-                          "auth_token_expiration": auth_token_expiration}, )
+            customer.id,
+            {"auth_token": auth_token, "auth_token_expiration": auth_token_expiration},
+        )
         self.notify(
             SMSNotificationHandler(
                 recipient=customer.phone_number,
@@ -280,17 +266,14 @@ class CustomerController(Notifier):
 
     def pin_process(self, data):
         phone_number = data.get("phone_number")
-        customer = self.customer_repository.find(
-            {"phone_number": phone_number})
+        customer = self.customer_repository.find({"phone_number": phone_number})
         if not customer:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
         otp_token = random.randint(1000, 9999)
         otp_token_expiration = datetime.now() + timedelta(minutes=5)
         self.customer_repository.update_by_id(
             customer.id,
-            {"otp_token": otp_token,
-             "otp_token_expiration": otp_token_expiration
-             },
+            {"otp_token": otp_token, "otp_token_expiration": otp_token_expiration},
         )
         self.notify(
             SMSNotificationHandler(
@@ -314,16 +297,16 @@ class CustomerController(Notifier):
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
         self.customer_repository.update_by_id(
             customer.id,
-            {"otp_token": None,
-             "auth_token": auth_token,
-             "auth_token_expiration": auth_token_expiration},
+            {
+                "otp_token": None,
+                "auth_token": auth_token,
+                "auth_token_expiration": auth_token_expiration,
+            },
         )
-        customer_data['full_name'] = customer.full_name
-        customer_data['id'] = customer.id
-        customer_data['password_token'] = str(auth_token)
+        customer_data["full_name"] = customer.full_name
+        customer_data["id"] = customer.id
+        customer_data["password_token"] = str(auth_token)
         return Result(customer_data, 200)
-
-
 
     def process_reset_pin(self, data):
         customer_id = data.get("customer_id")
@@ -333,41 +316,40 @@ class CustomerController(Notifier):
         if not customer:
             raise AppException.NotFoundException("User not found")
         if customer.auth_token != password_token:
-            raise AppException.Unauthorized(
-                "Something went wrong, please try again")
+            raise AppException.Unauthorized("Something went wrong, please try again")
 
-        self.auth_service.reset_password({
-            "user_id": str(customer.auth_service_id),
-            "new_password": new_pin})
+        self.auth_service.reset_password(
+            {"user_id": str(customer.auth_service_id), "new_password": new_pin}
+        )
 
-        self.customer_repository.update_by_id(customer.id,
-                                              {"auth_token": None,
-                                               "auth_token_expiration": None},)
+        self.customer_repository.update_by_id(
+            customer.id,
+            {"auth_token": None, "auth_token_expiration": None},
+        )
 
         return Result({"Message": "Pin modified successfully"}, 200)
 
-
-
-
     def reset_phone(self, data):
         phone_number = data.get("phone_number")
-        customer = self.customer_repository.find(
-            {"phone_number": phone_number})
+        customer = self.customer_repository.find({"phone_number": phone_number})
         if customer:
             raise AppException.NotFoundException(
-                f"User already registered with {phone_number} please try again with different")
+                f"User already registered with {phone_number} please try again with different"
+            )
 
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
-        customer_id = data.get('customer_id')
+        customer_id = data.get("customer_id")
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
         self.customer_repository.update_by_id(
             customer.id,
-            {"auth_token": auth_token,
-             "auth_token_expiration": auth_token_expiration,
-             "new_phone_number": phone_number},
+            {
+                "auth_token": auth_token,
+                "auth_token_expiration": auth_token_expiration,
+                "new_phone_number": phone_number,
+            },
         )
         self.notify(
             SMSNotificationHandler(
@@ -388,8 +370,7 @@ class CustomerController(Notifier):
 
         self.customer_repository.update_by_id(
             customer.id,
-            {"phone_number": customer.new_phone_number,
-             "new_phone_number": None},
+            {"phone_number": customer.new_phone_number, "new_phone_number": None},
         )
         lead = self.lead_repository.find_by_id(customer_id)
         if lead:
@@ -398,7 +379,6 @@ class CustomerController(Notifier):
                 {"phone_number": customer.phone_number},
             )
         return Result({}, 204)
-
 
     def reset_password(self, data):
         auth_token = data.get("token")
@@ -426,8 +406,7 @@ class CustomerController(Notifier):
         )
         self.customer_repository.update_by_id(
             customer.id,
-            {"auth_token": None,
-             "auth_token_expiration": None},
+            {"auth_token": None, "auth_token_expiration": None},
         )
 
         return Result({"detail": "Pin reset done successfully"}, 205)

@@ -8,7 +8,6 @@ import uuid
 from app.utils import IDEnum, StatusEnum
 
 
-
 @dataclass
 class Customer(db.Model):
     id: str
@@ -29,12 +28,14 @@ class Customer(db.Model):
     full_name = db.Column(db.String(60), nullable=False)
     birth_date = db.Column(db.DateTime(timezone=True))
     id_expiry_date = db.Column(db.DateTime(timezone=True))
-    id_type = db.Column(db.Enum(IDEnum, name="id_type"),
-                        default=IDEnum.national_id, nullable=False)
+    id_type = db.Column(
+        db.Enum(IDEnum, name="id_type"), default=IDEnum.national_id, nullable=False
+    )
     id_number = db.Column(db.String(20), nullable=False)
     auth_service_id = db.Column(db.GUID(), nullable=False)
-    status = db.Column(db.Enum(StatusEnum, name="status"),
-                       default=StatusEnum.inactive, nullable=False)
+    status = db.Column(
+        db.Enum(StatusEnum, name="status"), default=StatusEnum.inactive, nullable=False
+    )
     auth_token = db.Column(db.String(6))
     auth_token_expiration = db.Column(db.DateTime(timezone=True))
     created = db.Column(

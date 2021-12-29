@@ -1,11 +1,9 @@
-import os
 from flask_testing import TestCase
 from app import create_app, db
 from app.controllers import CustomerController
 from app.repositories import CustomerRepository, LeadRepository
 from tests import MockAuthService
 from config import Config
-from unittest.mock import patch
 
 
 class BaseTestCase(TestCase):
@@ -43,6 +41,7 @@ class BaseTestCase(TestCase):
             auth_service=self.auth_service,
             lead_repository=self.lead_repository,
         )
+
     #
     # def setup_patches(self):
     #     kafka_patcher = patch(
@@ -72,13 +71,11 @@ class BaseTestCase(TestCase):
         """
         # db.session.remove()
         # db.drop_all()
-        pass
 
     def dummy_kafka_method(self, topic, value):
         return True
 
-    def required_roles_side_effect(self, token, key, algorithms,
-                                   audience, issuer):
+    def required_roles_side_effect(self, token, key, algorithms, audience, issuer):
         return self.required_roles
 
     def utc_side_effect(self, args):  # noqa

@@ -37,7 +37,6 @@ obj_graph = pinject.new_object_graph(
 customer_controller = obj_graph.provide(CustomerController)
 
 
-
 @customer.route("account/", methods=["POST"])
 @validator(schema=CustomerSignUpSchema)
 def create_customer_account():
@@ -119,11 +118,14 @@ def add_information():
           - Authentication
     """
     from datetime import datetime
+
     data = request.json
-    if data.get('birth_date'):
-        data['birth_date'] = datetime.strptime(data.get('birth_date'), "%Y-%m-%d")
-    if data.get('id_expiry_date'):
-        data['id_expiry_date'] = datetime.strptime(data.get('id_expiry_date'), "%Y-%m-%d")
+    if data.get("birth_date"):
+        data["birth_date"] = datetime.strptime(data.get("birth_date"), "%Y-%m-%d")
+    if data.get("id_expiry_date"):
+        data["id_expiry_date"] = datetime.strptime(
+            data.get("id_expiry_date"), "%Y-%m-%d"
+        )
     result = customer_controller.add_customer_information(data)
     return handle_result(result)
 
@@ -248,7 +250,6 @@ def show_customer(customer_id):
     return handle_result(result, schema=CustomerSchema)
 
 
-
 @customer.route("/forgot-password", methods=["POST"])
 @validator(schema=PinResetRequestSchema)
 def forgot_password():
@@ -335,7 +336,6 @@ def change_password(user_id):
     data["customer_id"] = user_id
     result = customer_controller.change_password(data)
     return handle_result(result)
-
 
 
 @customer.route("/pin-request", methods=["POST"])
@@ -558,4 +558,3 @@ def delete_customer(customer_id):
     """
     result = customer_controller.delete(customer_id)
     return handle_result(result)
-

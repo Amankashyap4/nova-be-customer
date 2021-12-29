@@ -10,11 +10,12 @@ class TestCustomerRepository(BaseTestCase):
     lead_repository = LeadRepository()
     customer_repository = CustomerRepository()
     from datetime import datetime
+
     customer_data = {
         "phone_number": "00233242583061",
         "full_name": "John",
-        "birth_date": datetime.strptime("2021-06-22", '%Y-%m-%d'),
-        "id_expiry_date": datetime.strptime("2021-06-22", '%Y-%m-%d'),
+        "birth_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
+        "id_expiry_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
         "id_type": "passport",
         "id_number": "4829h9445839",
         "auth_service_id": auth_service_id,
@@ -24,7 +25,6 @@ class TestCustomerRepository(BaseTestCase):
         customer = self.customer_repository.create(self.customer_data)
         self.assertEqual(customer.full_name, "John")
         self.customer_repository.delete(customer.id)
-
 
     def test_2_update(self):
         customer = self.customer_repository.create(self.customer_data)
