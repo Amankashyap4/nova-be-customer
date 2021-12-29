@@ -5,7 +5,7 @@ import loguru
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", default="localhost:90")
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", default="localhost:9092")
 bootstrap_servers = KAFKA_BOOTSTRAP_SERVERS.split("|")
 
 

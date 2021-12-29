@@ -74,7 +74,6 @@ class TestCustomerRoutes(BaseTestCase):
             data = response.json
             self.access_token = data.get("access_token")
             self.refresh_token = data.get("refresh_token")
-            return data
 
     def test_e_token_login(self):
         with self.client:
@@ -92,32 +91,8 @@ class TestCustomerRoutes(BaseTestCase):
             self.user_data["id"] = data.get("id")
             self.user_data["phone_number"] = data.get("phone_number")
             self.user_data["full_name"] = data.get("full_name")
-            return data
 
-    # def test_f_update_phone(self):
-    #     with self.client:
-    #         response = self.client.post(
-    #             "/api/v1/customers/reset-phone/{}".format(self.user_data['id']),
-    #             headers={
-    #                 "Authorization": f"Bearer {self.user_data['access_token']}"},
-    #             json={"phone_number": "9890225747"},
-    #         )
-    #         self.assert_status(response, 200)
-    #         data = response.json
-    #         self.user_data['id'] = data.get('id')
-    #
-    # def test_g_update_phone(self):
-    #     customer = self.customer_repository.find_by_id(self.user_data['id'])
-    #     with self.client:
-    #         response = self.client.post(
-    #             "/api/v1/customers/update-phone/{}".format(self.user_data['id']),
-    #             headers={
-    #                 "Authorization": f"Bearer {self.user_data['access_token']}"},
-    #             json={"token": customer.auth_token},
-    #         )
-    #         self.assert_status(response, 204)
-
-    def test_h_change_password(self):
+    def test_f_change_password(self):
         with self.client:
             response = self.client.post(
                 "/api/v1/customers/change-password/{}".format(self.user_data["id"]),
@@ -125,10 +100,8 @@ class TestCustomerRoutes(BaseTestCase):
                 json={"new_pin": "1414", "old_pin": "6666"},
             )
             self.assert_status(response, 205)
-            data = response.json
-            self.user_data["full_name"] = data.get("full_name")
 
-    def test_i_update_name(self):
+    def test_g_update_name(self):
         with self.client:
             response = self.client.patch(
                 "/api/v1/customers/accounts/{}".format(self.user_data["id"]),
@@ -139,7 +112,7 @@ class TestCustomerRoutes(BaseTestCase):
             data = response.json
             self.user_data["full_name"] = data.get("full_name")
 
-    def test_j_forgot_password(self):
+    def test_h_forgot_password(self):
         with self.client:
             response = self.client.post(
                 "/api/v1/customers/forgot-password",
@@ -149,7 +122,7 @@ class TestCustomerRoutes(BaseTestCase):
             data = response.json
             self.user_data["id"] = data.get("id")
 
-    def test_k_reset_password(self):
+    def test_i_reset_password(self):
         customer = self.customer_repository.find_by_id(self.user_data.get("id"))
         with self.client:
             response = self.client.post(
@@ -162,7 +135,7 @@ class TestCustomerRoutes(BaseTestCase):
             )
             self.assert_status(response, 205)
 
-    def test_l_pin_request(self):
+    def test_j_pin_request(self):
         """
         pin process request
         """
@@ -175,7 +148,7 @@ class TestCustomerRoutes(BaseTestCase):
             data = response.json
             self.user_data["id"] = data.get("id")
 
-    def test_m_request_reset_pin(self):
+    def test_k_request_reset_pin(self):
         """
         reset pin process
         """
@@ -190,7 +163,7 @@ class TestCustomerRoutes(BaseTestCase):
             self.user_data["id"] = data.get("id")
             self.user_data["password_token"] = data.get("password_token")
 
-    def test_n_reset_pin(self):
+    def test_l_reset_pin(self):
         """reset pin"""
         with self.client:
             response = self.client.post(
@@ -199,7 +172,7 @@ class TestCustomerRoutes(BaseTestCase):
             )
             self.assert_status(response, 200)
 
-    def test_o_remove_user(self):
+    def test_m_remove_user(self):
         with self.client:
             response = self.client.delete(
                 "/api/v1/customers/accounts/{}".format(self.user_data["id"]),
