@@ -1,6 +1,8 @@
 import uuid
-from core.exceptions import AppException
+import random
 from app.utils import IDEnum
+from datetime import datetime
+from core.exceptions import AppException
 from tests.utils.base_test_case import BaseTestCase
 from app.repositories import CustomerRepository, LeadRepository
 
@@ -9,10 +11,10 @@ class TestCustomerRepository(BaseTestCase):
     auth_service_id = str(uuid.uuid4())
     lead_repository = LeadRepository()
     customer_repository = CustomerRepository()
-    from datetime import datetime
+    phone_number = random.randint(1000000000, 9999999999)
 
     customer_data = {
-        "phone_number": "00233242583061",
+        "phone_number": str(phone_number),
         "full_name": "John",
         "birth_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
         "id_expiry_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
@@ -58,8 +60,8 @@ class TestCustomerRepository(BaseTestCase):
             self.customer_repository.create(customer_data)
 
     def test_5_duplicates(self):
-        customer = self.customer_repository.create(self.customer_data)
+        self.customer_repository.create(self.customer_data)
 
         with self.assertRaises(AppException.OperationError):
             self.customer_repository.create(self.customer_data)
-        self.customer_repository.delete(customer.id)
+        # self.customer_repository.delete(customer.id)

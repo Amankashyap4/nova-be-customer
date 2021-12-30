@@ -1,4 +1,5 @@
 import uuid
+import random
 from core.exceptions import AppException
 from app.utils import IDEnum
 from tests.utils.base_test_case import BaseTestCase
@@ -13,8 +14,10 @@ class TestCustomerController(BaseTestCase):
 
     lead_repository = LeadRepository()
     customer_repository = CustomerRepository()
+    phone_number = random.randint(1000000000, 9999999999)
+
     customer_data = {
-        "phone_number": "00233242583555",
+        "phone_number": str(phone_number),
         "full_name": "John",
         "birth_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
         "id_expiry_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
