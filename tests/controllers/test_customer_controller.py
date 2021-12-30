@@ -55,9 +55,8 @@ class TestCustomerController(BaseTestCase):
 
     def test_3_show_customer(self):
         customer = self.customer_repository.create(self.customer_data)
-        customer_search = self.customer_repository.show(customer.id)
+        customer_values = self.customer_repository.find_by_id(customer.id)
 
-        customer_values = customer_search.value
         self.assertEqual(customer_values.id, customer.id)
         self.assertEqual(customer_values.full_name, "John")
         self.assertEqual(customer_values.id_type, IDEnum.passport)
