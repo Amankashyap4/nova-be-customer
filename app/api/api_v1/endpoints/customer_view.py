@@ -37,7 +37,7 @@ obj_graph = pinject.new_object_graph(
 customer_controller = obj_graph.provide(CustomerController)
 
 
-@customer.route("account/", methods=["POST"])
+@customer.route("account/register", methods=["POST"])
 @validator(schema=CustomerSignUpSchema)
 def create_customer_account():
     """
@@ -157,7 +157,7 @@ def add_pin():
     return handle_result(result, schema=TokenSchema)
 
 
-@customer.route("/token-login", methods=["POST"])
+@customer.route("/login", methods=["POST"])
 @validator(schema=LoginSchema)
 def login_user():
     """
@@ -338,7 +338,7 @@ def change_password(user_id):
     return handle_result(result)
 
 
-@customer.route("/pin-request", methods=["POST"])
+@customer.route("/request-pin-process", methods=["POST"])
 @validator(schema=PinResetRequestSchema)
 def pin_process():
     """

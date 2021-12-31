@@ -4,6 +4,7 @@ from app.controllers import CustomerController
 from app.repositories import CustomerRepository, LeadRepository
 from tests import MockAuthService
 from config import Config
+from unittest.mock import patch
 
 
 class BaseTestCase(TestCase):
@@ -28,8 +29,8 @@ class BaseTestCase(TestCase):
 
         self.headers = {"Authorization": f"Bearer {self.access_token}"}
 
-        # self.setup_patches()
-        # self.instantiate_classes()
+        self.setup_patches()
+        self.instantiate_classes()
         return app
 
     def instantiate_classes(self):
@@ -42,22 +43,21 @@ class BaseTestCase(TestCase):
             lead_repository=self.lead_repository,
         )
 
-    #
-    # def setup_patches(self):
-    #     kafka_patcher = patch(
-    #         "app.notifications.sms_notification_handler.publish_to_kafka",
-    #         self.dummy_kafka_method,
-    #     )
-    #     self.addCleanup(kafka_patcher.stop)
-    #     kafka_patcher.start()
-    #     patcher = patch("core.utils.auth.jwt.decode", self.required_roles_side_effect)
-    #     self.addCleanup(patcher.stop)
-    #     patcher.start()
-    #     utc_patcher = patch(
-    #         "app.controllers.customer_controller.utc.localize", self.utc_side_effect
-    #     )
-    #     self.addCleanup(utc_patcher.stop)
-    #     utc_patcher.start()
+    def setup_patches(self):
+        kafka_patcher = patch(
+            "app.notifications.sms_notification_handler.publish_to_kafka",
+            self.dummy_kafka_method,
+        )
+        self.addCleanup(kafka_patcher.stop)
+        kafka_patcher.start()
+        patcher = patch("core.utils.auth.jwt.decode", self.required_roles_side_effect)
+        self.addCleanup(patcher.stop)
+        patcher.start()
+        utc_patcher = patch(
+            "app.controllers.customer_controller.utc.localize", self.utc_side_effect
+        )
+        self.addCleanup(utc_patcher.stop)
+        utc_patcher.start()
 
     def setUp(self):
         """
@@ -69,14 +69,16 @@ class BaseTestCase(TestCase):
         """
         Will be called after every test
         """
-        # db.session.remove()
-        # db.drop_all()
+        db.session.remove()
+        db.drop_all()
 
     def dummy_kafka_method(self, topic, value):
         return True
 
-    def required_roles_side_effect(self, token, key, algorithms, audience, issuer):
+    def required_roles_side_effect(
+        self, token, key, algorithms, options, audience=None, issuer=None
+    ):
         return self.required_roles
 
-    def utc_side_effect(self, args):  # noqa
+    def utc_side_effect(self, args):
         return args
