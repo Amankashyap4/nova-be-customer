@@ -7,6 +7,10 @@ from flask.logging import default_handler
 from flask_mongoengine import MongoEngine
 from sqlalchemy.exc import DBAPIError
 
+
+base_dir = os.getcwd()
+sys.path.append(base_dir)
+
 from core.extensions import db, migrate, ma
 from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import HTTPException
@@ -19,8 +23,6 @@ from core.exceptions.app_exceptions import (
     AppExceptionCase,
 )
 
-base_dir = os.getcwd()
-sys.path.append(base_dir)
 
 APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to application_top
 dotenv_path = os.path.join(APP_ROOT, ".env")
