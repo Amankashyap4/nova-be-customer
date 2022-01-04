@@ -171,7 +171,7 @@ class CustomerController(Notifier):
         # find if password_token exists
         user = self.lead_repository.find({"password_token": token})
 
-        if not user:
+        if not user or not token:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
 
         # Check if password_token is valid or expired
@@ -202,6 +202,10 @@ class CustomerController(Notifier):
         }
 
         self.customer_repository.create(customer_data)
+        self.lead_repository.update_by_id(
+            user.id,
+            {"password_token": ""},
+        )
         # Remove id from auth_result
         auth_result.pop("id", None)
         return Result(auth_result, 200)
