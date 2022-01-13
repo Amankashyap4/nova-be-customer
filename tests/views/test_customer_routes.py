@@ -321,13 +321,16 @@ class TestCustomerRoutes(BaseTestCase):
         """
         reset phone
         """
-        self.test_o_request_reset_phone()
+        data = self.test_o_request_reset_phone()
         new_phone_number = random.randint(1000000000, 9999999999)
         customer = self.customer_repository.find({"phone_number": str(phone_number)})
         with self.client:
             response = self.client.post(
                 f"/api/v1/customers/reset-phone/{customer.id}",
-                json={"phone_number": str(new_phone_number)},
+                json={
+                    "new_phone_number": str(new_phone_number),
+                    "token": data.get("token"),
+                },
             )
             self.assert_status(response, 200)
             data = response.json

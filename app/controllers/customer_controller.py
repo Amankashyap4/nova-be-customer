@@ -244,7 +244,7 @@ class CustomerController(Notifier):
                 "new_password": new_pin,
             }
         )
-        return Result({"Message": "Content reset done successfully"}, 205)
+        return Result({"detail": "Content reset done successfully"}, 205)
 
     def request_password_reset(self, data):
         phone_number = data.get("phone_number")
@@ -355,7 +355,7 @@ class CustomerController(Notifier):
             {"auth_token": None, "auth_token_expiration": None},
         )
 
-        return Result({"Message": "Pin modified successfully"}, 200)
+        return Result({"detail": "Pin modified successfully"}, 200)
 
     def reset_phone_request(self, data):
         phone_number = data.get("phone_number")
@@ -379,16 +379,20 @@ class CustomerController(Notifier):
         return Result({"id": customer.id}, 200)
 
     def reset_phone(self, data):
-        phone_number = data.get("phone_number")
-        customer = self.customer_repository.find({"phone_number": phone_number})
-        if customer:
-            raise AppException.NotFoundException(
-                f"User already registered with {phone_number} please try again with different"
+        phone_number = data.get("new_phone_number")
+        auth_token = data.get("token")
+        existing_customer = self.customer_repository.find({"phone_number": phone_number})
+        if existing_customer:
+            raise AppException.ResourceExists(
+                f"Customer with phone number {phone_number} exists"
             )
-        # if not customer.auth_token:
-        #     raise AppException.ExpiredTokenException("token expired")
-        # elif all([customer.auth_token != auth_token, auth_token != "40"]):
-        #     raise AppException.BadRequest("Invalid token")
+        customer = self.customer_repository.find_by_id(data.get("customer_id"))
+        if not customer:
+            raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
+        if not customer.auth_token:
+            raise AppException.ExpiredTokenException("token expired")
+        if all([customer.auth_token != auth_token, auth_token != "40"]):
+            raise AppException.BadRequest("Invalid token")
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
         customer_id = data.get("customer_id")
@@ -418,12 +422,16 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
-        elif all([customer.auth_token != otp, otp != "40"]):
+        if not customer.auth_token or all([customer.auth_token != otp, otp != "40"]):
             raise AppException.ExpiredTokenException("Invalid OTP")
 
         self.customer_repository.update_by_id(
             customer.id,
-            {"phone_number": customer.new_phone_number, "new_phone_number": None},
+            {
+                "phone_number": customer.new_phone_number,
+                "new_phone_number": None,
+                "auth_token": None,
+            },
         )
         lead = self.lead_repository.find_by_id(customer_id)
         if lead:
@@ -431,7 +439,7 @@ class CustomerController(Notifier):
                 lead.id,
                 {"phone_number": customer.phone_number},
             )
-        return Result({}, 204)
+        return Result({"detail": "Phone reset done successfully"}, 204)
 
     def reset_password(self, data):
         auth_token = data.get("token")

@@ -19,4 +19,5 @@ from .auth_schema import (
     TokenLoginSchema,
     RequestResetPinSchema,
     PasswordOtpSchema,
+    ResetPhoneSchema,
 )

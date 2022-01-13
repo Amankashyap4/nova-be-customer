@@ -21,6 +21,7 @@ from app.schema import (
     TokenLoginSchema,
     RequestResetPinSchema,
     PasswordOtpSchema,
+    ResetPhoneSchema,
 )
 from app.services import AuthService
 from core.utils import validator, auth_required
@@ -302,7 +303,7 @@ def password_otp_conformation():
             application/json:
               schema: PasswordOtpSchema
       tags:
-          - Forgot-Password
+          - OTP conformation for change Forgot password or change phone
     """
     data = request.json
     result = customer_controller.password_otp_conformation(data)
@@ -323,7 +324,15 @@ def reset_password():
                 schema: PinReset
       responses:
         '205':
-          description: returns nil
+          description: message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: str
+                    example: Pin reset done successfully
       tags:
           - Forgot-Password
     """
@@ -356,7 +365,15 @@ def change_password(user_id):
         - bearerAuth: []
       responses:
         '205':
-          description: returns nil
+          description: message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: str
+                    example: Content reset done successfully
       tags:
           - Authentication
     """
@@ -487,7 +504,7 @@ def reset_phone_request():
 
 
 @customer.route("/reset-phone/<string:user_id>", methods=["POST"])
-@validator(schema=PinResetRequestSchema)
+@validator(schema=ResetPhoneSchema)
 def reset_phone(user_id):
     """
     ---
@@ -504,7 +521,7 @@ def reset_phone(user_id):
         required: true
         content:
           application/json:
-            schema: PinResetRequestSchema
+            schema: ResetPhoneSchema
       responses:
         '201':
           description: returns a customer id
@@ -547,7 +564,15 @@ def update_phone(user_id):
             schema: UpdatePhoneSchema
       responses:
         '204':
-          description: nil
+          description: message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: str
+                    example: Phone reset done successfully
       tags:
           - Customer Reset Phone
     """

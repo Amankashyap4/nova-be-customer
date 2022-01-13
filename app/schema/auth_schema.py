@@ -37,6 +37,11 @@ class PinResetRequestSchema(Schema):
     phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
 
 
+class ResetPhoneSchema(Schema):
+    new_phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
+    token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
+
+
 class PinResetSchema(Schema):
     # token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
     token = fields.String(required=True)
