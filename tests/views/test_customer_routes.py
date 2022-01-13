@@ -250,3 +250,98 @@ class TestCustomerRoutes(BaseTestCase):
     #             headers={"Authorization": f"Bearer {access_token}"},
     #         )
     #         self.assert_status(response, 204)
+
+    def test_m_forgot_password(self):
+        """
+        reset pin process
+        """
+        data = self.test_j_pin_request()
+        customer = self.customer_repository.find_by_id(data.get("id"))
+        with self.client:
+            response = self.client.post(
+                "/api/v1/customers/forgot-password",
+                json={"phone_number": customer.phone_number},
+            )
+            self.assert_status(response, 200)
+            data = response.json
+            return data
+
+    def test_n_conform_pin(self):
+        """
+        reset pin process
+        """
+        data = self.test_m_forgot_password()
+        customer = self.customer_repository.find_by_id(data.get("id"))
+        with self.client:
+            response = self.client.post(
+                "/api/v1/customers/otp-conformation",
+                json={"id": customer.id, "token": customer.auth_token},
+            )
+            self.assert_status(response, 200)
+            data = response.json
+            return data
+
+    @mock.patch("app.services.keycloak_service.AuthService.reset_password")
+    def test_o_reset_pin(self, mock_reset_password):
+        """
+        reset pin process
+        """
+        mock_reset_password.side_effect = self.auth_service.reset_password
+        data = self.test_n_conform_pin()
+        with self.client:
+            response = self.client.post(
+                "/api/v1/customers/reset-password",
+                json={
+                    "id": data.get("id"),
+                    "token": data.get("token"),
+                    "new_pin": "6666",
+                },
+            )
+            self.assert_status(response, 205)
+            data = response.json
+            return data
+
+    def test_o_request_reset_phone(self):
+        """
+        reset pin process
+        """
+        self.test_d_add_pin()
+        customer = self.customer_repository.find({"phone_number": str(phone_number)})
+        with self.client:
+            response = self.client.post(
+                "/api/v1/customers/reset-phone-request",
+                json={"phone_number": str(phone_number)},
+            )
+            self.assert_status(response, 200)
+            data = response.json
+            data["token"] = customer.auth_token
+            return data
+
+    def test_p_reset_phone(self):
+        """
+        reset phone
+        """
+        self.test_o_request_reset_phone()
+        new_phone_number = random.randint(1000000000, 9999999999)
+        customer = self.customer_repository.find({"phone_number": str(phone_number)})
+        with self.client:
+            response = self.client.post(
+                f"/api/v1/customers/reset-phone/{customer.id}",
+                json={"phone_number": str(new_phone_number)},
+            )
+            self.assert_status(response, 200)
+            data = response.json
+            return data
+
+    def test_q_update_phone(self):
+        """
+        reset phone
+        """
+        data = self.test_p_reset_phone()
+        customer = self.customer_repository.find_by_id(data)
+        with self.client:
+            response = self.client.post(
+                f"/api/v1/customers/update-phone/{customer.id}",
+                json={"token": customer.auth_token},
+            )
+            self.assert_status(response, 204)

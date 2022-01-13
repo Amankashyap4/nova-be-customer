@@ -17,4 +17,6 @@ from .auth_schema import (
     PinResetSchema,
     PinResetRequestSchema,
     TokenLoginSchema,
+    RequestResetPinSchema,
+    PasswordOtpSchema,
 )

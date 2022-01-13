@@ -61,3 +61,15 @@ class TestCustomerController(BaseTestCase):
         self.assertEqual(customer_values.full_name, "John")
         self.assertEqual(customer_values.id_type, IDEnum.passport)
         self.customer_repository.delete(customer.id)
+
+    def test_4_find_by_phone(self):
+        customer = self.customer_repository.create(self.customer_data)
+
+        customer_values = self.customer_repository.find(
+            {"phone_number": customer.phone_number}
+        )
+
+        self.assertEqual(customer_values.id, customer.id)
+        self.assertEqual(customer_values.full_name, "John")
+        self.assertEqual(customer_values.id_type, IDEnum.passport)
+        self.customer_repository.delete(customer.id)

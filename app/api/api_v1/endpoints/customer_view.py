@@ -19,6 +19,8 @@ from app.schema import (
     PinResetSchema,
     PinResetRequestSchema,
     TokenLoginSchema,
+    RequestResetPinSchema,
+    PasswordOtpSchema,
 )
 from app.services import AuthService
 from core.utils import validator, auth_required
@@ -61,7 +63,7 @@ def create_customer_account():
                     type: uuid
                     example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
       tags:
-          - Authentication
+          - Customer Registration
     """
 
     data = request.json
@@ -88,7 +90,7 @@ def confirm_token():
             application/json:
               schema: ConfirmedTokenSchema
       tags:
-          - Authentication
+          - Customer Registration
     """
 
     data = request.json
@@ -115,7 +117,7 @@ def add_information():
             application/json:
               schema: ConformInfo
       tags:
-          - Authentication
+          - Customer Registration
     """
     from datetime import datetime
 
@@ -149,7 +151,7 @@ def add_pin():
             application/json:
               schema: TokenSchema
       tags:
-          - Authentication
+          - Customer Registration
     """
 
     data = request.json
@@ -274,10 +276,36 @@ def forgot_password():
                     type: uuid
                     example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
       tags:
-          - Authentication
+          - Forgot-Password
     """
     data = request.json
     result = customer_controller.request_password_reset(data)
+    return handle_result(result)
+
+
+@customer.route("/otp-conformation", methods=["POST"])
+@validator(schema=PasswordOtpSchema)
+def password_otp_conformation():
+    """
+    ---
+    post:
+      description: confirms reset of a customer's password
+      requestBody:
+        required: true
+        content:
+            application/json:
+                schema: PasswordOtpSchema
+      responses:
+        '200':
+          description: returns id, token
+          content:
+            application/json:
+              schema: PasswordOtpSchema
+      tags:
+          - Forgot-Password
+    """
+    data = request.json
+    result = customer_controller.password_otp_conformation(data)
     return handle_result(result)
 
 
@@ -297,7 +325,7 @@ def reset_password():
         '205':
           description: returns nil
       tags:
-          - Authentication
+          - Forgot-Password
     """
     data = request.json
     result = customer_controller.reset_password(data)
@@ -362,7 +390,7 @@ def pin_process():
                     type: uuid
                     example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
       tags:
-          - Authentication
+          - Pin-Process
     """
     data = request.json
     result = customer_controller.pin_process(data)
@@ -370,7 +398,7 @@ def pin_process():
 
 
 @customer.route("/request-reset-pin", methods=["POST"])
-@validator(schema=ConfirmTokenSchema)
+@validator(schema=RequestResetPinSchema)
 def request_reset_pin():
     """
     ---
@@ -388,7 +416,7 @@ def request_reset_pin():
             application/json:
               schema: ResetPinProcess
       tags:
-          - Authentication
+          - Pin-Process
     """
     data = request.json
     result = customer_controller.reset_pin_process(data)
@@ -418,7 +446,7 @@ def reset_pin(user_id):
         '200':
           description: nil
       tags:
-          - Authentication
+          - Pin-Process
     """
     data = request.json
     data["customer_id"] = user_id
@@ -426,9 +454,40 @@ def reset_pin(user_id):
     return handle_result(result)
 
 
+@customer.route("/reset-phone-request", methods=["POST"])
+@validator(schema=PinResetRequestSchema)
+def reset_phone_request():
+    """
+    ---
+    post:
+      description: requests a reset of a customer's phone number
+      requestBody:
+        required: true
+        content:
+            application/json:
+                schema: PinResetRequest
+      responses:
+        '200':
+          description: returns a uuid (customer's id)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: uuid
+                    example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      tags:
+          - Customer Reset Phone
+    """
+
+    data = request.json
+    result = customer_controller.reset_phone_request(data)
+    return handle_result(result)
+
+
 @customer.route("/reset-phone/<string:user_id>", methods=["POST"])
 @validator(schema=PinResetRequestSchema)
-@auth_required()
 def reset_phone(user_id):
     """
     ---
@@ -446,8 +505,6 @@ def reset_phone(user_id):
         content:
           application/json:
             schema: PinResetRequestSchema
-      security:
-        - bearerAuth: []
       responses:
         '201':
           description: returns a customer id
@@ -460,7 +517,7 @@ def reset_phone(user_id):
                     type: uuid
                     example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
       tags:
-          - Authentication
+          - Customer Reset Phone
     """
 
     data = request.json
@@ -471,7 +528,6 @@ def reset_phone(user_id):
 
 @customer.route("/update-phone/<string:user_id>", methods=["POST"])
 @validator(schema=UpdatePhoneSchema)
-@auth_required()
 def update_phone(user_id):
     """
     ---
@@ -484,18 +540,16 @@ def update_phone(user_id):
           schema:
             type: string
           description: The customer ID
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema: UpdatePhoneSchema
       responses:
-        '201':
+        '204':
           description: nil
       tags:
-          - Authentication
+          - Customer Reset Phone
     """
     data = request.json
     data["customer_id"] = user_id

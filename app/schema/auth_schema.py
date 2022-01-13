@@ -3,6 +3,13 @@ from app import constants
 
 
 class ConfirmTokenSchema(Schema):
+    # token = fields.Str(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
+    token = fields.Str(required=True)
+    id = fields.UUID(required=True)
+
+
+class RequestResetPinSchema(Schema):
+    # token = fields.Str(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
     token = fields.Str(required=True)
     id = fields.UUID(required=True)
 
@@ -13,7 +20,7 @@ class ConfirmedTokenSchema(Schema):
 
 
 class AddPinSchema(Schema):
-    pin = fields.Str(required=True)
+    pin = fields.Str(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
     password_token = fields.Str(required=True)
 
 
@@ -22,8 +29,8 @@ class ResendTokenSchema(Schema):
 
 
 class PinChangeSchema(Schema):
-    old_pin = fields.String(required=True)
-    new_pin = fields.String(required=True)
+    old_pin = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
+    new_pin = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
 
 
 class PinResetRequestSchema(Schema):
@@ -31,8 +38,15 @@ class PinResetRequestSchema(Schema):
 
 
 class PinResetSchema(Schema):
-    token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
+    # token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
+    token = fields.String(required=True)
     new_pin = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
+    id = fields.UUID(required=True)
+
+
+class PasswordOtpSchema(Schema):
+    # token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
+    token = fields.String(required=True)
     id = fields.UUID(required=True)
 
 

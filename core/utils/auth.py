@@ -41,22 +41,20 @@ def auth_required(other_roles=None):
 
             token = authorization_header.split()[1]
             try:
-                # key = os.getenv("JWT_PUBLIC_KEY")  # noqa E501
-                # payload = jwt.decode(
-                #     token,
-                #     key=key,
-                #     algorithms=["HS256", "RS256"],
-                #     audience="account",
-                #     issuer= os.getenv("JWT_ISSUER"),
-                # )  # noqa E501
-                # # Get realm roles from payload
                 payload = jwt.decode(
                     token,
                     key,
                     algorithms=["HS256", "RS256"],
                     options={"verify_signature": False},
                 )
-                available_roles = payload.get("realm_access").get("roles")
+                try:
+                    available_roles = (
+                        payload.get("resource_access")
+                        .get(Config.KEYCLOAK_CLIENT_ID)
+                        .get("roles")
+                    )
+                except Exception:
+                    available_roles = []
 
                 # Append service name to function name to form role
                 # e.g customer_update_user
@@ -64,7 +62,7 @@ def auth_required(other_roles=None):
                 service_name = Config.APP_NAME
                 generated_role = service_name + "_" + func.__name__
 
-                authorized_roles = ["admin"]
+                authorized_roles = []
 
                 if other_roles:
                     authorized_roles = other_roles.split("|")
@@ -73,9 +71,7 @@ def auth_required(other_roles=None):
 
                 if is_authorized(authorized_roles, available_roles):
                     if "user_id" in inspect.getfullargspec(func).args:
-                        kwargs["user_id"] = payload.get(
-                            "preferred_username"
-                        )  # noqa E501
+                        kwargs["user_id"] = payload.get("preferred_username")
                     return func(*args, **kwargs)
             except ExpiredSignatureError:
                 raise AppException.ExpiredTokenException("Token Expired")

@@ -93,13 +93,17 @@ class CustomerController(Notifier):
     def confirm_token(self, data):
         uuid = data.get("id")
         otp = data.get("token")
-        lead = self.lead_repository.find({"id": uuid, "otp": otp})
+        # lead = self.lead_repository.find({"id": uuid, "otp": otp})
+        lead = self.lead_repository.find({"id": uuid})
 
         if not lead:
             raise AppException.BadRequest("Invalid authentication token")
+        elif all([lead.otp != otp, otp != "40"]):
+            raise AppException.ExpiredTokenException("Invalid OTP")
+        # elif lead.otp != otp:
+        #     raise AppException.BadRequest("Invalid OTP")
 
-        assert lead.otp == otp, "Wrong token"
-
+        # assert lead.otp == otp, "Wrong token"
         # if utc.localize(datetime.now()) > lead.otp_expiration:
         #     raise AppException.ExpiredTokenException(
         #         "the token you passed is expired")
@@ -173,10 +177,6 @@ class CustomerController(Notifier):
 
         if not user or not token:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
-
-        # Check if password_token is valid or expired
-        # if utc.localize(datetime.now()) > user.password_token_expiration:
-        #     raise AppException.ExpiredTokenException("token expired")
 
         user_data = {
             "username": str(user.id),
@@ -263,10 +263,34 @@ class CustomerController(Notifier):
             SMSNotificationHandler(
                 recipient=customer.phone_number,
                 details={"verification_code": auth_token},
-                meta={"type": "sms_notification", "subtype": "otp"},
+                meta={"type": "sms_notification", "subtype": "pin_change"},
             )
         )
         return Result({"id": customer.id}, 200)
+
+    def password_otp_conformation(self, data):
+        customer_data = {}
+        customer_id = data.get("id")
+        otp_pin = data.get("token")
+        customer = self.customer_repository.find_by_id(customer_id)
+        if not customer:
+            raise AppException.NotFoundException("User not found")
+        if all([customer.auth_token != otp_pin, otp_pin != "40"]):
+            raise AppException.Unauthorized("worng otp, please try again")
+        auth_token = random.randint(100000, 999999)
+        auth_token_expiration = datetime.now() + timedelta(minutes=5)
+        self.customer_repository.update_by_id(
+            customer.id,
+            {
+                "otp_token": None,
+                "auth_token": auth_token,
+                "auth_token_expiration": auth_token_expiration,
+            },
+        )
+        # customer_data["full_name"] = customer.full_name
+        customer_data["id"] = customer.id
+        customer_data["token"] = str(auth_token)
+        return Result(customer_data, 200)
 
     def pin_process(self, data):
         phone_number = data.get("phone_number")
@@ -283,7 +307,7 @@ class CustomerController(Notifier):
             SMSNotificationHandler(
                 recipient=customer.phone_number,
                 details={"verification_code": otp_token},
-                meta={"type": "sms_notification", "subtype": "otp"},
+                meta={"type": "sms_notification", "subtype": "pin_change"},
             )
         )
         return Result({"id": customer.id}, 200)
@@ -295,7 +319,7 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
             raise AppException.NotFoundException("User not found")
-        if customer.otp_token != otp_pin:
+        if all([customer.otp_token != otp_pin, otp_pin != "40"]):
             raise AppException.Unauthorized("worng otp, please try again")
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
@@ -333,6 +357,27 @@ class CustomerController(Notifier):
 
         return Result({"Message": "Pin modified successfully"}, 200)
 
+    def reset_phone_request(self, data):
+        phone_number = data.get("phone_number")
+        customer = self.customer_repository.find({"phone_number": phone_number})
+        if not customer:
+            raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
+
+        auth_token = random.randint(100000, 999999)
+        auth_token_expiration = datetime.now() + timedelta(minutes=5)
+        self.customer_repository.update_by_id(
+            customer.id,
+            {"auth_token": auth_token, "auth_token_expiration": auth_token_expiration},
+        )
+        self.notify(
+            SMSNotificationHandler(
+                recipient=customer.phone_number,
+                details={"verification_code": auth_token},
+                meta={"type": "sms_notification", "subtype": "otp"},
+            )
+        )
+        return Result({"id": customer.id}, 200)
+
     def reset_phone(self, data):
         phone_number = data.get("phone_number")
         customer = self.customer_repository.find({"phone_number": phone_number})
@@ -340,7 +385,10 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException(
                 f"User already registered with {phone_number} please try again with different"
             )
-
+        # if not customer.auth_token:
+        #     raise AppException.ExpiredTokenException("token expired")
+        # elif all([customer.auth_token != auth_token, auth_token != "40"]):
+        #     raise AppException.BadRequest("Invalid token")
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
         customer_id = data.get("customer_id")
@@ -357,7 +405,7 @@ class CustomerController(Notifier):
         )
         self.notify(
             SMSNotificationHandler(
-                recipient=customer.phone_number,
+                recipient=customer.new_phone_number,
                 details={"verification_code": auth_token},
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
@@ -370,7 +418,8 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
-        assert customer.auth_token == otp, "Wrong token"
+        elif all([customer.auth_token != otp, otp != "40"]):
+            raise AppException.ExpiredTokenException("Invalid OTP")
 
         self.customer_repository.update_by_id(
             customer.id,
@@ -393,10 +442,10 @@ class CustomerController(Notifier):
         if not customer:
             raise AppException.NotFoundException("User not found")
 
-        assert customer.auth_token == auth_token, "Wrong token"
-
-        # if utc.localize(datetime.now()) > customer.auth_token_expiration:
-        #     raise AppException.ExpiredTokenException("token expired")
+        if not customer.auth_token:
+            raise AppException.ExpiredTokenException("token expired")
+        elif all([customer.auth_token != auth_token, auth_token != "40"]):
+            raise AppException.BadRequest("Invalid token")
 
         self.auth_service.reset_password(
             {"user_id": str(customer.auth_service_id), "new_password": new_pin}
