@@ -8,6 +8,8 @@ from flask_mongoengine import MongoEngine
 from sqlalchemy.exc import DBAPIError
 
 
+from flask_cors import CORS, cross_origin
+
 base_dir = os.getcwd()
 sys.path.append(base_dir)
 
@@ -62,7 +64,7 @@ def create_app(config="config.DevelopmentConfig"):
     basedir = os.path.abspath(os.path.dirname(__file__))
     path = os.path.join(basedir, "../instance")
     app = Flask(__name__, instance_relative_config=False, instance_path=path)
-
+    CORS(app=app, support_credentials=True)
     app.logger.addHandler(default_handler)
     with app.app_context():
         environment = os.getenv("FLASK_ENV")

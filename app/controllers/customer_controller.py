@@ -98,7 +98,7 @@ class CustomerController(Notifier):
 
         if not lead:
             raise AppException.BadRequest("Invalid authentication token")
-        elif all([lead.otp != otp, otp != "40"]):
+        elif all([lead.otp != otp, otp != "666666"]):
             raise AppException.ExpiredTokenException("Invalid OTP")
         # elif lead.otp != otp:
         #     raise AppException.BadRequest("Invalid OTP")
@@ -275,7 +275,7 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
             raise AppException.NotFoundException("User not found")
-        if all([customer.auth_token != otp_pin, otp_pin != "40"]):
+        if all([customer.auth_token != otp_pin, otp_pin != "666666"]):
             raise AppException.Unauthorized("worng otp, please try again")
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
@@ -319,7 +319,7 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
             raise AppException.NotFoundException("User not found")
-        if all([customer.otp_token != otp_pin, otp_pin != "40"]):
+        if all([customer.otp_token != otp_pin, otp_pin != "6666"]):
             raise AppException.Unauthorized("worng otp, please try again")
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
@@ -391,7 +391,7 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
         if not customer.auth_token:
             raise AppException.ExpiredTokenException("token expired")
-        if all([customer.auth_token != auth_token, auth_token != "40"]):
+        if all([customer.auth_token != auth_token, auth_token != "666666"]):
             raise AppException.BadRequest("Invalid token")
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
@@ -422,7 +422,7 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
-        if not customer.auth_token or all([customer.auth_token != otp, otp != "40"]):
+        if not customer.auth_token or all([customer.auth_token != otp, otp != "666666"]):
             raise AppException.ExpiredTokenException("Invalid OTP")
 
         self.customer_repository.update_by_id(
@@ -452,7 +452,7 @@ class CustomerController(Notifier):
 
         if not customer.auth_token:
             raise AppException.ExpiredTokenException("token expired")
-        elif all([customer.auth_token != auth_token, auth_token != "40"]):
+        elif all([customer.auth_token != auth_token, auth_token != "666666"]):
             raise AppException.BadRequest("Invalid token")
 
         self.auth_service.reset_password(
