@@ -17,8 +17,8 @@ flask-mongoengine==1.0.0
 flask-script==2.0.6
 flask-sqlalchemy==2.5.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 flask-swagger-ui==3.36.0
-Flask-Testing
-flask-cors
+Flask-Testing==0.8.1
+Flask-Cors==3.0.10
 flask-wtf==0.15.1; python_version >= "3.6"
 flask==1.1.4; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 greenlet==1.1.0; python_version >= "3" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3"
