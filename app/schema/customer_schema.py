@@ -22,7 +22,7 @@ class CustomerInfoSchema(Schema):
     full_name = fields.Str(required=True, validate=validate.Length(min=2))
     birth_date = fields.Date(required=False)
     id_expiry_date = fields.Date(required=True)
-    id_type = EnumField(IDEnum)
+    id_type = EnumField(IDEnum, required=True)
     id_number = (fields.Str(validate=validate.Length(min=5)),)
     conformation_token = (fields.Str(validate=validate.Length(min=5)),)
 

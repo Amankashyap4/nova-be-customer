@@ -63,6 +63,32 @@ def create_customer_account():
                   id:
                     type: uuid
                     example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        '409':
+          description: conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ResourceExists
+                  errorMessage:
+                    type: str
+                    example: Customer with phone number ... exists
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: NoBrokersAvailable
       tags:
           - Customer Registration
     """
@@ -78,20 +104,45 @@ def confirm_token():
     """
     ---
     post:
-      description: creates a new customer
+      description: confirm a new customer token
       requestBody:
         required: true
         content:
-            application/json:
-                schema: ConfirmToken
+          application/json:
+            schema: ConfirmToken
       responses:
         '200':
           description: returns a customer
           content:
             application/json:
               schema: ConfirmedTokenSchema
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                    oneOf:
+                      - type: object
+                        properties:
+                          token:
+                            type: array
+                            items:
+                              type: str
+                              example: String does not match expected pattern.
+                      - type: Str
+                        example: Invalid user.
+                example:
+                  app_exception: ValidationException
+                  errorMessage:
+                    token: ["String does not match expected pattern."]
       tags:
-          - Customer Registration
+        - Customer Registration
     """
 
     data = request.json
@@ -104,7 +155,10 @@ def confirm_token():
 def add_information():
     """
     ---
+    swagger: '2.0'
     post:
+      tags:
+          - Customer Registration
       description: add new customer information
       requestBody:
         required: true
@@ -117,8 +171,31 @@ def add_information():
           content:
             application/json:
               schema: ConformInfo
-      tags:
-          - Customer Registration
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                    oneOf:
+                      - type: object
+                        properties:
+                          full_name:
+                            type: array
+                            items:
+                              type: str
+                              value: Missing data for required field.
+                      - type: Str
+                        value: Invalid user.
+                example:
+                  app_exception: ValidationException
+                  errorMessage:
+                    token: ["Missing data for required field."]
     """
     from datetime import datetime
 
@@ -139,7 +216,7 @@ def add_pin():
     """
     ---
     post:
-      description: creates a new customer
+      description: create new customer
       requestBody:
         required: true
         content:
@@ -151,6 +228,37 @@ def add_pin():
           content:
             application/json:
               schema: TokenSchema
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                    type: object
+                    properties:
+                      pin:
+                        type: array
+                        items:
+                          type: str
+                          example: String does not match expected pattern.
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist.
       tags:
           - Customer Registration
     """
@@ -166,7 +274,7 @@ def login_user():
     """
     ---
     post:
-      description: logs in a customer
+      description: login a customer
       requestBody:
         required: true
         content:
@@ -178,8 +286,52 @@ def login_user():
           content:
             application/json:
               schema: TokenLoginSchema
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                    type: object
+                    properties:
+                      pin:
+                        type: array
+                        items:
+                          type: str
+                          example: Length must be between 4 and 4.
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: Error in username or password
       tags:
-          - Authentication
+        - Authentication
     """
 
     data = request.json
@@ -211,10 +363,36 @@ def update_customer(customer_id):
         - bearerAuth: []
       responses:
         '200':
-          description: returns a customer
+          description: returns a updated customer information
           content:
             application/json:
               schema: Customer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: Unauthorized
+                  errorMessage:
+                    type: str
+                    example: Missing authentication token
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
       tags:
           - Customer
     """
@@ -242,10 +420,37 @@ def show_customer(customer_id):
         - bearerAuth: []
       responses:
         '200':
-          description: returns a customer
+          description: returns a customer information
           content:
             application/json:
               schema: Customer
+
+        '401':
+          description: unauthorised
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: Unauthorized
+                  errorMessage:
+                    type: str
+                    example: Missing authentication token
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
       tags:
           - Customer
     """
@@ -276,6 +481,32 @@ def forgot_password():
                   id:
                     type: uuid
                     example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: NoBrokersAvailable
       tags:
           - Forgot-Password
     """
@@ -302,6 +533,32 @@ def password_otp_conformation():
           content:
             application/json:
               schema: PasswordOtpSchema
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: BadRequest
+                  errorMessage:
+                    type: str
+                    example: Wrong otp, please try again
       tags:
           - OTP conformation for change Forgot password or change phone
     """
@@ -333,6 +590,57 @@ def reset_password():
                   detail:
                     type: str
                     example: Pin reset done successfully
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                    oneOf:
+                      - type: object
+                        properties:
+                          new_pin:
+                            type: array
+                            items:
+                              type: str
+                              example: String does not match expected pattern.
+                      - type: Str
+                        example: Invalid token.
+                example:
+                  app_exception: ValidationException
+                  errorMessage:
+                    new_pin: ["String does not match expected pattern."]
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: NoBrokersAvailable
       tags:
           - Forgot-Password
     """
@@ -374,6 +682,54 @@ def change_password(user_id):
                   detail:
                     type: str
                     example: Content reset done successfully
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                      type: object
+                      properties:
+                        new_pin:
+                          type: array
+                          items:
+                            type: str
+                            example: String does not match expected pattern.
+                example:
+                  app_exception: ValidationException
+                  errorMessage:
+                    new_pin: ["String does not match expected pattern."]
+        '401':
+          description: unauthorised
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: Unauthorized
+                  errorMessage:
+                    type: str
+                    example: Missing authentication token
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: Auth service error
       tags:
           - Authentication
     """
@@ -406,6 +762,32 @@ def pin_process():
                   id:
                     type: uuid
                     example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: NoBrokersAvailable
       tags:
           - Pin-Process
     """
@@ -432,6 +814,32 @@ def request_reset_pin():
           content:
             application/json:
               schema: ResetPinProcess
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: Unauthorized
+                  errorMessage:
+                    type: str
+                    example: Wrong otp, please try again
       tags:
           - Pin-Process
     """
@@ -446,7 +854,7 @@ def reset_pin(user_id):
     """
     ---
     post:
-      description: request to pin reset
+      description: pin reset
       parameters:
         - in: path
           name: user_id
@@ -461,7 +869,41 @@ def reset_pin(user_id):
                 schema: AddPinSchema
       responses:
         '200':
-          description: nil
+          description: message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: str
+                    example: Pin modified successfully
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: Unauthorized
+                  errorMessage:
+                    type: str
+                    example: Something went wrong, please try again
       tags:
           - Pin-Process
     """
@@ -494,6 +936,32 @@ def reset_phone_request():
                   id:
                     type: uuid
                     example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: NoBrokersAvailable
       tags:
           - Customer Reset Phone
     """
@@ -509,7 +977,7 @@ def reset_phone(user_id):
     """
     ---
     post:
-      description: register new customer phone number
+      description: register customer new phone number
       parameters:
         - in: path
           name: user_id
@@ -533,6 +1001,45 @@ def reset_phone(user_id):
                   id:
                     type: uuid
                     example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '409':
+          description: conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ResourceExists
+                  errorMessage:
+                    type: str
+                    example: Customer with phone number ... exists
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: BadRequest
+                  errorMessage:
+                    type: str
+                    example: Invalid token
       tags:
           - Customer Reset Phone
     """
@@ -549,7 +1056,7 @@ def update_phone(user_id):
     """
     ---
     post:
-      description: register new customer phone number
+      description: update customer's new phone number
       parameters:
         - in: path
           name: user_id
@@ -573,6 +1080,32 @@ def update_phone(user_id):
                   detail:
                     type: str
                     example: Phone reset done successfully
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ExpiredTokenException
+                  errorMessage:
+                    type: str
+                    example: Invalid token
       tags:
           - Customer Reset Phone
     """
@@ -632,6 +1165,32 @@ def delete_customer(customer_id):
       responses:
         '204':
           description: returns nil
+        '401':
+          description: unauthorised
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: Unauthorized
+                  errorMessage:
+                    type: str
+                    example: Missing authentication token
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
       tags:
           - Customer
     """

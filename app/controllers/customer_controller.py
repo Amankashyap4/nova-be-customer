@@ -80,13 +80,16 @@ class CustomerController(Notifier):
         else:
             lead = self.lead_repository.create(data)
 
-        self.notify(
-            SMSNotificationHandler(
-                recipient=lead.phone_number,
-                details={"verification_code": auth_token},
-                meta={"type": "sms_notification", "subtype": "otp"},
+        try:
+            self.notify(
+                SMSNotificationHandler(
+                    recipient=lead.phone_number,
+                    details={"verification_code": auth_token},
+                    meta={"type": "sms_notification", "subtype": "otp"},
+                )
             )
-        )
+        except Exception as e:
+            raise AppException.InternalServerError(str(e))
 
         return Result({"id": lead.id}, 201)
 
@@ -97,16 +100,9 @@ class CustomerController(Notifier):
         lead = self.lead_repository.find({"id": uuid})
 
         if not lead:
-            raise AppException.BadRequest("Invalid authentication token")
+            raise AppException.BadRequest("Invalid user")
         elif all([lead.otp != otp, otp != "666666"]):
             raise AppException.ExpiredTokenException("Invalid OTP")
-        # elif lead.otp != otp:
-        #     raise AppException.BadRequest("Invalid OTP")
-
-        # assert lead.otp == otp, "Wrong token"
-        # if utc.localize(datetime.now()) > lead.otp_expiration:
-        #     raise AppException.ExpiredTokenException(
-        #         "the token you passed is expired")
 
         password_token = secrets.token_urlsafe(16)
 
@@ -128,7 +124,7 @@ class CustomerController(Notifier):
         if not lead:
             raise AppException.BadRequest("Invalid customer")
         elif lead.password_token != password_token:
-            raise AppException.BadRequest("Invalid customer")
+            raise AppException.BadRequest("Something went wrong, please try again")
 
         password_token = secrets.token_urlsafe(16)
 
@@ -223,9 +219,12 @@ class CustomerController(Notifier):
         customer_data["id_type"] = customer.id_type
         customer_data["phone_number"] = customer.phone_number
         customer_data["id"] = customer.id
-        access_token = self.auth_service.get_token(
-            {"username": customer.id, "password": pin}
-        )
+        try:
+            access_token = self.auth_service.get_token(
+                {"username": customer.id, "password": pin}
+            )
+        except Exception:
+            raise AppException.InternalServerError("Error in username or password")
         customer_data["access_token"] = access_token.get("access_token")
         customer_data["refresh_token"] = access_token.get("refresh_token")
         return Result(customer_data, 200)
@@ -237,13 +236,18 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
-        self.auth_service.get_token({"username": str(customer.id), "password": old_pin})
-        self.auth_service.reset_password(
-            {
-                "user_id": str(customer.auth_service_id),
-                "new_password": new_pin,
-            }
-        )
+        try:
+            self.auth_service.get_token(
+                {"username": str(customer.id), "password": old_pin}
+            )
+            self.auth_service.reset_password(
+                {
+                    "user_id": str(customer.auth_service_id),
+                    "new_password": new_pin,
+                }
+            )
+        except Exception:
+            raise AppException.InternalServerError("Auth service error")
         return Result({"detail": "Content reset done successfully"}, 205)
 
     def request_password_reset(self, data):
@@ -259,13 +263,16 @@ class CustomerController(Notifier):
             customer.id,
             {"auth_token": auth_token, "auth_token_expiration": auth_token_expiration},
         )
-        self.notify(
-            SMSNotificationHandler(
-                recipient=customer.phone_number,
-                details={"verification_code": auth_token},
-                meta={"type": "sms_notification", "subtype": "pin_change"},
+        try:
+            self.notify(
+                SMSNotificationHandler(
+                    recipient=customer.phone_number,
+                    details={"verification_code": auth_token},
+                    meta={"type": "sms_notification", "subtype": "pin_change"},
+                )
             )
-        )
+        except Exception as e:
+            raise AppException.InternalServerError(str(e))
         return Result({"id": customer.id}, 200)
 
     def password_otp_conformation(self, data):
@@ -274,9 +281,9 @@ class CustomerController(Notifier):
         otp_pin = data.get("token")
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
-            raise AppException.NotFoundException("User not found")
+            raise AppException.NotFoundException("user does not exist")
         if all([customer.auth_token != otp_pin, otp_pin != "666666"]):
-            raise AppException.Unauthorized("worng otp, please try again")
+            raise AppException.BadRequest("Wrong otp, please try again")
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
         self.customer_repository.update_by_id(
@@ -303,13 +310,16 @@ class CustomerController(Notifier):
             customer.id,
             {"otp_token": otp_token, "otp_token_expiration": otp_token_expiration},
         )
-        self.notify(
-            SMSNotificationHandler(
-                recipient=customer.phone_number,
-                details={"verification_code": otp_token},
-                meta={"type": "sms_notification", "subtype": "pin_change"},
+        try:
+            self.notify(
+                SMSNotificationHandler(
+                    recipient=customer.phone_number,
+                    details={"verification_code": otp_token},
+                    meta={"type": "sms_notification", "subtype": "pin_change"},
+                )
             )
-        )
+        except Exception as e:
+            raise AppException.InternalServerError(str(e))
         return Result({"id": customer.id}, 200)
 
     def reset_pin_process(self, data):
@@ -318,9 +328,9 @@ class CustomerController(Notifier):
         otp_pin = data.get("token")
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
-            raise AppException.NotFoundException("User not found")
+            raise AppException.NotFoundException("user does not exist")
         if all([customer.otp_token != otp_pin, otp_pin != "6666"]):
-            raise AppException.Unauthorized("worng otp, please try again")
+            raise AppException.Unauthorized("Wrong otp, please try again")
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
         self.customer_repository.update_by_id(
@@ -342,7 +352,7 @@ class CustomerController(Notifier):
         new_pin = data.get("pin")
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
-            raise AppException.NotFoundException("User not found")
+            raise AppException.NotFoundException("user does not exist")
         if customer.auth_token != password_token:
             raise AppException.Unauthorized("Something went wrong, please try again")
 
@@ -369,13 +379,16 @@ class CustomerController(Notifier):
             customer.id,
             {"auth_token": auth_token, "auth_token_expiration": auth_token_expiration},
         )
-        self.notify(
-            SMSNotificationHandler(
-                recipient=customer.phone_number,
-                details={"verification_code": auth_token},
-                meta={"type": "sms_notification", "subtype": "otp"},
+        try:
+            self.notify(
+                SMSNotificationHandler(
+                    recipient=customer.phone_number,
+                    details={"verification_code": auth_token},
+                    meta={"type": "sms_notification", "subtype": "otp"},
+                )
             )
-        )
+        except Exception as e:
+            raise AppException.InternalServerError(str(e))
         return Result({"id": customer.id}, 200)
 
     def reset_phone(self, data):
@@ -389,16 +402,10 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find_by_id(data.get("customer_id"))
         if not customer:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
-        if not customer.auth_token:
-            raise AppException.ExpiredTokenException("token expired")
         if all([customer.auth_token != auth_token, auth_token != "666666"]):
             raise AppException.BadRequest("Invalid token")
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
-        customer_id = data.get("customer_id")
-        customer = self.customer_repository.find_by_id(customer_id)
-        if not customer:
-            raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
         self.customer_repository.update_by_id(
             customer.id,
             {
@@ -407,13 +414,16 @@ class CustomerController(Notifier):
                 "new_phone_number": phone_number,
             },
         )
-        self.notify(
-            SMSNotificationHandler(
-                recipient=customer.new_phone_number,
-                details={"verification_code": auth_token},
-                meta={"type": "sms_notification", "subtype": "otp"},
+        try:
+            self.notify(
+                SMSNotificationHandler(
+                    recipient=customer.new_phone_number,
+                    details={"verification_code": auth_token},
+                    meta={"type": "sms_notification", "subtype": "otp"},
+                )
             )
-        )
+        except Exception as e:
+            raise AppException.InternalServerError(str(e))
         return Result({"id": customer.id}, 200)
 
     def request_phone_reset(self, data):
@@ -448,23 +458,26 @@ class CustomerController(Notifier):
 
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
-            raise AppException.NotFoundException("User not found")
+            raise AppException.NotFoundException("user does not exist")
 
         if not customer.auth_token:
             raise AppException.ExpiredTokenException("token expired")
         elif all([customer.auth_token != auth_token, auth_token != "666666"]):
-            raise AppException.BadRequest("Invalid token")
+            raise AppException.ValidationException("Invalid token")
 
         self.auth_service.reset_password(
             {"user_id": str(customer.auth_service_id), "new_password": new_pin}
         )
-        self.notify(
-            SMSNotificationHandler(
-                recipient=customer.phone_number,
-                details={"name": customer.full_name},
-                meta={"type": "sms_notification", "subtype": "pin_change"},
+        try:
+            self.notify(
+                SMSNotificationHandler(
+                    recipient=customer.phone_number,
+                    details={"name": customer.full_name},
+                    meta={"type": "sms_notification", "subtype": "pin_change"},
+                )
             )
-        )
+        except Exception as e:
+            raise AppException.InternalServerError(str(e))
         self.customer_repository.update_by_id(
             customer.id,
             {"auth_token": None, "auth_token_expiration": None},

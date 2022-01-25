@@ -49,7 +49,6 @@ class TestCustomerRoutes(BaseTestCase):
         """
         # self.test_a_create_route()
         lead = self.customer_controller.register({"phone_number": str(phone_number)})
-        lead.value.get("id")
         leader = self.lead_repository.find_by_id(obj_id=lead.value.get("id"))
         token_data = {"id": lead.value.get("id"), "token": leader.otp}
         with self.client:
@@ -333,6 +332,24 @@ class TestCustomerRoutes(BaseTestCase):
                 },
             )
             self.assert_status(response, 200)
+            data = response.json
+            return data
+
+    def test_pq_reset_phone(self):
+        """
+        reset phone
+        """
+        data = self.test_o_request_reset_phone()
+        customer = self.customer_repository.find({"phone_number": str(phone_number)})
+        with self.client:
+            response = self.client.post(
+                f"/api/v1/customers/reset-phone/{customer.id}",
+                json={
+                    "new_phone_number": str(phone_number),
+                    "token": data.get("token"),
+                },
+            )
+            self.assert_status(response, 409)
             data = response.json
             return data
 

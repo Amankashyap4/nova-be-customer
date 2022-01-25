@@ -66,7 +66,7 @@ class AppException:
 
         def __init__(self, context):
 
-            status_code = 400
+            status_code = 409
             AppExceptionCase.__init__(self, status_code, context)
 
     class ResourceDoesNotExist(AppExceptionCase):
@@ -132,3 +132,13 @@ class AppException:
 
             status_code = 400
             AppExceptionCase.__init__(self, status_code, context)
+
+    # class InternalServerError(AppExceptionCase):
+    #     def __init__(self, context="Internal server error"):
+    #         """
+    #         Expired Token
+    #         :param context:
+    #         """
+    #
+    #         status_code = 500
+    #         AppExceptionCase.__init__(self, status_code, context)
