@@ -9,13 +9,15 @@ from unittest.mock import patch
 
 class BaseTestCase(TestCase):
     required_roles = {
-        "realm_access": {
-            "roles": [
-                f"{Config.APP_NAME}_change_password",
-                f"{Config.APP_NAME}_delete_customer",
-                f"{Config.APP_NAME}_show_customer",
-                f"{Config.APP_NAME}_update_customer",
-            ]
+        "resource_access": {
+            "customer": {
+                "roles": [
+                    f"{Config.APP_NAME}_change_password",
+                    f"{Config.APP_NAME}_delete_customer",
+                    f"{Config.APP_NAME}_show_customer",
+                    f"{Config.APP_NAME}_update_customer",
+                ]
+            }
         },
     }
 

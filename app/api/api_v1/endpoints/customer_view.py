@@ -807,7 +807,7 @@ def request_reset_pin():
         required: true
         content:
             application/json:
-                schema: ConfirmTokenSchema
+                schema: RequestResetPinSchema
       responses:
         '200':
           description: returns full_name, id, password_token
@@ -872,12 +872,7 @@ def reset_pin(user_id):
           description: message
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  detail:
-                    type: str
-                    example: Pin modified successfully
+              schema: TokenSchema
         '404':
           description: not found
           content:

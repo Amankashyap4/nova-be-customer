@@ -301,71 +301,93 @@ class CustomerController(Notifier):
 
     def pin_process(self, data):
         phone_number = data.get("phone_number")
-        customer = self.customer_repository.find({"phone_number": phone_number})
-        if not customer:
+        lead_customer = self.lead_repository.find({"phone_number": phone_number})
+        if not lead_customer:
             raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
         otp_token = random.randint(1000, 9999)
         otp_token_expiration = datetime.now() + timedelta(minutes=5)
-        self.customer_repository.update_by_id(
-            customer.id,
-            {"otp_token": otp_token, "otp_token_expiration": otp_token_expiration},
+        self.lead_repository.update_by_id(
+            lead_customer.id,
+            {"otp": otp_token, "otp_expiration": otp_token_expiration},
         )
         try:
             self.notify(
                 SMSNotificationHandler(
-                    recipient=customer.phone_number,
+                    recipient=lead_customer.phone_number,
                     details={"verification_code": otp_token},
-                    meta={"type": "sms_notification", "subtype": "pin_change"},
+                    meta={"type": "sms_notification", "subtype": "pin_process"},
                 )
             )
         except Exception as e:
             raise AppException.InternalServerError(str(e))
-        return Result({"id": customer.id}, 200)
+        return Result({"id": lead_customer.id}, 200)
 
     def reset_pin_process(self, data):
         customer_data = {}
         customer_id = data.get("id")
         otp_pin = data.get("token")
-        customer = self.customer_repository.find_by_id(customer_id)
-        if not customer:
+        lead_customer = self.lead_repository.find_by_id(customer_id)
+        if not lead_customer:
             raise AppException.NotFoundException("user does not exist")
-        if all([customer.otp_token != otp_pin, otp_pin != "6666"]):
+        if all([lead_customer.otp != otp_pin, otp_pin != "6666"]):
             raise AppException.Unauthorized("Wrong otp, please try again")
-        auth_token = random.randint(100000, 999999)
-        auth_token_expiration = datetime.now() + timedelta(minutes=5)
-        self.customer_repository.update_by_id(
-            customer.id,
+        password_token_expiration = datetime.now() + timedelta(minutes=5)
+        password_token = secrets.token_urlsafe(16)
+        self.lead_repository.update_by_id(
+            lead_customer.id,
             {
-                "otp_token": None,
-                "auth_token": auth_token,
-                "auth_token_expiration": auth_token_expiration,
+                "otp": None,
+                "otp_expiration": None,
+                "password_token": password_token,
+                "password_token_expiration": password_token_expiration,
             },
         )
-        customer_data["full_name"] = customer.full_name
-        customer_data["id"] = customer.id
-        customer_data["password_token"] = str(auth_token)
+        customer_data["full_name"] = lead_customer.full_name
+        customer_data["id"] = lead_customer.id
+        customer_data["password_token"] = password_token
         return Result(customer_data, 200)
 
     def process_reset_pin(self, data):
         customer_id = data.get("customer_id")
         password_token = data.get("password_token")
         new_pin = data.get("pin")
-        customer = self.customer_repository.find_by_id(customer_id)
-        if not customer:
+        lead_customer = self.lead_repository.find_by_id(customer_id)
+
+        if not lead_customer:
             raise AppException.NotFoundException("user does not exist")
-        if customer.auth_token != password_token:
+        if lead_customer.password_token != password_token:
             raise AppException.Unauthorized("Something went wrong, please try again")
+        user_data = {
+            "username": str(lead_customer.id),
+            "first_name": lead_customer.full_name,
+            "last_name": lead_customer.full_name,
+            "password": new_pin,
+            "group": "customer",
+        }
 
-        self.auth_service.reset_password(
-            {"user_id": str(customer.auth_service_id), "new_password": new_pin}
-        )
-
-        self.customer_repository.update_by_id(
-            customer.id,
-            {"auth_token": None, "auth_token_expiration": None},
-        )
-
-        return Result({"detail": "Pin modified successfully"}, 200)
+        # Create user in auth service
+        auth_result = self.auth_service.create_user(user_data)
+        if auth_result and auth_result.get("id"):
+            self.lead_repository.update_by_id(
+                lead_customer.id,
+                {"password_token": ""},
+            )
+            customer_data = {
+                "id": lead_customer.id,
+                "phone_number": lead_customer.phone_number,
+                "full_name": lead_customer.full_name,
+                "birth_date": lead_customer.birth_date,
+                "id_type": lead_customer.id_type,
+                "id_number": lead_customer.id_number,
+                "status": "active",
+                "auth_service_id": auth_result.get("id"),
+                "id_expiry_date": lead_customer.id_expiry_date,
+            }
+            self.customer_repository.create(customer_data)
+            auth_result.pop("id", None)
+            return Result(auth_result, 200)
+        else:
+            raise AppException.Unauthorized("Something went wrong, please try again")
 
     def reset_phone_request(self, data):
         phone_number = data.get("phone_number")
