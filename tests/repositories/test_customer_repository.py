@@ -1,37 +1,43 @@
 import uuid
-from core.exceptions import AppException
+import random
 from app.utils import IDEnum
+from datetime import datetime
+from core.exceptions import AppException
 from tests.utils.base_test_case import BaseTestCase
+from app.repositories import CustomerRepository, LeadRepository
 
 
 class TestCustomerRepository(BaseTestCase):
     auth_service_id = str(uuid.uuid4())
+    lead_repository = LeadRepository()
+    customer_repository = CustomerRepository()
+    phone_number = random.randint(1000000000, 9999999999)
 
     customer_data = {
-        "phone_number": "00233242583061",
-        "first_name": "John",
-        "last_name": "Doe",
+        "phone_number": str(phone_number),
+        "full_name": "John",
+        "birth_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
+        "id_expiry_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
         "id_type": "passport",
         "id_number": "4829h9445839",
         "auth_service_id": auth_service_id,
     }
 
-    def test_create(self):
+    def test_1_create(self):
         customer = self.customer_repository.create(self.customer_data)
-        self.assertEqual(customer.first_name, "John")
+        self.assertEqual(customer.full_name, "John")
+        self.customer_repository.delete(customer.id)
 
-    def test_update(self):
+    def test_2_update(self):
         customer = self.customer_repository.create(self.customer_data)
-
-        self.assertEqual(customer.first_name, "John")
-
+        self.assertEqual(customer.full_name, "John")
         updated_customer = self.customer_repository.update_by_id(
-            customer.id, {"first_name": "Joe"}
+            customer.id, {"full_name": "John Joe"}
         )
+        self.assertEqual(updated_customer.full_name, "John Joe")
+        self.customer_repository.delete(customer.id)
 
-        self.assertEqual(updated_customer.first_name, "Joe")
-
-    def test_delete(self):
+    def test_3_delete(self):
         customer = self.customer_repository.create(self.customer_data)
         customer_search = self.customer_repository.find_by_id(customer.id)
 
@@ -43,9 +49,9 @@ class TestCustomerRepository(BaseTestCase):
         with self.assertRaises(AppException.NotFoundException):
             self.customer_repository.find_by_id(customer.id)
 
-    def test_required_fields(self):
+    def test_4_required_fields(self):
         customer_data = {
-            "last_name": "Doe",
+            "full_name": "Doe",
             "id_type": "passport",
             "id_number": "4829h9445839",
         }
@@ -53,8 +59,9 @@ class TestCustomerRepository(BaseTestCase):
         with self.assertRaises(AppException.OperationError):
             self.customer_repository.create(customer_data)
 
-    def test_duplicates(self):
+    def test_5_duplicates(self):
         self.customer_repository.create(self.customer_data)
 
         with self.assertRaises(AppException.OperationError):
             self.customer_repository.create(self.customer_data)
+        # self.customer_repository.delete(customer.id)

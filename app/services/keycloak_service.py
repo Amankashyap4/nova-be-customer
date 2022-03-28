@@ -43,7 +43,6 @@ class AuthService(AuthServiceInterface):
 
         # create keycloak uri for token login
         url = URI + REALM_PREFIX + REALM + AUTH_ENDPOINT
-
         response = requests.post(url, data=data)
 
         # handle error if its anything more than a 200 as a 200 response is the
@@ -180,7 +179,8 @@ class AuthService(AuthServiceInterface):
     def assign_group(self, user_id, group):
         endpoint = "/users/" + user_id + "/groups/" + group.get("id")
         url = URI + REALM_URL + REALM + endpoint
-        headers = self.headers or self.get_keycloak_headers()
+        # headers = self.headers or self.get_keycloak_headers()
+        headers = self.get_keycloak_headers()
         response = requests.put(url, headers=headers)
         if response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
@@ -201,6 +201,36 @@ class AuthService(AuthServiceInterface):
         self.keycloak_put(url, data)
         return True
 
+    def update_user(self, user_id, data):
+        import json
+
+        assert user_id, "user_id is required"
+        endpoint = "/users/" + user_id
+        url = URI + REALM_URL + REALM + endpoint
+        headers = self.get_keycloak_headers()
+        # headers = self.headers or self.get_keycloak_headers()
+        response = requests.put(url, headers=headers, data=json.dumps(data))
+        if response.status_code >= 300:
+            raise AppException.KeyCloakAdminException(
+                {constants.KEYCLOAK_ERROR: [response.json().get("errorMessage")]},
+                status_code=response.status_code,
+            )
+        return True
+
+    def delete_user(self, user_id):
+        assert user_id, "user_id is required"
+        endpoint = "/users/" + user_id
+        url = URI + REALM_URL + REALM + endpoint
+        # headers = self.headers or self.get_keycloak_headers()
+        headers = self.get_keycloak_headers()
+        response = requests.delete(url, headers=headers)
+        if response.status_code >= 300:
+            raise AppException.KeyCloakAdminException(
+                {constants.KEYCLOAK_ERROR: [response.json().get("errorMessage")]},
+                status_code=response.status_code,
+            )
+        return True
+
     def keycloak_post(self, endpoint, data):
         """
         Make a POST request to Keycloak
@@ -209,7 +239,8 @@ class AuthService(AuthServiceInterface):
         :return {Response} request response object
         """
         url = URI + REALM_URL + REALM + endpoint
-        headers = self.headers or self.get_keycloak_headers()
+        # headers = self.headers or self.get_keycloak_headers()
+        headers = self.get_keycloak_headers()
         response = requests.post(url, headers=headers, json=data)
         if response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
@@ -226,7 +257,8 @@ class AuthService(AuthServiceInterface):
         :return {Response} request response object
         """
         url = URI + REALM_URL + REALM + endpoint
-        headers = self.headers or self.get_keycloak_headers()
+        # headers = self.headers or self.get_keycloak_headers()
+        headers = self.get_keycloak_headers()
         response = requests.put(url, headers=headers, json=data)
         if response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
@@ -240,6 +272,12 @@ class AuthService(AuthServiceInterface):
         """
         :returns {string} Keycloak admin user access_token
         """
+        # data = {
+        #     "grant_type": "password",
+        #     "client_id": "admin-cli",
+        #     "username": config.Config.KEYCLOAK_ADMIN_USER,
+        #     "password": config.Config.KEYCLOAK_ADMIN_PASSWORD,
+        # }
         data = {
             "grant_type": "password",
             "client_id": "admin-cli",
@@ -267,12 +305,13 @@ class AuthService(AuthServiceInterface):
         :return {object}  Object of keycloak headers
         """
 
-        if self.headers:
-            return self.headers
+        # if self.headers:
+        #     return self.headers
 
         headers = {
             "Authorization": "Bearer " + self.get_keycloak_access_token(),
             "Content-Type": "application/json",
         }
         self.headers = headers
+
         return headers

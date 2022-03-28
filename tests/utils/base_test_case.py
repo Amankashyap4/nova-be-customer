@@ -1,4 +1,3 @@
-import os
 from flask_testing import TestCase
 from app import create_app, db
 from app.controllers import CustomerController
@@ -10,13 +9,15 @@ from unittest.mock import patch
 
 class BaseTestCase(TestCase):
     required_roles = {
-        "realm_access": {
-            "roles": [
-                f"{Config.APP_NAME}_change_password",
-                f"{Config.APP_NAME}_delete_customer",
-                f"{Config.APP_NAME}_show_customer",
-                f"{Config.APP_NAME}_update_customer",
-            ]
+        "resource_access": {
+            "customer": {
+                "roles": [
+                    f"{Config.APP_NAME}_change_password",
+                    f"{Config.APP_NAME}_delete_customer",
+                    f"{Config.APP_NAME}_show_customer",
+                    f"{Config.APP_NAME}_update_customer",
+                ]
+            }
         },
     }
 
@@ -73,16 +74,13 @@ class BaseTestCase(TestCase):
         db.session.remove()
         db.drop_all()
 
-        file = f"{Config.SQL_DB_NAME}.sqlite3"
-        os.remove(file)
-
     def dummy_kafka_method(self, topic, value):
         return True
 
-    def required_roles_side_effect(  # noqa
-        self, token, key, algorithms, audience, issuer
+    def required_roles_side_effect(
+        self, token, key, algorithms, options, audience=None, issuer=None
     ):
         return self.required_roles
 
-    def utc_side_effect(self, args):  # noqa
+    def utc_side_effect(self, args):
         return args

@@ -26,3 +26,9 @@ class MockAuthService(AuthServiceInterface):
 
     def reset_password(self, param):
         return True
+
+    def delete_user(self, data):
+        return True
+
+    def update_user(self, id, data):
+        return True

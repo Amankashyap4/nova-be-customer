@@ -1,16 +1,17 @@
 """empty message
 
-Revision ID: ce4983186a96
+Revision ID: a3301f044a79
 Revises:
-Create Date: 2021-07-08 15:18:10.244031
+Create Date: 2021-12-07 18:11:23.395527
 
 """
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
 
+
 # revision identifiers, used by Alembic.
-revision = "ce4983186a96"
+revision = "a3301f044a79"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,9 +22,9 @@ def upgrade():
     op.create_table(
         "customer",
         sa.Column("id", UUID(), nullable=False),
-        sa.Column("phone_number", sa.String(length=0), nullable=True),
-        sa.Column("first_name", sa.String(length=60), nullable=False),
-        sa.Column("last_name", sa.String(length=60), nullable=False),
+        sa.Column("phone_number", sa.String(), nullable=True),
+        sa.Column("full_name", sa.String(length=60), nullable=False),
+        sa.Column("birth_date", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
             "id_type",
             sa.Enum(
@@ -38,6 +39,8 @@ def upgrade():
             sa.Enum("active", "inactive", "blocked", "first_time", name="status"),
             nullable=False,
         ),
+        sa.Column("auth_token", sa.String(length=6), nullable=True),
+        sa.Column("auth_token_expiration", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
             "created",
             sa.DateTime(timezone=True),
@@ -57,8 +60,8 @@ def upgrade():
         "lead",
         sa.Column("id", UUID(), nullable=False),
         sa.Column("phone_number", sa.String(length=0), nullable=False),
-        sa.Column("first_name", sa.String(length=60), nullable=False),
-        sa.Column("last_name", sa.String(length=60), nullable=False),
+        sa.Column("full_name", sa.String(length=60), nullable=False),
+        sa.Column("birth_date", sa.DateTime(timezone=True), nullable=True),
         sa.Column("id_type", sa.String(length=20), nullable=False),
         sa.Column("id_number", sa.String(length=20), nullable=False),
         sa.Column("otp", sa.String(length=6), nullable=False),

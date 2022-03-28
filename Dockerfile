@@ -13,7 +13,10 @@ FROM base
 
 COPY --from=builder /install /usr/local
 
-COPY . /app
+COPY . /app_dir
 
-WORKDIR /app
+WORKDIR /app_dir
+
+EXPOSE 5000
+
 CMD "./gunicorn_starter.sh"

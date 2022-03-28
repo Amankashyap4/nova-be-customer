@@ -52,3 +52,21 @@ class AuthServiceInterface(metaclass=abc.ABCMeta):
         """
 
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def update_user(self, data):
+        """
+        :param data: data to update user with
+        :return:
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def delete_user(self, data):
+        """
+        :param data: data to delete user with
+        :return:
+        """
+
+        raise NotImplementedError

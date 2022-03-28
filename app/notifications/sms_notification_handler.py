@@ -1,5 +1,9 @@
+import os
+
 from core import NotificationHandler
 from app.producer import publish_to_kafka
+
+KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", default="SMS_NOTIFICATION")
 
 
 class SMSNotificationHandler(NotificationHandler):
@@ -28,4 +32,4 @@ class SMSNotificationHandler(NotificationHandler):
             "recipient": self.recipient,
         }
 
-        publish_to_kafka("SMS_NOTIFICATION", data)
+        publish_to_kafka(KAFKA_TOPIC, data)

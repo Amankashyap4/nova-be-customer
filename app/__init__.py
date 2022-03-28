@@ -1,12 +1,19 @@
 import os
+import sys
 import logging
 
 from flask import Flask, jsonify, has_request_context, request
 from flask.logging import default_handler
 from flask_mongoengine import MongoEngine
 from sqlalchemy.exc import DBAPIError
-from core.extensions import db, migrate, ma
 
+
+from flask_cors import CORS, cross_origin
+
+base_dir = os.getcwd()
+sys.path.append(base_dir)
+
+from core.extensions import db, migrate, ma
 from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import import_string
@@ -18,11 +25,12 @@ from core.exceptions.app_exceptions import (
     AppExceptionCase,
 )
 
+
 APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to application_top
 dotenv_path = os.path.join(APP_ROOT, ".env")
 
 # SWAGGER
-SWAGGER_URL = "/api/docs"
+SWAGGER_URL = "/api/customer/docs"
 API_URL = "/static/swagger.json"
 
 SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
@@ -56,7 +64,7 @@ def create_app(config="config.DevelopmentConfig"):
     basedir = os.path.abspath(os.path.dirname(__file__))
     path = os.path.join(basedir, "../instance")
     app = Flask(__name__, instance_relative_config=False, instance_path=path)
-
+    CORS(app=app, support_credentials=True)
     app.logger.addHandler(default_handler)
     with app.app_context():
         environment = os.getenv("FLASK_ENV")
