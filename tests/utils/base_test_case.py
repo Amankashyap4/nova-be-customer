@@ -52,7 +52,7 @@ class BaseTestCase(TestCase):
         )
         self.addCleanup(kafka_patcher.stop)
         kafka_patcher.start()
-        patcher = patch("core.utils.auth.jwt.decode", self.required_roles_side_effect)
+        patcher = patch("app.core.utils.auth.jwt.decode", self.required_roles_side_effect)
         self.addCleanup(patcher.stop)
         patcher.start()
         utc_patcher = patch(

@@ -7,7 +7,7 @@ authors = ["Joseph Maclean Arhin <josephmacleanarhin@outlook.com>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 pip = "21.1.2"
-Flask = "^1.1.2"
+Flask = "2.0.3"
 kafka-python = "^2.0.2"
 Flask-SQLAlchemy = "^2.5.1"
 psycopg2-binary = "^2.8.6"

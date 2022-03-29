@@ -2,7 +2,7 @@ import uuid
 import random
 from app.utils import IDEnum
 from datetime import datetime
-from core.exceptions import AppException
+from app.core.exceptions import AppException
 from tests.utils.base_test_case import BaseTestCase
 from app.repositories import CustomerRepository, LeadRepository
 

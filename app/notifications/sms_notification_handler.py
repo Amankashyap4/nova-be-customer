@@ -1,6 +1,6 @@
 import os
 
-from core import NotificationHandler
+from app.core import NotificationHandler
 from app.producer import publish_to_kafka
 
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", default="SMS_NOTIFICATION")

@@ -2,8 +2,8 @@ import requests
 import config
 from dataclasses import dataclass
 from app import constants
-from core.exceptions import AppException
-from core.service_interfaces.auth_service_interface import (
+from app.core.exceptions import AppException
+from app.core.service_interfaces.auth_service_interface import (
     AuthServiceInterface,
 )
 

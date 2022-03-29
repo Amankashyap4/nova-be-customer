@@ -8,19 +8,19 @@ from flask_mongoengine import MongoEngine
 from sqlalchemy.exc import DBAPIError
 
 
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 base_dir = os.getcwd()
 sys.path.append(base_dir)
 
-from core.extensions import db, migrate, ma
+from app.core.extensions import db, migrate, ma
 from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import import_string
 
 # load dotenv in the base root
 from app.api_spec import spec
-from core.exceptions.app_exceptions import (
+from app.core.exceptions.app_exceptions import (
     app_exception_handler,
     AppExceptionCase,
 )
@@ -30,7 +30,7 @@ APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to applicatio
 dotenv_path = os.path.join(APP_ROOT, ".env")
 
 # SWAGGER
-SWAGGER_URL = "/api/customer/docs"
+SWAGGER_URL = "/api/v1/customer/docs"
 API_URL = "/static/swagger.json"
 
 SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
@@ -82,7 +82,7 @@ def create_app(config="config.DevelopmentConfig"):
 
 def register_extensions(flask_app):
     """Register Flask extensions."""
-    from core.factory import factory
+    from app.core.factory import factory
 
     if flask_app.config["DB_ENGINE"] == "MONGODB":
         me = MongoEngine()

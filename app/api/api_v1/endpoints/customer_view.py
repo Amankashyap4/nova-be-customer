@@ -2,7 +2,7 @@ import pinject
 from flask import Blueprint, request
 
 from app.controllers import CustomerController
-from core.service_result import handle_result
+from app.core.service_result import handle_result
 from app.repositories import CustomerRepository, LeadRepository
 from app.schema import (
     CustomerSchema,
@@ -24,7 +24,7 @@ from app.schema import (
     ResetPhoneSchema,
 )
 from app.services import AuthService
-from core.utils import validator, auth_required
+from app.core.utils import validator, auth_required
 
 customer = Blueprint("customer", __name__)
 

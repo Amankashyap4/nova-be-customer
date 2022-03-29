@@ -13,19 +13,23 @@ class Customer(db.Model):
     id: str
     phone_number: str
     full_name: str
+    email: str
     birth_date: datetime.datetime
     id_expiry_date: datetime.datetime
     id_type: str
     id_number: str
     status: str
+    otp: str
+    otp_expiration: datetime.datetime
     created: datetime.datetime
     modified: datetime.datetime
 
-    __tablename__ = "customer"
+    __tablename__ = "customers"
 
     id = db.Column(db.GUID(), primary_key=True, default=uuid.uuid4)
     phone_number = db.Column(db.String(), unique=True)
     full_name = db.Column(db.String(60), nullable=False)
+    email = db.Column(db.String(60), nullable=False)
     birth_date = db.Column(db.DateTime(timezone=True))
     id_expiry_date = db.Column(db.DateTime(timezone=True))
     id_type = db.Column(
@@ -47,6 +51,6 @@ class Customer(db.Model):
         server_default=func.now(),
         onupdate=func.now(),
     )
-    new_phone_number = db.Column(db.String(60), nullable=True)
+    # new_phone_number = db.Column(db.String(60), nullable=True)
     otp_token = db.Column(db.String(4), nullable=True)
     otp_token_expiration = db.Column(db.DateTime(timezone=True))

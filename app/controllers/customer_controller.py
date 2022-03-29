@@ -3,10 +3,10 @@ import secrets
 import pytz
 from datetime import datetime, timedelta
 
-from core import Result
-from core.exceptions import AppException
-from core.notifier import Notifier
-from core.service_interfaces import AuthServiceInterface
+from app.core import Result
+from app.core.exceptions import AppException
+from app.core.notifier import Notifier
+from app.core.service_interfaces import AuthServiceInterface
 from app.repositories import CustomerRepository, LeadRepository
 from app.notifications import SMSNotificationHandler
 
@@ -25,6 +25,10 @@ class CustomerController(Notifier):
         self.lead_repository = lead_repository
         self.customer_repository = customer_repository
         self.auth_service = auth_service
+
+    def index(self):
+        result = self.customer_repository.index()
+        return Result(result, 200)
 
     def show(self, customer_id):
         customer = self.customer_repository.find_by_id(customer_id)

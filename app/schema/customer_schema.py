@@ -20,6 +20,7 @@ class CustomerSignUpSchema(Schema):
 class CustomerInfoSchema(Schema):
     id = fields.UUID()
     full_name = fields.Str(required=True, validate=validate.Length(min=2))
+    email = fields.Email(required=True)
     birth_date = fields.Date(required=False)
     id_expiry_date = fields.Date(required=True)
     id_type = EnumField(IDEnum, required=True)
@@ -30,6 +31,7 @@ class CustomerInfoSchema(Schema):
         fields = [
             "id",
             "full_name",
+            "email",
             "birth_date",
             "id_expiry_date",
             "id_type",
@@ -51,6 +53,7 @@ class CustomerSchema(Schema):
     id = fields.UUID()
     phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
     full_name = fields.Str(validate=validate.Length(min=2))
+    email = fields.Email()
     birth_date = fields.Date()
     id_expiry_date = fields.Date()
     id_type = EnumField(IDEnum)
@@ -64,6 +67,7 @@ class CustomerSchema(Schema):
             "id",
             "phone_number",
             "full_name",
+            "email",
             "birth_date",
             "id_expiry_date",
             "id_type",
@@ -76,6 +80,7 @@ class CustomerSchema(Schema):
 
 class CustomerUpdateSchema(Schema):
     full_name = fields.Str(validate=validate.Length(min=2))
+    email = fields.Email()
     birth_date = fields.Date()
     id_expiry_date = fields.Date()
     id_type = EnumField(IDEnum)
@@ -93,6 +98,7 @@ class CustomerUpdateSchema(Schema):
 
 class CustomerAddInfoSchema(Schema):
     full_name = fields.Str(validate=validate.Length(min=2))
+    email = fields.Email()
     birth_date = fields.Date()
     id_expiry_date = fields.Date()
     id_type = fields.Str(required=True)
@@ -103,6 +109,7 @@ class CustomerAddInfoSchema(Schema):
     class Meta:
         fields = [
             "full_name",
+            "email",
             "birth_date",
             "id_expiry_date",
             "id_type",
