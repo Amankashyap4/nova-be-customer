@@ -2,15 +2,13 @@ import os
 import sys
 from logging.config import dictConfig
 
-from flask import Flask, has_request_context, jsonify, request
+from flask import Flask, jsonify
 from flask.logging import default_handler
 from flask_mongoengine import MongoEngine
 from flask_swagger_ui import get_swaggerui_blueprint
 from sqlalchemy.exc import DBAPIError
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import import_string
-
-from app.utils.log_config import log_config
 
 # add app to system path
 sys.path.insert(
@@ -21,6 +19,7 @@ sys.path.insert(
 from app.api_spec import spec
 from app.core.exceptions.app_exceptions import AppExceptionCase, app_exception_handler
 from app.core.extensions import cors, db, ma, migrate
+from app.utils.log_config import log_config
 
 APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to application_top
 dotenv_path = os.path.join(APP_ROOT, ".env")
