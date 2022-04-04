@@ -1,15 +1,16 @@
-import logging
 import os
 import sys
+from logging.config import dictConfig
 
 from flask import Flask, has_request_context, jsonify, request
 from flask.logging import default_handler
-from flask_cors import CORS
 from flask_mongoengine import MongoEngine
 from flask_swagger_ui import get_swaggerui_blueprint
 from sqlalchemy.exc import DBAPIError
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import import_string
+
+from app.utils.log_config import log_config
 
 # add app to system path
 sys.path.insert(
@@ -19,7 +20,7 @@ sys.path.insert(
 # load dotenv in the base root
 from app.api_spec import spec
 from app.core.exceptions.app_exceptions import AppExceptionCase, app_exception_handler
-from app.core.extensions import db, ma, migrate
+from app.core.extensions import cors, db, ma, migrate
 
 APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to application_top
 dotenv_path = os.path.join(APP_ROOT, ".env")
@@ -29,29 +30,10 @@ SWAGGER_URL = "/api/v1/customer/docs"
 API_URL = "/static/swagger.json"
 
 SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
-    SWAGGER_URL, API_URL, config={"app_name": "Python-Flask-REST-Boilerplate"}
+    SWAGGER_URL, API_URL, config={"app_name": "Nova Customer Service"}
 )
 
-
-class RequestFormatter(logging.Formatter):
-    def format(self, record):
-        if has_request_context():
-            record.url = request.url
-            record.remote_addr = request.remote_addr
-        else:
-            record.url = None
-            record.remote_addr = None
-
-        return super().format(record)
-
-
-formatter = RequestFormatter(
-    "[%(asctime)s] %(remote_addr)s requested %(url)s\n"
-    "%(levelname)s in %(module)s: %(message)s"
-)
-default_handler.setFormatter(formatter)
-default_handler.setLevel(logging.ERROR)
-default_handler.setLevel(logging.INFO)
+dictConfig(log_config())
 
 
 def create_app(config="config.DevelopmentConfig"):
@@ -59,8 +41,8 @@ def create_app(config="config.DevelopmentConfig"):
     basedir = os.path.abspath(os.path.dirname(__file__))
     path = os.path.join(basedir, "../instance")
     app = Flask(__name__, instance_relative_config=False, instance_path=path)
-    CORS(app=app, support_credentials=True)
-    app.logger.addHandler(default_handler)
+    app.logger.removeHandler(default_handler)
+
     with app.app_context():
         environment = os.getenv("FLASK_ENV")
         cfg = import_string(config)()
@@ -89,6 +71,7 @@ def register_extensions(flask_app):
             db.create_all()
     factory.init_app(flask_app, db)
     ma.init_app(flask_app)
+    cors.init_app(flask_app, resources={r"/api/*": {"origins": "*"}}, allow_headers="*")
 
     @flask_app.errorhandler(HTTPException)
     def handle_http_exception(e):

@@ -1,6 +1,9 @@
 """OpenAPI v3 Specification"""
 
 # apispec via OpenAPI
+import json
+import os
+
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
@@ -36,11 +39,19 @@ def enum_to_properties(self, field, **kwargs):
 
 marshmallow_plugin = MarshmallowPlugin()
 
+# get swagger.json file path
+swagger_json_path = os.path.dirname(__file__) + "/static/swagger.json"
+
+# load swagger.json file
+with open(swagger_json_path) as apispec_info:
+    spec_info = json.load(apispec_info).get("info")
+
 spec = APISpec(
-    title="Nova Customer Service",
+    title=spec_info.get("title"),
     version="1.0.0",
     openapi_version="3.0.2",
     plugins=[FlaskPlugin(), marshmallow_plugin],
+    info=spec_info,
 )
 
 marshmallow_plugin.converter.add_attribute_function(enum_to_properties)

@@ -1,10 +1,12 @@
 {
     "info": {
-    "description": "This is a boilerplate project",
-    "version": "1.0.0",
-    "title": "App Boilerplate",
+    "description": "Documentation for all available endpoints.",
+    "version": "1.0.1",
+    "title": "Nova Customer Service",
     "contact": {
-      "email": "jarhin@quantumgroup.com"
+      "name": "API Documentation Support",
+      "email": "michaelasumadu1@gmail.com",
+      "url": ""
     },
     "license": {
       "name": "MIT",
