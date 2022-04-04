@@ -1,14 +1,14 @@
+# This is a basic workflow to help you get started with Actions
+
 name: Build and Push to Docker Registry
 
 # Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches:
-      - develop
+    branches: [ develop ]
   pull_request:
-    branches:
-      - develop
+    branches: [ develop ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -20,17 +20,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.8]
-        poetry-version: [1.1.4]
+        python-version: [3.9]
+        poetry-version: [1.1.12]
     # The type of runner that the job will run on
     runs-on: self-hosted
     env:
       DB_NAME: test
-      TEST_DB_SERVER: .
       FLASK_ENV: testing
       SECRET_KEY: samplesecretkey
-      KEYCLOAK_ADMIN_USER: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - uses: actions/checkout@v2
@@ -55,9 +52,6 @@ jobs:
         shell: bash
         run: poetry install
 
-      # - name: Run pre-commit
-      #   uses: pre-commit/action@v2.0.2
-
       - name: Test with pytest
         run: |
           poetry run python -m pytest -v tests
@@ -75,8 +69,7 @@ jobs:
           images: registry.digitalocean.com/quantum-private-registry/nova-be-customer
           tags: |
             type=ref,event=branch
-            type=sha,prefix={{branch}}-
-
+            type=sha,prefix={{branch}}
 
       - name: Login to Docker
         uses: docker/login-action@v1
