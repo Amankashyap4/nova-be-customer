@@ -1,128 +1,441 @@
 import uuid
-import random
+from datetime import datetime, timedelta
+from time import sleep
+
+import pytest
+
+from app.core import Result
 from app.core.exceptions import AppException
-from app.utils import IDEnum
-from tests.utils.base_test_case import BaseTestCase
-from app.repositories import CustomerRepository, LeadRepository
-from unittest import mock
+from app.models import CustomerModel
+from tests.base_test_case import BaseTestCase
 
 
 class TestCustomerController(BaseTestCase):
+    @pytest.mark.controller
+    def test_index(self):
+        result = self.customer_controller.index()
+        self.assertIsInstance(result, Result)
+        self.assert200(result)
+        self.assertIsInstance(result.value, list)
+        self.assertIsInstance(result.value[0], CustomerModel)
 
-    auth_service_id = str(uuid.uuid4())
-
-    from datetime import datetime
-
-    lead_repository = LeadRepository()
-    customer_repository = CustomerRepository()
-    phone_number = random.randint(1000000000, 9999999999)
-
-    customer_data = {
-        "phone_number": str(phone_number),
-        "full_name": "John",
-        "birth_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
-        "id_expiry_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
-        "id_type": "passport",
-        "id_number": "4829h94458312",
-        "auth_service_id": auth_service_id,
-    }
-
-    @mock.patch("app.services.keycloak_service.AuthService.create_user")
-    def test_pin_process(self, mock_create_user):
-        mock_create_user.side_effect = self.auth_service.create_user
-
-        self.customer_data.pop("auth_service_id")
-        phone_number = self.customer_data.get("phone_number")
-        lead = self.customer_controller.register({"phone_number": phone_number})
-        leader = self.lead_repository.find_by_id(obj_id=lead.value.get("id"))
-        token_response = self.customer_controller.confirm_token(
-            {"id": leader.id, "token": leader.otp}
+    @pytest.mark.controller
+    def test_register_customer(self):
+        result = self.customer_controller.register(
+            self.customer_test_data.register_customer
         )
-        self.customer_data["id"] = leader.id
-        self.customer_data["conformation_token"] = token_response.value.get(
-            "conformation_token"
+        self.assertIsInstance(result, Result)
+        self.assertIn("id", result.value)
+        self.assertEqual(result.status_code, 201)
+        with self.assertRaises(AppException.ResourceExists) as obj_exist:
+            self.customer_controller.register(self.customer_test_data.register_customer)
+        self.assertTrue(obj_exist.exception)
+        self.assertEqual(obj_exist.exception.status_code, 409)
+
+    @pytest.mark.controller
+    def test_confirm_token(self):
+        self.customer_controller.register(self.customer_test_data.register_customer)
+        result = CustomerModel.query.filter_by(
+            phone_number=self.customer_test_data.register_customer.get("phone_number")
+        ).first()
+        self.assertIsNotNone(result.otp_token)
+        self.assertIsNotNone(result.otp_token_expiration)
+        data = {"id": result.id, "token": result.otp_token}
+        confirm_token = self.customer_controller.confirm_token(data)
+        self.assertIsNotNone(confirm_token)
+        self.assertIsInstance(confirm_token, Result)
+        self.assert200(confirm_token)
+        with self.assertRaises(AppException.ExpiredTokenException) as expired_otp:
+            result.otp_token_expiration = datetime.now() + timedelta(seconds=1)
+            sleep(1)
+            self.customer_controller.confirm_token(data)
+        self.assertTrue(expired_otp.exception)
+        self.assert400(expired_otp.exception)
+        with self.assertRaises(AppException.BadRequest) as invalid_otp:
+            data["token"] = "00000"
+            self.customer_controller.confirm_token(data)
+        self.assertTrue(invalid_otp.exception)
+        self.assert400(invalid_otp.exception)
+
+    @pytest.mark.controller
+    def test_add_information(self):
+        self.customer_controller.register(self.customer_test_data.register_customer)
+        customer = CustomerModel.query.filter_by(
+            phone_number=self.customer_test_data.register_customer.get("phone_number")
+        ).first()
+        confirm_token = self.customer_controller.confirm_token(
+            {"id": customer.id, "token": customer.otp_token}
         )
+        data = self.customer_test_data.add_information.copy()
+        data["confirmation_token"] = confirm_token.value.get("confirmation_token")
+        data["id"] = customer.id
+        result = self.customer_controller.add_information(data)
+        self.assert200(result)
+        self.assertIsInstance(result, Result)
+        self.assertIsInstance(result.value, dict)
+        self.assertIn("password_token", result.value)
+        self.assertIn("id", result.value)
+        with self.assertRaises(AppException.BadRequest) as bad_request:
+            self.customer_controller.add_information(
+                {"id": uuid.uuid4(), "phone_number": "0203340444"}
+            )
+        self.assertTrue(bad_request.exception)
+        self.assert400(bad_request.exception)
+        with self.assertRaises(AppException.BadRequest) as bad_request:
+            self.customer_controller.add_information(
+                self.customer_test_data.add_information
+            )
+        self.assertTrue(bad_request.exception)
+        self.assert400(bad_request.exception)
 
-        self.customer_controller.add_customer_information(self.customer_data)
-        # After adding information by the customer user wants to discontinue the process.
-        # user requests pin process
-        pin_process_data_response = self.customer_controller.pin_process(
-            {"phone_number": str(phone_number)}
+    @pytest.mark.controller
+    def test_resend_token(self):
+        result = CustomerModel.query.filter_by(
+            phone_number=self.customer_test_data.existing_customer.get("phone_number")
+        ).first()
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(result.id)
+        self.assertIsNone(result.otp_token)
+        self.assertIsNone(result.otp_token_expiration)
+        resend_token = self.customer_controller.resend_token({"id": result.id})
+        self.assertIsNotNone(result.otp_token)
+        self.assertIsNotNone(result.otp_token_expiration)
+        self.assertIsInstance(resend_token, Result)
+        self.assert200(resend_token)
+        with self.assertRaises(AppException.NotFoundException) as bad_request:
+            self.customer_controller.resend_token({"id": uuid.uuid4()})
+        self.assertTrue(bad_request.exception)
+        self.assert404(bad_request.exception)
+
+    @pytest.mark.controller
+    def test_login_customer(self):
+        result = self.customer_controller.login(
+            self.customer_test_data.customer_credential
         )
-        self.assertStatus(pin_process_data_response, 200)
-        self.assertEqual(pin_process_data_response.value.get("id"), leader.id)
-        leader = self.lead_repository.find_by_id(obj_id=lead.value.get("id"))
-        leader.otp, pin_process_data_response.value.get("id")
+        self.assertIsInstance(result, Result)
+        self.assertIsInstance(result.value, dict)
+        self.assertEqual(len(result.value), 2)
+        self.assertIn("access_token", result.value)
+        self.assertIn("refresh_token", result.value)
+        self.assertEqual(result.status_code, 200)
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            credentials = {"phone_number": "2345678921", "pin": "1234"}
+            self.customer_controller.login(credentials)
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            self.customer_controller.update(
+                self.customer_model.id, {"status": "disabled"}
+            )
+            self.customer_controller.login(self.customer_test_data.customer_credential)
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
 
-        # reset request pin
-        reset_process_response = self.customer_controller.reset_pin_process(
-            {"id": leader.id, "token": leader.otp}
+    @pytest.mark.controller
+    def test_update_customer(self):
+        result = self.customer_controller.update(
+            self.customer_model.id, self.customer_test_data.update_customer
         )
-        self.assertStatus(reset_process_response, 200)
-        self.assertEqual(reset_process_response.value.get("full_name"), leader.full_name)
-        password_token = reset_process_response.value.get("password_token")
-        id = reset_process_response.value.get("id")
-        response = self.customer_controller.process_reset_pin(
-            {"customer_id": id, "password_token": password_token, "new_pin": 1234}
+        self.assert200(result)
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, Result)
+        self.assertIsInstance(result.value, CustomerModel)
+        self.assertEqual(
+            result.value.full_name,
+            self.customer_test_data.update_customer.get("full_name"),
         )
-        self.assertStatus(response, 200)
+        with self.assertRaises(AppException.NotFoundException) as not_found:
+            self.customer_controller.update(
+                obj_id=uuid.uuid4(),
+                obj_data=self.customer_test_data.update_customer,
+            )
+        self.assertTrue(not_found.exception)
+        self.assert404(not_found.exception)
 
-    # change_password
-    @mock.patch("app.services.keycloak_service.AuthService.reset_password")
-    @mock.patch("app.services.keycloak_service.AuthService.get_token")
-    def test_change_password(self, mock_reset_password, mock_get_token):  # noqa
-        mock_reset_password.side_effect = self.auth_service.reset_password
-        mock_get_token.side_effect = self.auth_service.get_token
-        customer = self.customer_repository.create(self.customer_data)
-        response = self.customer_controller.change_password(
-            {"customer_id": customer.id, "new_pin": "6666", "old_pin": "1234"}
+    @pytest.mark.controller
+    def test_add_pin(self):
+        result = self.customer_controller.update(
+            self.customer_model.id, {"auth_token": "auth_token"}
         )
-        self.assertStatus(response, 205)
-
-    def test_1_edit_customer(self):
-        customer = self.customer_repository.create(self.customer_data)
-
-        updated_customer = self.customer_repository.update_by_id(
-            customer.id,
-            {"full_name": "Jane"},
+        self.assertIsNotNone(result.value.auth_token)
+        add_pin = self.customer_controller.add_pin(
+            {"password_token": "auth_token", "pin": "1234"}
         )
+        self.assert200(add_pin)
+        self.assertIsInstance(add_pin, Result)
+        self.assertIsInstance(add_pin.value, dict)
+        self.assertIn("id", add_pin.value)
+        with self.assertRaises(AppException.NotFoundException) as not_found:
+            self.customer_controller.add_pin(
+                {"password_token": "not_found", "pin": "1234"}
+            )
+        self.assertTrue(not_found.exception)
+        self.assert404(not_found.exception)
 
-        updated_data = updated_customer
-
-        self.assertEqual(updated_data.id, customer.id)
-        self.assertEqual(updated_data.full_name, "Jane")
-
-        customer_search = self.customer_repository.find_by_id(updated_data.id)
-
-        self.assertEqual(customer_search.id, updated_data.id)
-        self.assertEqual(customer_search.full_name, "Jane")
-        self.customer_repository.delete(customer.id)
-
-    def test_2_delete_customer(self):
-        customer = self.customer_repository.create(self.customer_data)
-
-        self.customer_repository.delete(customer.id)
-
-        with self.assertRaises(AppException.NotFoundException):
-            self.customer_repository.find_by_id(customer.id)
-
-    def test_3_show_customer(self):
-        customer = self.customer_repository.create(self.customer_data)
-        customer_values = self.customer_repository.find_by_id(customer.id)
-
-        self.assertEqual(customer_values.id, customer.id)
-        self.assertEqual(customer_values.full_name, "John")
-        self.assertEqual(customer_values.id_type, IDEnum.passport)
-        self.customer_repository.delete(customer.id)
-
-    def test_4_find_by_phone(self):
-        customer = self.customer_repository.create(self.customer_data)
-
-        customer_values = self.customer_repository.find(
-            {"phone_number": customer.phone_number}
+    @pytest.mark.controller
+    def test_forgot_password(self):
+        result = CustomerModel.query.filter_by(
+            phone_number=self.customer_model.phone_number
+        ).first()
+        self.assertIsNotNone(result)
+        self.assertIsNone(result.otp_token)
+        self.assertIsNone(result.otp_token_expiration)
+        forgot_password = self.customer_controller.forgot_password(
+            self.customer_test_data.existing_customer
         )
+        self.assertIsNotNone(result.otp_token)
+        self.assertIsNotNone(result.otp_token_expiration)
+        self.assertIsInstance(forgot_password, Result)
+        self.assertEqual(forgot_password.status_code, 200)
+        self.assertIsInstance(forgot_password.value, dict)
+        self.assertEqual(len(forgot_password.value), 1)
+        self.assertEqual(forgot_password.value.get("id"), result.id)
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            self.customer_controller.forgot_password(
+                self.customer_test_data.register_customer
+            )
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
 
-        self.assertEqual(customer_values.id, customer.id)
-        self.assertEqual(customer_values.full_name, "John")
-        self.assertEqual(customer_values.id_type, IDEnum.passport)
-        self.customer_repository.delete(customer.id)
+    @pytest.mark.controller
+    def test_reset_password(self):
+        result = CustomerModel.query.filter_by(
+            phone_number=self.customer_model.phone_number
+        ).first()
+        result.auth_token = "auth_token"
+        self.assertIsNotNone(result.pin)
+        self.assertTrue(result.verify_pin("1234"))
+        reset_password = self.customer_controller.reset_password(
+            {"id": result.id, "new_pin": "0000", "token": "auth_token"}
+        )
+        self.assertIsInstance(reset_password, Result)
+        self.assertEqual(reset_password.status_code, 200)
+        self.assertFalse(result.verify_pin("1234"))
+        self.assertTrue(result.verify_pin("0000"))
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            self.customer_controller.reset_password({"id": uuid.uuid4()})
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
+        with self.assertRaises(AppException.ExpiredTokenException) as expired_token:
+            self.customer_controller.reset_password(
+                {"id": result.id, "new_pin": "0000", "token": "no_auth"}
+            )
+        self.assertTrue(expired_token.exception)
+        self.assert400(expired_token.exception)
+        with self.assertRaises(AppException.ValidationException) as not_found_exc:
+            result.auth_token = "new_auth"
+            self.customer_controller.reset_password(
+                {"id": result.id, "new_pin": "0000", "token": "old_auth"}
+            )
+        self.assertTrue(not_found_exc.exception)
+        self.assert400(not_found_exc.exception)
+
+    @pytest.mark.controller
+    def test_change_password(self):
+        result = CustomerModel.query.filter_by(
+            phone_number=self.customer_model.phone_number
+        ).first()
+        self.assertIsNotNone(result.pin)
+        self.assertTrue(result.verify_pin("1234"))
+        data = {"customer_id": result.id, "old_pin": "1234", "new_pin": "0000"}
+        change_password = self.customer_controller.change_password(data)
+        self.assertIsInstance(change_password, Result)
+        self.assertEqual(change_password.status_code, 200)
+        self.assertFalse(result.verify_pin("1234"))
+        self.assertTrue(result.verify_pin("0000"))
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            self.customer_controller.change_password(
+                {"customer_id": uuid.uuid4(), "old_pin": "1234", "new_pin": "0000"}
+            )
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
+
+    @pytest.mark.controller
+    def test_pin_process(self):
+        self.customer_controller.register(self.customer_test_data.register_customer)
+        pin_process = self.customer_controller.pin_process(
+            self.customer_test_data.register_customer
+        )
+        self.assert200(pin_process)
+        self.assertIn("id", pin_process.value)
+        result = CustomerModel.query.get(pin_process.value.get("id"))
+        self.assertIsNone(result.pin)
+        self.assertIsNotNone(result.otp_token)
+        self.assertIsNotNone(result.otp_token_expiration)
+        with self.assertRaises(AppException.BadRequest) as bad_request:
+            self.customer_controller.pin_process(
+                self.customer_test_data.existing_customer
+            )
+        self.assertTrue(bad_request.exception)
+        self.assert400(bad_request.exception)
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            self.customer_controller.pin_process({"phone_number": "0245060606"})
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
+
+    @pytest.mark.controller
+    def test_request_pin(self):
+        self.customer_controller.register(self.customer_test_data.register_customer)
+        request_pin = self.customer_controller.request_pin(
+            self.customer_test_data.register_customer
+        )
+        self.assert200(request_pin)
+        self.assertIn("id", request_pin.value)
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            self.customer_controller.request_pin({"phone_number": "0245555555"})
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
+
+    @pytest.mark.controller
+    def test_reset_phone_request(self):
+        reset_phone = self.customer_controller.reset_phone_request(
+            self.customer_test_data.existing_customer
+        )
+        self.assert200(reset_phone)
+        self.assertIn("id", reset_phone.value)
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            self.customer_controller.reset_phone_request({"phone_number": "0245555555"})
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
+
+    @pytest.mark.controller
+    def test_reset_phone(self):
+        data = {
+            "customer_id": "id",
+            "new_phone_number": "0244444444",
+            "token": "auth_token",
+        }
+        request_reset_phone = self.customer_controller.reset_phone_request(
+            self.customer_test_data.existing_customer
+        )
+        self.assert200(request_reset_phone)
+        self.assertIn("id", request_reset_phone.value)
+        self.customer_controller.update(
+            request_reset_phone.value.get("id"), {"auth_token": "auth_token"}
+        )
+        data["customer_id"] = request_reset_phone.value.get("id")
+        reset_phone = self.customer_controller.reset_phone(data)
+        self.assert200(reset_phone)
+        self.assertIn("id", reset_phone.value)
+        self.assertIn("phone_number", reset_phone.value)
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            data["customer_id"] = uuid.uuid4()
+            self.customer_controller.reset_phone(data)
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
+        with self.assertRaises(AppException.BadRequest) as bad_request:
+            data["customer_id"] = request_reset_phone.value.get("id")
+            data["token"] = "no_auth"
+            self.customer_controller.reset_phone(data)
+        self.assertTrue(bad_request.exception)
+        self.assert400(bad_request.exception)
+        with self.assertRaises(AppException.ResourceExists) as resource_exist:
+            data["new_phone_number"] = self.customer_test_data.existing_customer.get(
+                "phone_number"
+            )
+            self.customer_controller.reset_phone(data)
+        self.assertTrue(resource_exist.exception)
+        self.assertEqual(resource_exist.exception.status_code, 409)
+
+    @pytest.mark.controller
+    def test_request_phone_reset(self):
+        data = {"customer_id": "id", "phone_number": "0244444444", "token": "666666"}
+        reset_phone_request = self.customer_controller.reset_phone_request(
+            self.customer_test_data.existing_customer
+        )
+        data["customer_id"] = reset_phone_request.value.get("id")
+        reset_phone = self.customer_controller.request_phone_reset(data)
+        self.assert200(reset_phone)
+        self.assertIn("detail", reset_phone.value)
+        with self.assertRaises(AppException.ExpiredTokenException) as expired_token:
+            data["token"] = "1234"
+            self.customer_controller.request_phone_reset(data)
+        self.assertTrue(expired_token.exception)
+        self.assert400(expired_token.exception)
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            data["customer_id"] = uuid.uuid4()
+            self.customer_controller.request_phone_reset(data)
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
+
+    @pytest.mark.controller
+    def test_get_customer(self):
+        result = self.customer_controller.get_customer(self.customer_model.id)
+        self.assert200(result)
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, Result)
+        self.assertIsInstance(result.value, CustomerModel)
+        self.assertEqual(result.value, self.customer_model)
+        with self.assertRaises(AppException.NotFoundException) as not_found:
+            self.customer_controller.get_customer(obj_id=uuid.uuid4())
+        self.assertTrue(not_found.exception)
+        self.assert404(not_found.exception)
+
+    @pytest.mark.controller
+    def test_password_otp_confirmation(self):
+        self.customer_controller.register(self.customer_test_data.register_customer)
+        result = CustomerModel.query.filter_by(
+            phone_number=self.customer_test_data.register_customer.get("phone_number")
+        ).first()
+        self.assertIsNotNone(result.otp_token)
+        self.assertIsNotNone(result.otp_token_expiration)
+        data = {"id": result.id, "token": result.otp_token}
+        confirm_otp = self.customer_controller.password_otp_confirmation(data)
+        self.assert200(confirm_otp)
+        self.assertIsNotNone(confirm_otp)
+        self.assertIsInstance(confirm_otp, Result)
+        self.assertIn("token", confirm_otp.value)
+        with self.assertRaises(AppException.ExpiredTokenException) as expired_otp:
+            result.otp_token_expiration = datetime.now() + timedelta(seconds=1)
+            result.otp_token = "666666"
+            sleep(1)
+            self.customer_controller.password_otp_confirmation(data)
+        self.assertTrue(expired_otp.exception)
+        self.assert400(expired_otp.exception)
+        with self.assertRaises(AppException.BadRequest) as invalid_otp:
+            data["id"] = uuid.uuid4()
+            self.customer_controller.password_otp_confirmation(data)
+        self.assertTrue(invalid_otp.exception)
+        self.assert400(invalid_otp.exception)
+
+    @pytest.mark.controller
+    def test_reset_pin_process(self):
+        data = {"id": self.customer_model.id, "token": "666666"}
+        self.customer_model.otp_token = "666666"
+        reset_pin = self.customer_controller.reset_pin_process(data)
+        self.assert200(reset_pin)
+        self.assertIn("id", reset_pin.value)
+        self.assertIn("password_token", reset_pin.value)
+        with self.assertRaises(AppException.Unauthorized) as unauthorize_exc:
+            self.customer_model.otp_token = None
+            self.customer_controller.reset_pin_process(data)
+        self.assertTrue(unauthorize_exc.exception)
+        self.assert401(unauthorize_exc.exception)
+
+    @pytest.mark.controller
+    def test_process_reset_pin(self):
+        data = {
+            "customer_id": self.customer_model.id,
+            "password_token": "auth_token",
+            "pin": "0000",
+        }
+        self.customer_model.auth_token = "auth_token"
+        reset_pin = self.customer_controller.process_reset_pin(data)
+        self.assert200(reset_pin)
+        self.assertIsInstance(reset_pin.value, CustomerModel)
+        with self.assertRaises(AppException.Unauthorized) as unauthorize_exc:
+            self.customer_model.auth_token = None
+            self.customer_controller.process_reset_pin(data)
+        self.assertTrue(unauthorize_exc.exception)
+        self.assert401(unauthorize_exc.exception)
+
+    @pytest.mark.controller
+    def test_delete_customer(self):
+        result = self.customer_controller.delete(self.customer_model.id)
+        self.assertIsInstance(result, Result)
+        self.assertEqual(result.status_code, 204)
+        self.assertEqual(result.value, {})
+        with self.assertRaises(AppException.NotFoundException) as not_found:
+            self.customer_controller.delete(obj_id=uuid.uuid4())
+        self.assertTrue(not_found.exception)
+        self.assert404(not_found.exception)

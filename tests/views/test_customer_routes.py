@@ -1,275 +1,384 @@
-import uuid
-import random
-
-from app.controllers import CustomerController
-from app.services import AuthService
-from app.repositories import CustomerRepository, LeadRepository
-
-from tests.utils.base_test_case import BaseTestCase
-
+from datetime import datetime, timedelta
 from unittest import mock
 
-phone_number = random.randint(1000000000, 9999999999)
+import pytest
+from flask import url_for
+
+from app.models import CustomerModel
+from tests.base_test_case import BaseTestCase
+
+expiration_time = datetime.now() + timedelta(minutes=5)
 
 
 class TestCustomerRoutes(BaseTestCase):
-    auth_service_id = str(uuid.uuid4())
-
-    lead_repository = LeadRepository()
-    customer_repository = CustomerRepository()
-    customer_controller = CustomerController(
-        lead_repository=lead_repository,
-        customer_repository=customer_repository,
-        auth_service=AuthService(),
-    )
-
-    customer_data = {
-        "full_name": "John Doe",
-        "id_type": "passport",
-        "id_number": "4829h9445839",
-        "birth_date": "2021-06-22",
-        "id_expiry_date": "2021-06-22",
-    }
-    pin_add = {"pin": "6666", "password_token": "7Y01WprMsxGSmoX1pf85Rw"}
-    token_info = {}
-
-    def test_a_create_route(self):
+    @pytest.mark.views
+    def test_get_customers(self):
         with self.client:
-            response = self.client.post(
-                "/api/v1/customers/account/register",
-                json={"phone_number": str(phone_number)},
-            )
-            self.assertStatus(response, 201)
-            data = response.json
-            return data
+            response = self.client.get(url_for("customer.get_customers"))
+            self.assert200(response)
+            self.assertIsInstance(response.json, list)
+            self.assertIsInstance(response.json[0], dict)
 
-    def test_b_confirm_token(self):
-        """
-        testcase for token conformation.
-        """
-        # self.test_a_create_route()
-        lead = self.customer_controller.register({"phone_number": str(phone_number)})
-        leader = self.lead_repository.find_by_id(obj_id=lead.value.get("id"))
-        token_data = {"id": lead.value.get("id"), "token": leader.otp}
-        with self.client:
-            response = self.client.post(
-                "/api/v1/customers/confirm-token", json=token_data
-            )
-            self.assertEqual(response.status_code, 200)
-            data = response.json
-            return data
-
-    def test_c_add_information(self):
-        """
-        testcase for add user information
-        """
-        conformation_data = self.test_b_confirm_token()
-        cust_data = {**self.customer_data, **conformation_data}
-        with self.client:
-            response = self.client.post(
-                "/api/v1/customers/add-information", json=cust_data
-            )
-            self.assertEqual(response.status_code, 200)
-            data = response.json
-            return data
-
+    @pytest.mark.views
     @mock.patch("app.services.keycloak_service.AuthService.create_user")
-    def test_d_add_pin(self, mock_create_user):
-        """testcase to add pin"""
-        token_info = self.test_c_add_information()
-
-        mock_create_user.side_effect = self.auth_service.create_user
-        self.pin_add["password_token"] = token_info.get("password_token")
-        with self.client:
-            response = self.client.post("/api/v1/customers/add-pin", json=self.pin_add)
-            self.assertEqual(response.status_code, 200)
-
-            data = response.json
-            self.assertIn("access_token", data.keys())
-            self.assertIn("refresh_token", data.keys())
-            return data
-
-    @mock.patch("app.services.keycloak_service.AuthService.get_token")
-    def test_e_token_login(self, mock_get_token):
-        self.test_d_add_pin()
-        mock_get_token.side_effect = self.auth_service.get_token
+    def test_create_customer_account(self, mock_create_user):
+        mock_create_user.return_value = self.auth_service.create_user(
+            self.customer_test_data.create_customer
+        )
         with self.client:
             response = self.client.post(
-                "/api/v1/customers/login",
+                url_for("customer.create_customer_account"),
+                json=self.customer_test_data.register_customer,
+            )
+            response_data = response.json
+            self.assertStatus(response, 201)
+            self.assertIsInstance(response_data, dict)
+            self.assertEqual(len(response_data), 1)
+            self.assertIn("id", response_data)
+
+    @pytest.mark.views
+    def test_confirm_token(self):
+        with self.client:
+            self.customer_model.otp_token = "666666"
+            self.customer_model.otp_token_expiration = expiration_time
+            response = self.client.post(
+                url_for("customer.confirm_token"),
                 json={
-                    "pin": "6666",
-                    "phone_number": str(phone_number),
+                    "id": self.customer_model.id,
+                    "token": self.customer_model.otp_token,
                 },
             )
-            self.assertEqual(response.status_code, 200)
-            data = response.json
-            self.assertIn("access_token", response.json.keys())
-            self.assertIn("refresh_token", response.json.keys())
-            self.assertEqual(str(phone_number), data.get("phone_number"))
-            return data
+            response_data = response.json
+            self.assert200(response)
+            self.assertIsInstance(response_data, dict)
+            self.assertIn("id", response_data)
 
-    # @mock.patch("app.services.keycloak_service.AuthService.get_token")
-    # @mock.patch("app.services.keycloak_service.AuthService.reset_password")
-    # @mock.patch("core.utils.auth.requests.get")
-    # @mock.patch("core.utils.auth.jwt.decode")
-    # def test_f_change_password(
-    #     self, mock_jwt, mock_request, mock_reset_password, mock_get_token
-    # ):
-    #     mock_reset_password.side_effect = self.auth_service.reset_password
-    #     mock_get_token.side_effect = self.auth_service.get_token
-    #     mock_request.side_effect = [{"public_key": "keycloakpublickey"}]
-    #
-    #     logged_in_user = self.test_e_token_login()
-    #     id = logged_in_user.get("id")
-    #     self.required_roles["preferred_username"] = id
-    #     mock_jwt.side_effect = self.required_roles_side_effect
-    #     access_token = logged_in_user.get("access_token")
-    #     with self.client:
-    #         response = self.client.post(
-    #             "/api/v1/customers/change-password/{}".format(id),
-    #             headers={"Authorization": f"Bearer {access_token}"},
-    #             json={"new_pin": "1414", "old_pin": "6666"},
-    #         )
-    #         self.assert_status(response, 205)
-    #
-    # @mock.patch("app.services.keycloak_service.AuthService.get_token")
-    # @mock.patch("app.services.keycloak_service.AuthService.update_user")
-    # @mock.patch("core.utils.auth.requests.get")
-    # @mock.patch("core.utils.auth.jwt.decode")
-    # def test_g_update_name(
-    #     self, mock_jwt, mock_request, mock_update_password, mock_get_token
-    # ):
-    #     mock_update_password.side_effect = self.auth_service.update_user
-    #     mock_get_token.side_effect = self.auth_service.get_token
-    #     mock_request.side_effect = [{"public_key": "keycloakpublickey"}]
-    #
-    #     logged_in_user = self.test_e_token_login()
-    #     id = logged_in_user.get("id")
-    #     self.required_roles["preferred_username"] = id
-    #     mock_jwt.side_effect = self.required_roles_side_effect
-    #     access_token = logged_in_user.get("access_token")
-    #
-    #     with self.client:
-    #         response = self.client.patch(
-    #             "/api/v1/customers/accounts/{}".format(id),
-    #             headers={"Authorization": f"Bearer {access_token}"},
-    #             json={"full_name": "shashikant"},
-    #         )
-    #         self.assert_status(response, 200)
-    #         data = response.json
-    #         self.assertEqual("shashikant", data.get("full_name"))
-
-    def test_h_forgot_password(self):
-        self.test_d_add_pin()
+    @pytest.mark.views
+    def test_resend_token(self):
         with self.client:
             response = self.client.post(
-                "/api/v1/customers/forgot-password",
-                json={"phone_number": str(phone_number)},
+                url_for("customer.resend_token"),
+                json={"id": self.customer_model.id},
             )
-            self.assert_status(response, 200)
-            data = response.json
-            return data
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertIsNotNone(self.customer_model.otp_token)
+            self.assertIsNotNone(self.customer_model.otp_token_expiration)
+            self.assertIn("id", response_data)
 
+    @pytest.mark.views
+    @mock.patch("app.services.keycloak_service.AuthService.update_user")
+    def test_add_information(self, mock_update_user):
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = self.customer_model.id
+        mock_update_user.return_value = self.auth_service.update_user(
+            self.customer_test_data.add_information
+        )
+        with self.client:
+            response = self.client.post(
+                url_for("customer.add_information"),
+                json=data,
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertIsNotNone(response_data.get("id"))
+            self.assertIn("password_token", response_data)
+
+    @pytest.mark.views
     @mock.patch("app.services.keycloak_service.AuthService.reset_password")
-    def test_i_reset_password(self, mock_reset_password):
-        mock_reset_password.side_effect = self.auth_service.reset_password
-        data = self.test_h_forgot_password()
-        customer = self.customer_repository.find_by_id(data.get("id"))
+    def test_add_pin(self, mock_reset_password):
+        mock_reset_password.return_value = self.auth_service.reset_password(
+            self.customer_model.id
+        )
+        with self.client:
+            self.customer_model.auth_token = "auth_token"
+            response = self.client.post(
+                url_for("customer.add_pin"),
+                json={"password_token": "auth_token", "pin": "0000"},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.customer_model.verify_pin("1234"))
+        self.assertTrue(self.customer_model.verify_pin("0000"))
+
+    @pytest.mark.views
+    @mock.patch("app.services.keycloak_service.AuthService.update_user")
+    @mock.patch("app.services.keycloak_service.AuthService.get_token")
+    def test_login_retailer(self, mock_get_token, mock_update_user):
+        mock_get_token.side_effect = self.auth_service.get_token
+        mock_update_user.return_value = self.auth_service.update_user(
+            self.customer_test_data.update_customer
+        )
         with self.client:
             response = self.client.post(
-                "/api/v1/customers/reset-password",
+                url_for("customer.login"),
+                json=self.customer_test_data.customer_credential,
+            )
+            response_data = response.json
+            self.assert200(response)
+            self.assertIsInstance(response_data, dict)
+            self.assertEqual(len(response_data), 2)
+            self.assertIn("access_token", response_data)
+            self.assertIn("refresh_token", response_data)
+
+    @pytest.mark.views
+    @mock.patch("app.services.keycloak_service.AuthService.update_user")
+    def test_update_by_id(self, mock_update_user):
+        mock_update_user.return_value = self.auth_service.update_user(
+            self.customer_test_data.update_customer
+        )
+        with self.client:
+            response = self.client.patch(
+                url_for("customer.update_customer", customer_id=self.customer_model.id),
+                json=self.customer_test_data.update_customer,
+                headers=self.headers,
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertIsNotNone(response_data.get("id"))
+            self.assertNotIn("pin", response_data)
+            self.assertNotEqual(
+                response_data.get("status"),
+                self.customer_test_data.existing_customer.get("status"),
+            )
+
+    @pytest.mark.views
+    def test_find_customer(self):
+        with self.client:
+            response = self.client.get(
+                url_for("customer.find_customer", customer_id=self.customer_model.id),
+                headers=self.headers,
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertEqual(
+                self.customer_model.phone_number,
+                response_data.get("phone_number"),
+            )
+
+    @pytest.mark.views
+    def test_forgot_password(self):
+        with self.client:
+            response = self.client.post(
+                url_for("customer.forgot_password"),
+                json={"phone_number": self.customer_model.phone_number},
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertIsNotNone(self.customer_model.otp_token)
+            self.assertIsNotNone(self.customer_model.otp_token_expiration)
+            self.assertIn("id", response_data)
+
+    @pytest.mark.views
+    def test_password_otp_confirmation(self):
+        with self.client:
+            self.customer_model.otp_token = "666666"
+            self.customer_model.otp_token_expiration = expiration_time
+            response = self.client.post(
+                url_for("customer.password_otp_confirmation"),
                 json={
-                    "new_pin": "6666",
-                    "token": customer.auth_token,
-                    "id": data.get("id"),
+                    "id": self.customer_model.id,
+                    "token": self.customer_model.otp_token,
                 },
             )
-            self.assert_status(response, 205)
+            response_data = response.json
+            self.assert200(response)
+            self.assertIsInstance(response_data, dict)
+            self.assertIn("id", response_data)
 
-    # @mock.patch("app.services.keycloak_service.AuthService.delete_user")
-    # @mock.patch("app.services.keycloak_service.AuthService.get_token")
-    # @mock.patch("core.utils.auth.requests.get")
-    # @mock.patch("core.utils.auth.jwt.decode")
-    # def test_m_remove_user(
-    #     self, mock_jwt, mock_request_get, mock_delete_user, mock_get_token
-    # ):
-    #     mock_delete_user.side_effect = self.auth_service.delete_user
-    #     mock_get_token.side_effect = self.auth_service.get_token
-    #     mock_request_get.side_effect = [{"public_key": "keycloakpublickey"}]
-    #     logged_in_user = self.test_e_token_login()
-    #     id = logged_in_user.get("id")
-    #     self.required_roles["preferred_username"] = id
-    #     mock_jwt.side_effect = self.required_roles_side_effect
-    #     access_token = logged_in_user.get("access_token")
-    #     with self.client:
-    #         response = self.client.delete(
-    #             "/api/v1/customers/accounts/{}".format(id),
-    #             headers={"Authorization": f"Bearer {access_token}"},
-    #         )
-    #         self.assert_status(response, 204)
-
-    def test_o_request_reset_phone(self):
-        """
-        reset pin process
-        """
-        self.test_d_add_pin()
-        customer = self.customer_repository.find({"phone_number": str(phone_number)})
+    @pytest.mark.views
+    @mock.patch("app.services.keycloak_service.AuthService.reset_password")
+    def test_reset_password(self, mock_reset_password):
+        mock_reset_password.return_value = self.auth_service.reset_password(
+            self.customer_model.id
+        )
         with self.client:
+            self.customer_model.auth_token = "666666"
+            # self.customer_model.otp_token_expiration = expiration_time
             response = self.client.post(
-                "/api/v1/customers/reset-phone-request",
-                json={"phone_number": str(phone_number)},
-            )
-            self.assert_status(response, 200)
-            data = response.json
-            data["token"] = customer.auth_token
-            return data
-
-    def test_p_reset_phone(self):
-        """
-        reset phone
-        """
-        data = self.test_o_request_reset_phone()
-        new_phone_number = random.randint(1000000000, 9999999999)
-        customer = self.customer_repository.find({"phone_number": str(phone_number)})
-        with self.client:
-            response = self.client.post(
-                f"/api/v1/customers/reset-phone/{customer.id}",
+                url_for("customer.reset_password"),
                 json={
-                    "new_phone_number": str(new_phone_number),
-                    "token": data.get("token"),
+                    "id": self.customer_model.id,
+                    "new_pin": "0000",
+                    "token": "666666",
                 },
             )
-            self.assert_status(response, 200)
-            data = response.json
-            return data
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.customer_model.verify_pin("1234"))
+        self.assertTrue(self.customer_model.verify_pin("0000"))
 
-    def test_pq_reset_phone(self):
-        """
-        reset phone
-        """
-        data = self.test_o_request_reset_phone()
-        customer = self.customer_repository.find({"phone_number": str(phone_number)})
+    @pytest.mark.views
+    @mock.patch("app.services.keycloak_service.AuthService.get_token")
+    @mock.patch("app.services.keycloak_service.AuthService.reset_password")
+    def test_change_password(self, mock_reset_password, mock_get_token):
+        mock_reset_password.return_value = self.auth_service.reset_password(
+            self.customer_model.id
+        )
+        mock_get_token.return_value = self.auth_service.get_token(self.customer_model)
+        data = {"old_pin": "1234", "new_pin": "0000"}
         with self.client:
             response = self.client.post(
-                f"/api/v1/customers/reset-phone/{customer.id}",
+                url_for("customer.change_password", user_id=self.customer_model.id),
+                json=data,
+                headers=self.headers,
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.customer_model.verify_pin("1234"))
+        self.assertTrue(self.customer_model.verify_pin("0000"))
+
+    @pytest.mark.views
+    def test_pin_process(self):
+        self.customer_controller.register(self.customer_test_data.register_customer)
+        with self.client:
+            response = self.client.post(
+                url_for("customer.pin_process"),
+                json=self.customer_test_data.register_customer,
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertIn("id", response_data)
+            register = CustomerModel.query.get(response_data.get("id"))
+            self.assertIsNotNone(register.otp_token)
+            self.assertIsNotNone(register.otp_token_expiration)
+
+    @pytest.mark.views
+    def test_request_reset_pin(self):
+        self.customer_controller.register(self.customer_test_data.register_customer)
+        pin_process = self.customer_controller.pin_process(
+            self.customer_test_data.register_customer
+        )
+        with self.client:
+            response = self.client.post(
+                url_for("customer.request_reset_pin"),
+                json={"id": pin_process.value.get("id"), "token": "6666"},
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertIn("id", response_data)
+            self.assertIn("password_token", response_data)
+
+    @pytest.mark.views
+    @mock.patch("app.services.keycloak_service.AuthService.reset_password")
+    def test_reset_pin(self, mock_reset_password):
+        mock_reset_password.return_value = self.auth_service.reset_password(
+            self.customer_model.id
+        )
+        self.customer_controller.register(self.customer_test_data.register_customer)
+        pin_process = self.customer_controller.pin_process(
+            self.customer_test_data.register_customer
+        )
+        reset = self.customer_controller.reset_pin_process(
+            {"id": pin_process.value.get("id"), "token": "6666"}
+        )
+        with self.client:
+            response = self.client.post(
+                url_for("customer.reset_pin", user_id=pin_process.value.get("id")),
                 json={
-                    "new_phone_number": str(phone_number),
-                    "token": data.get("token"),
+                    "password_token": reset.value.get("password_token"),
+                    "pin": "0000",
                 },
             )
-            self.assert_status(response, 409)
-            data = response.json
-            return data
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertIn("id", response_data)
 
-    def test_q_update_phone(self):
-        """
-        reset phone
-        """
-        data = self.test_p_reset_phone()
-        customer = self.customer_repository.find_by_id(data)
+    @pytest.mark.views
+    def test_reset_phone_request(self):
         with self.client:
             response = self.client.post(
-                f"/api/v1/customers/update-phone/{customer.id}",
-                json={"token": customer.auth_token},
+                url_for("customer.reset_phone_request"),
+                json={"phone_number": self.customer_model.phone_number},
             )
-            self.assert_status(response, 204)
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertIn("id", response_data)
+            self.assertIsNotNone(self.customer_model.otp_token)
+            self.assertIsNotNone(self.customer_model.otp_token_expiration)
+
+    @pytest.mark.views
+    def test_reset_phone(self):
+        with self.client:
+            self.customer_controller.reset_phone_request(
+                {"phone_number": self.customer_model.phone_number}
+            )
+            token = self.customer_controller.confirm_token(
+                {"id": self.customer_model.id, "token": "666666"}
+            )
+            response = self.client.post(
+                url_for("customer.reset_phone", user_id=self.customer_model.id),
+                json={
+                    "new_phone_number": self.customer_test_data.register_customer.get(
+                        "phone_number"
+                    ),
+                    "token": token.value.get("confirmation_token"),
+                },
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertIn("id", response_data)
+            self.assertIn("phone_number", response_data)
+
+    @pytest.mark.views
+    @mock.patch("app.services.keycloak_service.AuthService.update_user")
+    def test_update_phone(self, mock_update_user):
+        mock_update_user.return_value = self.auth_service.update_user(
+            self.customer_test_data.update_customer
+        )
+        with self.client:
+            self.customer_controller.reset_phone_request(
+                {"phone_number": self.customer_model.phone_number}
+            )
+            token = self.customer_controller.confirm_token(
+                {"id": self.customer_model.id, "token": "666666"}
+            )
+            self.customer_controller.reset_phone(
+                {
+                    "new_phone_number": self.customer_test_data.register_customer.get(
+                        "phone_number"
+                    ),
+                    "customer_id": self.customer_model.id,
+                    "token": token.value.get("confirmation_token"),
+                }
+            )
+            response = self.client.post(
+                url_for("customer.update_phone", user_id=self.customer_model.id),
+                json={
+                    "phone_number": self.customer_test_data.register_customer.get(
+                        "phone_number"
+                    ),
+                    "token": "666666",
+                },
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertNotEqual(
+                self.customer_model.phone_number,
+                self.customer_test_data.existing_customer.get("phone_number"),
+            )
+            self.assertEqual(
+                self.customer_model.phone_number,
+                self.customer_test_data.register_customer.get("phone_number"),
+            )
+
+    @pytest.mark.views
+    @mock.patch("app.services.keycloak_service.AuthService.update_user")
+    def test_delete(self, mock_delete_user):
+        mock_delete_user.return_value = self.auth_service.delete_user(
+            self.customer_model.id
+        )
+        with self.client:
+            response = self.client.delete(
+                url_for("customer.delete_customer", customer_id=self.customer_model.id),
+                headers=self.headers,
+            )
+            self.assertEqual(response.status_code, 204)

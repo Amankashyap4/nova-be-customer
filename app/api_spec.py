@@ -4,28 +4,46 @@
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
+from marshmallow_enum import EnumField
 
 # Create an APISpec
 from app.schema import (
-    CustomerSchema,
-    CustomerCreateSchema,
-    CustomerUpdateSchema,
-    ConfirmTokenSchema,
     AddPinSchema,
-    ResendTokenSchema,
-    LoginSchema,
-    TokenSchema,
+    ConfirmedTokenSchema,
+    ConfirmTokenSchema,
+    CustomerInfoSchema,
+    CustomerSchema,
+    CustomerSignUpSchema,
+    CustomerUpdateSchema,
     PinChangeSchema,
-    PinResetSchema,
+    PinRequestSchema,
     PinResetRequestSchema,
+    PinResetSchema,
+    ResendTokenSchema,
+    ResetPhoneSchema,
+    TokenSchema,
 )
+
+
+def enum_to_properties(self, field, **kwargs):
+    """
+    Add an OpenAPI extension for marshmallow_enum.EnumField instances
+    """
+    if isinstance(field, EnumField):
+        return {"type": "string", "enum": [enum_data.value for enum_data in field.enum]}
+    return {}
+
+
+marshmallow_plugin = MarshmallowPlugin()
 
 spec = APISpec(
     title="Nova Customer Service",
     version="1.0.0",
     openapi_version="3.0.2",
-    plugins=[FlaskPlugin(), MarshmallowPlugin()],
+    plugins=[FlaskPlugin(), marshmallow_plugin],
 )
+
+marshmallow_plugin.converter.add_attribute_function(enum_to_properties)
 
 # Security
 api_key_scheme = {"type": "apiKey", "in": "header", "name": "X-API-Key"}
@@ -35,18 +53,20 @@ spec.components.security_scheme("bearerAuth", bearer_scheme)
 
 # register schemas with spec
 # example
-spec.components.schema("Customer", schema=CustomerSchema)
-spec.components.schema("CustomerCreate", schema=CustomerCreateSchema)
-spec.components.schema("CustomerUpdate", schema=CustomerUpdateSchema)
-spec.components.schema("ConfirmToken", schema=ConfirmTokenSchema)
-spec.components.schema("PinData", schema=AddPinSchema)
-spec.components.schema("ResendTokenData", schema=ResendTokenSchema)
-spec.components.schema("LoginData", schema=LoginSchema)
-spec.components.schema("TokenData", schema=TokenSchema)
-spec.components.schema("PinChange", schema=PinChangeSchema)
-spec.components.schema("PinReset", schema=PinResetSchema)
-spec.components.schema("PinResetRequest", schema=PinResetRequestSchema)
-
+spec.components.schema("CustomerSchema", schema=CustomerSchema)
+spec.components.schema("CustomerUpdateSchema", schema=CustomerUpdateSchema)
+spec.components.schema("CustomerSignUpSchema", schema=CustomerSignUpSchema)
+spec.components.schema("CustomerInfoSchema", schema=CustomerInfoSchema)
+spec.components.schema("ConfirmTokenSchema", schema=ConfirmTokenSchema)
+spec.components.schema("ConfirmedTokenSchema", schema=ConfirmedTokenSchema)
+spec.components.schema("PinRequestSchema", schema=PinRequestSchema)
+spec.components.schema("AddPinSchema", schema=AddPinSchema)
+spec.components.schema("ResendOTPSchema", schema=ResendTokenSchema)
+spec.components.schema("TokenSchema", schema=TokenSchema)
+spec.components.schema("PinChangeSchema", schema=PinChangeSchema)
+spec.components.schema("PinResetSchema", schema=PinResetSchema)
+spec.components.schema("PinResetRequestSchema", schema=PinResetRequestSchema)
+spec.components.schema("ResetPhoneSchema", schema=ResetPhoneSchema)
 
 # add swagger tags that are used for endpoint annotation
 tags = [

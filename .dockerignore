@@ -148,9 +148,7 @@ cython_debug/
 
 #linters
 
-.coverage
 .editorconfig
-.env
 .flake8
 .gitignore
 .pre-commit-config.yaml
@@ -158,3 +156,8 @@ log.log
 
 #docker compose
 docker-compose.yml
+.scannerwork
+.dbdata
+docker-compose-dev.yml
+sonar-project.properties
+htmlcov

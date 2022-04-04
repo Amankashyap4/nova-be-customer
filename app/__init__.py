@@ -1,30 +1,25 @@
+import logging
 import os
 import sys
-import logging
 
-from flask import Flask, jsonify, has_request_context, request
+from flask import Flask, has_request_context, jsonify, request
 from flask.logging import default_handler
-from flask_mongoengine import MongoEngine
-from sqlalchemy.exc import DBAPIError
-
-
 from flask_cors import CORS
-
-base_dir = os.getcwd()
-sys.path.append(base_dir)
-
-from app.core.extensions import db, migrate, ma
+from flask_mongoengine import MongoEngine
 from flask_swagger_ui import get_swaggerui_blueprint
+from sqlalchemy.exc import DBAPIError
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import import_string
 
+# add app to system path
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+)  # noqa
+
 # load dotenv in the base root
 from app.api_spec import spec
-from app.core.exceptions.app_exceptions import (
-    app_exception_handler,
-    AppExceptionCase,
-)
-
+from app.core.exceptions.app_exceptions import AppExceptionCase, app_exception_handler
+from app.core.extensions import db, ma, migrate
 
 APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to application_top
 dotenv_path = os.path.join(APP_ROOT, ".env")

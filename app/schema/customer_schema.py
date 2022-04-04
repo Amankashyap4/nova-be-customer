@@ -1,68 +1,28 @@
-from marshmallow import Schema, fields, validate
+import re
+
+from marshmallow import Schema, fields, pre_load, validate
 from marshmallow_enum import EnumField
 
-from app import constants
-from app.utils import StatusEnum, IDEnum
-
-
-class CustomerSignUpSchema(Schema):
-    phone_number = fields.Str(
-        validate=validate.Regexp(constants.PHONE_NUMBER_REGEX),
-        required=True,
-    )
-
-    class Meta:
-        fields = [
-            "phone_number",
-        ]
-
-
-class CustomerInfoSchema(Schema):
-    id = fields.UUID()
-    full_name = fields.Str(required=True, validate=validate.Length(min=2))
-    email = fields.Email(required=True)
-    birth_date = fields.Date(required=False)
-    id_expiry_date = fields.Date(required=True)
-    id_type = EnumField(IDEnum, required=True)
-    id_number = (fields.Str(validate=validate.Length(min=5)),)
-    conformation_token = (fields.Str(validate=validate.Length(min=5)),)
-
-    class Meta:
-        fields = [
-            "id",
-            "full_name",
-            "email",
-            "birth_date",
-            "id_expiry_date",
-            "id_type",
-            "id_number",
-            "conformation_token",
-        ]
-
-
-class CustomerCreateSchema(Schema):
-    pass
-
-
-class UpdatePhoneSchema(Schema):
-    token = fields.Str(required=True)
+from app.enums import IDEnum, StatusEnum, regex_type
 
 
 class CustomerSchema(Schema):
-
-    id = fields.UUID()
-    phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
-    full_name = fields.Str(validate=validate.Length(min=2))
-    email = fields.Email()
-    birth_date = fields.Date()
-    id_expiry_date = fields.Date()
-    id_type = EnumField(IDEnum)
-    id_number = fields.Str(validate=validate.Length(min=5))
-    status = EnumField(StatusEnum)
+    id = fields.UUID(allow_none=True)
+    phone_number = fields.String()
+    full_name = fields.String(allow_none=True)
+    email = fields.String(allow_none=True)
+    birth_date = fields.Date(allow_none=True)
+    id_expiry_date = fields.Date(allow_none=True)
+    id_type = EnumField(IDEnum, allow_none=True)
+    id_number = fields.String(allow_none=True)
+    status = EnumField(StatusEnum, allow_none=True)
+    profile_image = fields.String(allow_none=True)
+    auth_service_id = fields.UUID(allow_none=True)
     created = fields.DateTime()
     modified = fields.DateTime()
 
     class Meta:
+        ordered = True
         fields = [
             "id",
             "phone_number",
@@ -72,39 +32,34 @@ class CustomerSchema(Schema):
             "id_expiry_date",
             "id_type",
             "id_number",
+            "profile_image",
+            "auth_service_id",
             "status",
             "created",
             "modified",
         ]
 
+    @pre_load
+    def international_format(self, field, **kwargs):
+        split_regex = regex_type().get("phone_number").split("|")
+        format_type = "|".join(split_regex[:2]), "|".join(split_regex[2:])
+        phone_number = field.get("phone_number")
+        if phone_number and re.fullmatch(format_type[0], phone_number):
+            local_format = re.sub(r"\+?233", "0", phone_number)
+            field["phone_number"] = local_format
+            return field
+        return field
 
-class CustomerUpdateSchema(Schema):
-    full_name = fields.Str(validate=validate.Length(min=2))
+
+class CustomerUpdateSchema(CustomerSchema):
+    full_name = fields.String(validate=validate.Length(min=3))
     email = fields.Email()
     birth_date = fields.Date()
     id_expiry_date = fields.Date()
     id_type = EnumField(IDEnum)
-    id_number = fields.Str(validate=validate.Length(min=5))
-
-    class Meta:
-        fields = [
-            "full_name",
-            "birth_date",
-            "id_expiry_date",
-            "id_type",
-            "id_number",
-        ]
-
-
-class CustomerAddInfoSchema(Schema):
-    full_name = fields.Str(validate=validate.Length(min=2))
-    email = fields.Email()
-    birth_date = fields.Date()
-    id_expiry_date = fields.Date()
-    id_type = fields.Str(required=True)
-    id_number = fields.Str(validate=validate.Length(min=5))
-    id = fields.UUID()
-    conformation_token = fields.Str(validate=validate.Length(min=5))
+    id_number = fields.String()
+    status = EnumField(StatusEnum)
+    profile_image = fields.String()
 
     class Meta:
         fields = [
@@ -114,6 +69,43 @@ class CustomerAddInfoSchema(Schema):
             "id_expiry_date",
             "id_type",
             "id_number",
-            "id",
-            "conformation_token",
+            "profile_image",
+            "status",
         ]
+
+
+class CustomerSignUpSchema(CustomerSchema):
+    phone_number = fields.Str(
+        required=True, validate=validate.Regexp(regex_type().get("phone_number"))
+    )
+
+    class Meta:
+        fields = ["phone_number"]
+
+
+class CustomerInfoSchema(CustomerSchema):
+    id = fields.UUID()
+    full_name = fields.String(validate=validate.Length(min=3))
+    birth_date = fields.Date()
+    id_expiry_date = fields.Date()
+    id_type = EnumField(IDEnum)
+    id_number = fields.String()
+    confirmation_token = fields.String()
+
+    class Meta:
+        fields = [
+            "id",
+            "full_name",
+            "birth_date",
+            "id_expiry_date",
+            "id_type",
+            "id_number",
+            "confirmation_token",
+        ]
+
+
+class UpdatePhoneSchema(Schema):
+    phone_number = fields.String(
+        required=True, validate=validate.Regexp(regex_type().get("phone_number"))
+    )
+    token = fields.Str(required=True)

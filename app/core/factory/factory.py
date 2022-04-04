@@ -1,8 +1,10 @@
 import click
-from flask import Flask
 from faker import Faker
-from . import Seeder
+from flask import Flask
+
 from app import factory
+
+from . import Seeder
 
 __all__ = ("factory",)
 

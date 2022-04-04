@@ -3,28 +3,27 @@ from flask import Blueprint, request
 
 from app.controllers import CustomerController
 from app.core.service_result import handle_result
-from app.repositories import CustomerRepository, LeadRepository
+from app.repositories import CustomerRepository
 from app.schema import (
-    CustomerSchema,
+    AddPinSchema,
+    ConfirmTokenSchema,
     CustomerInfoSchema,
+    CustomerSchema,
     CustomerSignUpSchema,
     CustomerUpdateSchema,
-    ConfirmTokenSchema,
-    AddPinSchema,
-    UpdatePhoneSchema,
-    ResendTokenSchema,
     LoginSchema,
-    TokenSchema,
-    PinChangeSchema,
-    PinResetSchema,
-    PinResetRequestSchema,
-    TokenLoginSchema,
-    RequestResetPinSchema,
     PasswordOtpSchema,
+    PinChangeSchema,
+    PinResetRequestSchema,
+    PinResetSchema,
+    RequestResetPinSchema,
+    ResendTokenSchema,
     ResetPhoneSchema,
+    TokenLoginSchema,
+    UpdatePhoneSchema,
 )
-from app.services import AuthService
-from app.core.utils import validator, auth_required
+from app.services import AuthService, RedisService
+from app.utils import auth_required, validator
 
 customer = Blueprint("customer", __name__)
 
@@ -34,10 +33,35 @@ obj_graph = pinject.new_object_graph(
         CustomerController,
         CustomerRepository,
         AuthService,
-        LeadRepository,
+        RedisService,
     ],
 )
 customer_controller = obj_graph.provide(CustomerController)
+
+
+@customer.route("/", methods=["GET"])
+def get_customers():
+    """
+    ---
+    get:
+      description: register new customer phone number
+      responses:
+        '200':
+          description: returns a customer id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: uuid
+                    example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      tags:
+          - Customer Registration
+    """
+
+    result = customer_controller.index()
+    return handle_result(result, schema=CustomerSchema, many=True)
 
 
 @customer.route("account/register", methods=["POST"])
@@ -109,7 +133,7 @@ def confirm_token():
         required: true
         content:
           application/json:
-            schema: ConfirmToken
+            schema: ConfirmTokenSchema
       responses:
         '200':
           description: returns a customer
@@ -150,6 +174,37 @@ def confirm_token():
     return handle_result(result)
 
 
+@customer.route("/resend-token", methods=["POST"])
+@validator(schema=ResendTokenSchema)
+def resend_token():
+    """
+    ---
+    post:
+      description: creates a new token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: ResendTokenSchema
+      responses:
+        '200':
+          description: resends a token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: uuid
+                    example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      tags:
+          - Authentication
+    """
+    data = request.json
+    result = customer_controller.resend_token(data)
+    return handle_result(result)
+
+
 @customer.route("/add-information", methods=["POST"])
 @validator(schema=CustomerInfoSchema)
 def add_information():
@@ -164,13 +219,13 @@ def add_information():
         required: true
         content:
             application/json:
-                schema: CustomerAddInfoSchema
+                schema: CustomerInfoSchema
       responses:
         '200':
           description: returns a customer
           content:
             application/json:
-              schema: ConformInfo
+              schema: ConfirmInfo
         '400':
           description: bad request
           content:
@@ -197,16 +252,8 @@ def add_information():
                   errorMessage:
                     token: ["Missing data for required field."]
     """
-    from datetime import datetime
-
     data = request.json
-    if data.get("birth_date"):
-        data["birth_date"] = datetime.strptime(data.get("birth_date"), "%Y-%m-%d")
-    if data.get("id_expiry_date"):
-        data["id_expiry_date"] = datetime.strptime(
-            data.get("id_expiry_date"), "%Y-%m-%d"
-        )
-    result = customer_controller.add_customer_information(data)
+    result = customer_controller.add_information(data)
     return handle_result(result)
 
 
@@ -221,7 +268,7 @@ def add_pin():
         required: true
         content:
             application/json:
-                schema: PinData
+                schema: AddPinSchema
       responses:
         '200':
           description: returns a customer
@@ -265,12 +312,12 @@ def add_pin():
 
     data = request.json
     result = customer_controller.add_pin(data)
-    return handle_result(result, schema=TokenSchema)
+    return handle_result(result)
 
 
 @customer.route("/login", methods=["POST"])
 @validator(schema=LoginSchema)
-def login_user():
+def login():
     """
     ---
     post:
@@ -358,7 +405,7 @@ def update_customer(customer_id):
         required: true
         content:
             application/json:
-                schema: CustomerUpdate
+                schema: CustomerUpdateSchema
       security:
         - bearerAuth: []
       responses:
@@ -366,7 +413,7 @@ def update_customer(customer_id):
           description: returns a updated customer information
           content:
             application/json:
-              schema: Customer
+              schema: CustomerSchema
         '401':
           description: Unauthorized
           content:
@@ -404,7 +451,7 @@ def update_customer(customer_id):
 
 @customer.route("/accounts/<string:customer_id>", methods=["GET"])
 @auth_required()
-def show_customer(customer_id):
+def find_customer(customer_id):
     """
     ---
     get:
@@ -423,8 +470,7 @@ def show_customer(customer_id):
           description: returns a customer information
           content:
             application/json:
-              schema: Customer
-
+              schema: CustomerSchema
         '401':
           description: unauthorised
           content:
@@ -454,7 +500,7 @@ def show_customer(customer_id):
       tags:
           - Customer
     """
-    result = customer_controller.show(customer_id)
+    result = customer_controller.get_customer(customer_id)
     return handle_result(result, schema=CustomerSchema)
 
 
@@ -469,7 +515,7 @@ def forgot_password():
         required: true
         content:
             application/json:
-                schema: PinResetRequest
+                schema: PinResetRequestSchema
       responses:
         '200':
           description: returns a uuid (customer's id)
@@ -511,13 +557,13 @@ def forgot_password():
           - Forgot-Password
     """
     data = request.json
-    result = customer_controller.request_password_reset(data)
+    result = customer_controller.forgot_password(data)
     return handle_result(result)
 
 
 @customer.route("/otp-conformation", methods=["POST"])
 @validator(schema=PasswordOtpSchema)
-def password_otp_conformation():
+def password_otp_confirmation():
     """
     ---
     post:
@@ -563,7 +609,7 @@ def password_otp_conformation():
           - OTP conformation for change Forgot password or change phone
     """
     data = request.json
-    result = customer_controller.password_otp_conformation(data)
+    result = customer_controller.password_otp_confirmation(data)
     return handle_result(result)
 
 
@@ -578,7 +624,7 @@ def reset_password():
         required: true
         content:
             application/json:
-                schema: PinReset
+                schema: PinResetSchema
       responses:
         '205':
           description: message
@@ -668,7 +714,7 @@ def change_password(user_id):
         required: true
         content:
             application/json:
-                schema: PinChange
+                schema: PinChangeSchema
       security:
         - bearerAuth: []
       responses:
@@ -905,7 +951,7 @@ def reset_pin(user_id):
     data = request.json
     data["customer_id"] = user_id
     result = customer_controller.process_reset_pin(data)
-    return handle_result(result)
+    return handle_result(result, schema=CustomerSchema)
 
 
 @customer.route("/reset-phone-request", methods=["POST"])
@@ -919,7 +965,7 @@ def reset_phone_request():
         required: true
         content:
             application/json:
-                schema: PinResetRequest
+                schema: PinResetRequestSchema
       responses:
         '200':
           description: returns a uuid (customer's id)
@@ -1107,37 +1153,6 @@ def update_phone(user_id):
     data = request.json
     data["customer_id"] = user_id
     result = customer_controller.request_phone_reset(data)
-    return handle_result(result)
-
-
-@customer.route("/resend-token", methods=["POST"])
-@validator(schema=ResendTokenSchema)
-def resend_token():
-    """
-    ---
-    post:
-      description: creates a new token
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: ResendTokenData
-      responses:
-        '200':
-          description: resends a token
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: uuid
-                    example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
-      tags:
-          - Authentication
-    """
-    data = request.json
-    result = customer_controller.resend_token(data)
     return handle_result(result)
 
 
