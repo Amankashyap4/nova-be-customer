@@ -143,7 +143,7 @@ class CustomerController(Notifier):
 
     def login(self, obj_credential):
         assert obj_credential, "missing credentials of object"
-
+        customer_data = {}
         phone_number = obj_credential.get("phone_number")
         pin = obj_credential.get("pin")
         customer = self.customer_repository.find({"phone_number": phone_number})
@@ -158,7 +158,15 @@ class CustomerController(Notifier):
                 {"username": customer.id, "password": pin}
             )
             self.update(str(customer.id), {"status": "first_time"})
-            return Result(access_token, 200)
+            customer_data["full_name"] = customer.full_name
+            customer_data["birth_date"] = customer.birth_date
+            customer_data["id_number"] = customer.id_number
+            customer_data["id_type"] = customer.id_type
+            customer_data["phone_number"] = customer.phone_number
+            customer_data["id"] = customer.id
+            customer_data["access_token"] = access_token.get("access_token")
+            customer_data["refresh_token"] = access_token.get("refresh_token")
+            return Result(customer_data, 200)
         raise AppException.NotFoundException(
             context={
                 "controller.login": f"account {phone_number} has been {customer.status.value}"  # noqa

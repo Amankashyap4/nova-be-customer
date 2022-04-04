@@ -51,11 +51,8 @@ def get_customers():
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: uuid
-                    example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                type: array
+                items: CustomerSchema
       tags:
           - Customer Registration
     """

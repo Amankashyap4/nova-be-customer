@@ -105,7 +105,7 @@ class TestCustomerRoutes(BaseTestCase):
     @pytest.mark.views
     @mock.patch("app.services.keycloak_service.AuthService.update_user")
     @mock.patch("app.services.keycloak_service.AuthService.get_token")
-    def test_login_retailer(self, mock_get_token, mock_update_user):
+    def test_login_customer(self, mock_get_token, mock_update_user):
         mock_get_token.side_effect = self.auth_service.get_token
         mock_update_user.return_value = self.auth_service.update_user(
             self.customer_test_data.update_customer
@@ -118,7 +118,6 @@ class TestCustomerRoutes(BaseTestCase):
             response_data = response.json
             self.assert200(response)
             self.assertIsInstance(response_data, dict)
-            self.assertEqual(len(response_data), 2)
             self.assertIn("access_token", response_data)
             self.assertIn("refresh_token", response_data)
 
