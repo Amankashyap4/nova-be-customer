@@ -1,5 +1,4 @@
-from flask import Response
-from flask import json
+from flask import Response, json
 from sqlalchemy.exc import DBAPIError
 from werkzeug.exceptions import HTTPException
 

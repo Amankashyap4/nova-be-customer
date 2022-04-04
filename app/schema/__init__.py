@@ -1,23 +1,23 @@
+from .auth_schema import (
+    AddPinSchema,
+    ConfirmedTokenSchema,
+    ConfirmTokenSchema,
+    LoginSchema,
+    PasswordOtpSchema,
+    PinChangeSchema,
+    PinRequestSchema,
+    PinResetRequestSchema,
+    PinResetSchema,
+    RequestResetPinSchema,
+    ResendTokenSchema,
+    ResetPhoneSchema,
+    TokenLoginSchema,
+    TokenSchema,
+)
 from .customer_schema import (
     CustomerInfoSchema,
-    CustomerSignUpSchema,
-    CustomerCreateSchema,
-    CustomerUpdateSchema,
     CustomerSchema,
+    CustomerSignUpSchema,
+    CustomerUpdateSchema,
     UpdatePhoneSchema,
-)
-
-from .auth_schema import (
-    ConfirmTokenSchema,
-    AddPinSchema,
-    ResendTokenSchema,
-    LoginSchema,
-    TokenSchema,
-    PinChangeSchema,
-    PinResetSchema,
-    PinResetRequestSchema,
-    TokenLoginSchema,
-    RequestResetPinSchema,
-    PasswordOtpSchema,
-    ResetPhoneSchema,
 )

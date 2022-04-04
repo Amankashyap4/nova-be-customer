@@ -1,4 +1,4 @@
-from .endpoints.customer_view import customer
+from .endpoints import customer
 
 
 def init_app(app):

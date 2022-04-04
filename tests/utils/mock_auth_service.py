@@ -17,18 +17,15 @@ class MockAuthService(AuthServiceInterface):
         return self.tokens
 
     def create_user(self, data):
-        token = self.tokens
-        token["id"] = str(uuid.uuid4())
-        return token
+        user_id = str(uuid.uuid4())
+        return user_id
 
-    def get_keycloak_access_token(self):
-        return
+    def update_user(self, data):
+        user_id = str(uuid.uuid4())
+        return user_id
+
+    def delete_user(self, user_id):
+        return {}
 
     def reset_password(self, param):
-        return True
-
-    def delete_user(self, data):
-        return True
-
-    def update_user(self, id, data):
         return True

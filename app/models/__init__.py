@@ -1,2 +1,1 @@
-from .customer_model import Customer
-from .lead_model import Lead
+from .customer_model import CustomerModel

@@ -1,11 +1,11 @@
-import requests
-import config
 from dataclasses import dataclass
-from app import constants
+
+import requests
+from requests import exceptions
+
+import config
 from app.core.exceptions import AppException
-from app.core.service_interfaces.auth_service_interface import (
-    AuthServiceInterface,
-)
+from app.core.service_interfaces.auth_service_interface import AuthServiceInterface
 
 CLIENT_ID = config.Config.KEYCLOAK_CLIENT_ID or ""
 CLIENT_SECRET = config.Config.KEYCLOAK_CLIENT_SECRET or ""
@@ -14,6 +14,7 @@ REALM = config.Config.KEYCLOAK_REALM or ""
 REALM_PREFIX = "/auth/realms/"
 AUTH_ENDPOINT = "/protocol/openid-connect/token/"
 REALM_URL = "/auth/admin/realms/"
+OPENID_CONFIGURATION_ENDPOINT = "/.well-known/openid-configuration"
 
 
 @dataclass
@@ -24,7 +25,6 @@ class AuthService(AuthServiceInterface):
     behalf of the application. Use this class when authenticating an entity
     """
 
-    headers = None
     roles = []
 
     def get_token(self, request_data):
@@ -33,6 +33,9 @@ class AuthService(AuthServiceInterface):
         :param request_data: {dict} a dictionary containing username and password
         :return: {dict} a dictionary containing token and refresh token
         """
+        assert request_data, "Missing request data to login"
+        assert isinstance(request_data, dict), "request data should be a dict"
+
         data = {
             "grant_type": "password",
             "client_id": CLIENT_ID,
@@ -43,17 +46,18 @@ class AuthService(AuthServiceInterface):
 
         # create keycloak uri for token login
         url = URI + REALM_PREFIX + REALM + AUTH_ENDPOINT
-        response = requests.post(url, data=data)
 
-        # handle error if its anything more than a 200 as a 200 response is the
-        # only expected response
-        if response.status_code != 200:
+        keycloak_response = self.send_request_to_keycloak(
+            method="post", url=url, data=data
+        )
+
+        if keycloak_response.status_code != 200:
             raise AppException.KeyCloakAdminException(
-                {constants.KEYCLOAK_ERROR: ["Error in username or password"]},
-                status_code=response.status_code,
+                {"access_token": [keycloak_response.json()]},
+                status_code=keycloak_response.status_code,
             )
 
-        tokens_data: dict = response.json()
+        tokens_data: dict = keycloak_response.json()
         result = {
             "access_token": tokens_data.get("access_token"),
             "refresh_token": tokens_data.get("refresh_token"),
@@ -63,11 +67,11 @@ class AuthService(AuthServiceInterface):
 
     def refresh_token(self, refresh_token):
         """
-
         :param refresh_token: a {str} containing the refresh token
         :return: {dict} a dictionary containing the token and refresh token
         """
-        assert refresh_token, "refresh token cannot be None"
+        assert refresh_token, "Missing refresh token"
+        assert isinstance(refresh_token, str)
 
         request_data = {
             "grant_type": "refresh_token",
@@ -75,28 +79,39 @@ class AuthService(AuthServiceInterface):
             "client_secret": CLIENT_SECRET,
             "refresh_token": refresh_token,
         }
-
         url = URI + REALM_PREFIX + REALM + AUTH_ENDPOINT
+        keycloak_response = self.send_request_to_keycloak(
+            method="post", url=url, data=request_data
+        )
 
-        response = requests.post(url, data=request_data)
+        if keycloak_response.status_code != 200:
+            raise AppException.KeyCloakAdminException(
+                {"refresh_token": [keycloak_response.json()]},
+                status_code=keycloak_response.status_code,
+            )
 
-        if response.status_code != requests.codes.ok:
-            raise AppException.BadRequest({"error": ["Error in refresh token"]})
-
-        data: dict = response.json()
+        data: dict = keycloak_response.json()
         return {
             "access_token": data.get("access_token"),
             "refresh_token": data.get("refresh_token"),
         }
 
     def create_user(self, request_data: dict):
-        assert request_data.get("group"), "Entity must belong to a group"
-
+        assert request_data, "Missing request data to be saved"
+        assert isinstance(request_data, dict)
         data = {
-            "email": request_data.get("email"),
+            "email": request_data.get("email", request_data.get("username")),
             "username": request_data.get("username"),
-            "firstName": request_data.get("first_name"),
-            "lastName": request_data.get("last_name"),
+            "firstName": request_data.get("first_name", "null"),
+            "lastName": request_data.get("last_name", "null"),
+            "attributes": {
+                "phoneNumber": request_data.get("phone_number", "null"),
+                "idType": request_data.get("id_type", "null"),
+                "idNumber": request_data.get("id_number", "null"),
+                "idExpiryDate": request_data.get("id_expiry_date", "null"),
+                "profileImage": request_data.get("profile_image", "null"),
+                "status": request_data.get("status", "null"),
+            },
             "credentials": [
                 {
                     "value": request_data.get("password"),
@@ -118,12 +133,11 @@ class AuthService(AuthServiceInterface):
         endpoint: str = "/users"
         # create user
         self.keycloak_post(endpoint, data)
-
         # get user details from keycloak
         user = self.get_keycloak_user(request_data.get("username"))
         user_id: str = user.get("id")
 
-        # assign keycloak group
+        # assign user to group
         group = request_data.get("group")
         iam_groups = self.get_all_groups()
         required_groups = list(filter(lambda x: x.get("name") == group, iam_groups))
@@ -132,29 +146,51 @@ class AuthService(AuthServiceInterface):
                 f"group {group} does not exist in IAM service"
             )
         group_data = required_groups[0]
-
+        # assign user to a group
         self.assign_group(user_id, group_data)
+        return user_id
 
-        # login user and return token
-        token_data = self.get_token(
-            {
-                "username": request_data.get("username"),
-                "password": request_data.get("password"),
-            }
-        )
-        token_data["id"] = user_id
-        return token_data
+    def update_user(self, request_data: dict):
+        assert request_data, "Missing request data to update user with"
+        assert isinstance(request_data, dict), "request data is not a dict"
+
+        user = self.get_keycloak_user(request_data.get("username"))
+        for field in request_data:
+            if field in user:
+                user[field] = request_data[field]
+            elif field in user.get("attributes"):
+                user.get("attributes")[field] = request_data.get(field)
+        endpoint: str = f"/users/{user.get('id')}"
+        # update user on keycloak
+        self.keycloak_put(endpoint, user)
+        # get updated details from keycloak
+        updated_user = self.get_keycloak_user(request_data.get("username"))
+        return updated_user.get("username")
+
+    def delete_user(self, user_id: str):
+        assert user_id, "Missing id of user to be deleted"
+        assert isinstance(user_id, str)
+
+        # user id is set as username in auth service
+        user = self.get_keycloak_user(user_id)
+
+        endpoint: str = f"/users/{user.get('id')}"
+        # delete user
+        self.keycloak_delete(endpoint)
+        return True
 
     def get_all_groups(self):
         url = URI + REALM_URL + REALM + "/groups"
-        response = requests.get(url, headers=self.get_keycloak_headers())
+        keycloak_response = self.send_request_to_keycloak(
+            method="get", url=url, headers=self.get_keycloak_headers()
+        )
 
-        if response.status_code >= 300:
+        if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                {"message": [response.json().get("errorMessage")]},
-                status_code=response.status_code,
+                {"realm_groups": [keycloak_response.json()]},
+                status_code=keycloak_response.status_code,
             )
-        return response.json()
+        return keycloak_response.json()
 
     def get_keycloak_user(self, username):
         """
@@ -163,72 +199,51 @@ class AuthService(AuthServiceInterface):
         of the user in the database
         :return:
         """
+        assert username, "Missing username of keycloak user"
+
         url = URI + REALM_URL + REALM + "/users?username=" + username
-        response = requests.get(url, headers=self.get_keycloak_headers())
-        if response.status_code >= 300:
+        keycloak_response = self.send_request_to_keycloak(
+            method="get", url=url, headers=self.get_keycloak_headers()
+        )
+        if keycloak_response.status_code != 200:
             raise AppException.KeyCloakAdminException(
-                {"message": [response.json().get("errorMessage")]},
-                status_code=response.status_code,
+                {"realm_user": [keycloak_response.json()]},
+                status_code=keycloak_response.status_code,
             )
-        user = response.json()
+        user = keycloak_response.json()
         if len(user) == 0:
             return None
         else:
             return user[0]
 
     def assign_group(self, user_id, group):
+        assert user_id, "Missing id of user to assign group"
+        assert group, "Missing group to assign user to"
+
         endpoint = "/users/" + user_id + "/groups/" + group.get("id")
         url = URI + REALM_URL + REALM + endpoint
-        # headers = self.headers or self.get_keycloak_headers()
-        headers = self.get_keycloak_headers()
-        response = requests.put(url, headers=headers)
-        if response.status_code >= 300:
+        keycloak_response = self.send_request_to_keycloak(
+            method="put", url=url, headers=self.get_keycloak_headers()
+        )
+
+        if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                {constants.KEYCLOAK_ERROR: [response.json().get("errorMessage")]},
-                status_code=response.status_code,
+                {"assign_group": [keycloak_response.json()]},
+                status_code=keycloak_response.status_code,
             )
         return True
 
     def reset_password(self, data):
-        user_id = data.get("user_id")
+        assert data, "Missing data for password reset"
+
+        username = data.get("username")
         new_password = data.get("new_password")
-        assert user_id, "user_id is required"
-        assert new_password, "new_password is required"
-        url = "/users/" + user_id + "/reset-password"
+        user = self.get_keycloak_user(username)
+        url = "/users/" + user.get("id") + "/reset-password"
 
         data = {"type": "password", "value": new_password, "temporary": False}
 
         self.keycloak_put(url, data)
-        return True
-
-    def update_user(self, user_id, data):
-        import json
-
-        assert user_id, "user_id is required"
-        endpoint = "/users/" + user_id
-        url = URI + REALM_URL + REALM + endpoint
-        headers = self.get_keycloak_headers()
-        # headers = self.headers or self.get_keycloak_headers()
-        response = requests.put(url, headers=headers, data=json.dumps(data))
-        if response.status_code >= 300:
-            raise AppException.KeyCloakAdminException(
-                {constants.KEYCLOAK_ERROR: [response.json().get("errorMessage")]},
-                status_code=response.status_code,
-            )
-        return True
-
-    def delete_user(self, user_id):
-        assert user_id, "user_id is required"
-        endpoint = "/users/" + user_id
-        url = URI + REALM_URL + REALM + endpoint
-        # headers = self.headers or self.get_keycloak_headers()
-        headers = self.get_keycloak_headers()
-        response = requests.delete(url, headers=headers)
-        if response.status_code >= 300:
-            raise AppException.KeyCloakAdminException(
-                {constants.KEYCLOAK_ERROR: [response.json().get("errorMessage")]},
-                status_code=response.status_code,
-            )
         return True
 
     def keycloak_post(self, endpoint, data):
@@ -238,65 +253,63 @@ class AuthService(AuthServiceInterface):
         :data {object} data Keycloak data object
         :return {Response} request response object
         """
+        assert endpoint, "Missing endpoint for post request"
+        assert data, "Missing data for post request"
+
         url = URI + REALM_URL + REALM + endpoint
-        # headers = self.headers or self.get_keycloak_headers()
         headers = self.get_keycloak_headers()
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code >= 300:
+        keycloak_response = self.send_request_to_keycloak(
+            method="post", url=url, headers=headers, json=data
+        )
+        if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                {constants.KEYCLOAK_ERROR: [response.json().get("errorMessage")]},
-                status_code=response.status_code,
+                {"keycloak_post_request": [keycloak_response.json()]},
+                status_code=keycloak_response.status_code,
             )
-        return response
+        return keycloak_response
 
     def keycloak_put(self, endpoint, data):
         """
-        Make a POST request to Keycloak
+        Make a PUT request to Keycloak
         :param {string} endpoint Keycloak endpoint
         :data {object} data Keycloak data object
         :return {Response} request response object
         """
+        assert endpoint, "Missing endpoint for put request"
+        assert data, "Missing data for put request"
+
         url = URI + REALM_URL + REALM + endpoint
-        # headers = self.headers or self.get_keycloak_headers()
-        headers = self.get_keycloak_headers()
-        response = requests.put(url, headers=headers, json=data)
-        if response.status_code >= 300:
-            raise AppException.KeyCloakAdminException(
-                {constants.KEYCLOAK_ERROR: [response.json().get("errorMessage")]},
-                status_code=response.status_code,
-            )
-        return response
-
-    # noinspection PyMethodMayBeStatic
-    def get_keycloak_access_token(self):
-        """
-        :returns {string} Keycloak admin user access_token
-        """
-        # data = {
-        #     "grant_type": "password",
-        #     "client_id": "admin-cli",
-        #     "username": config.Config.KEYCLOAK_ADMIN_USER,
-        #     "password": config.Config.KEYCLOAK_ADMIN_PASSWORD,
-        # }
-        data = {
-            "grant_type": "password",
-            "client_id": "admin-cli",
-            "username": config.Config.KEYCLOAK_ADMIN_USER,
-            "password": config.Config.KEYCLOAK_ADMIN_PASSWORD,
-        }
-
-        url = URI + REALM_PREFIX + REALM + AUTH_ENDPOINT
-
-        response = requests.post(
-            url,
-            data=data,
+        keycloak_response = self.send_request_to_keycloak(
+            method="put", url=url, headers=self.get_keycloak_headers(), json=data
         )
-        if response.status_code != requests.codes.ok:
+
+        if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                {constants.KEYCLOAK_ERROR: [response.text]}, status_code=500
+                {"keycloak_put_request": [keycloak_response.json()]},
+                status_code=keycloak_response.status_code,
             )
-        data = response.json()
-        return data.get("access_token")
+        return keycloak_response
+
+    def keycloak_delete(self, endpoint):
+        """
+        Make a DELETE request to Keycloak
+        :param {string} endpoint Keycloak endpoint
+        :data {object} data Keycloak data object
+        :return {Response} request response object
+        """
+        assert endpoint, "Missing endpoint for delete request"
+
+        url = URI + REALM_URL + REALM + endpoint
+        keycloak_response = self.send_request_to_keycloak(
+            method="delete", url=url, headers=self.get_keycloak_headers()
+        )
+
+        if keycloak_response.status_code >= 300:
+            raise AppException.KeyCloakAdminException(
+                {"keycloak_delete_request": [keycloak_response.json()]},
+                status_code=keycloak_response.status_code,
+            )
+        return keycloak_response
 
     def get_keycloak_headers(self):
         """
@@ -305,13 +318,59 @@ class AuthService(AuthServiceInterface):
         :return {object}  Object of keycloak headers
         """
 
-        # if self.headers:
-        #     return self.headers
+        realm_admin = {
+            "username": config.Config.KEYCLOAK_ADMIN_USER,
+            "password": config.Config.KEYCLOAK_ADMIN_PASSWORD,
+        }
 
+        token = self.get_token(realm_admin)
         headers = {
-            "Authorization": "Bearer " + self.get_keycloak_access_token(),
+            "Authorization": "Bearer " + token.get("access_token"),
             "Content-Type": "application/json",
         }
-        self.headers = headers
 
         return headers
+
+    def realm_openid_configuration(self):
+        """
+        Returns all openid configuration url endpoints pertaining to admin realm.
+        :return {object} url endpoints
+        """
+        url = URI + REALM_PREFIX + REALM + OPENID_CONFIGURATION_ENDPOINT
+        keycloak_response = self.send_request_to_keycloak(method="get", url=url)
+
+        # handle keycloak response
+        if keycloak_response.status_code != requests.codes.ok:
+            raise AppException.KeyCloakAdminException(
+                {"realm_openid_config": [keycloak_response.json()]}, status_code=500
+            )
+        data = keycloak_response.json()
+        return data
+
+    # noinspection PyMethodMayBeStatic
+    def send_request_to_keycloak(
+        self, method=None, url=None, headers=None, json=None, data=None
+    ):
+        try:
+            response = requests.request(
+                method=method, url=url, headers=headers, json=json, data=data
+            )
+        except exceptions.ConnectionError:
+            raise AppException.OperationError(
+                context={f"{method} request error": "keycloak server connection error"}
+            )
+        except exceptions.HTTPError:
+            raise AppException.OperationError(
+                context={f"{method} request error": "keycloak server http error"}
+            )
+        except exceptions.Timeout:
+            raise AppException.OperationError(
+                context={f"{method} request error": "keycloak server connection timeout"}
+            )
+        except exceptions.RequestException:
+            raise AppException.OperationError(
+                context={
+                    f"{method} request error": "error connecting to keycloak server"
+                }
+            )
+        return response

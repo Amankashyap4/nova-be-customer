@@ -1,67 +1,43 @@
-import uuid
-import random
-from app.utils import IDEnum
-from datetime import datetime
-from app.core.exceptions import AppException
-from tests.utils.base_test_case import BaseTestCase
-from app.repositories import CustomerRepository, LeadRepository
+import pytest
+
+from app.models import CustomerModel
+from tests.base_test_case import BaseTestCase
 
 
 class TestCustomerRepository(BaseTestCase):
-    auth_service_id = str(uuid.uuid4())
-    lead_repository = LeadRepository()
-    customer_repository = CustomerRepository()
-    phone_number = random.randint(1000000000, 9999999999)
+    @pytest.mark.repository
+    def test_index(self):
+        result = self.customer_repository.index()
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], CustomerModel)
 
-    customer_data = {
-        "phone_number": str(phone_number),
-        "full_name": "John",
-        "birth_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
-        "id_expiry_date": datetime.strptime("2021-06-22", "%Y-%m-%d"),
-        "id_type": "passport",
-        "id_number": "4829h9445839",
-        "auth_service_id": auth_service_id,
-    }
+    @pytest.mark.repository
+    def test_create(self):
+        result = self.customer_repository.create(self.customer_test_data.create_customer)
+        self.assertIsInstance(result, CustomerModel)
+        self.assertIsNotNone(result.id)
 
-    def test_1_create(self):
-        customer = self.customer_repository.create(self.customer_data)
-        self.assertEqual(customer.full_name, "John")
-        self.customer_repository.delete(customer.id)
+    @pytest.mark.repository
+    def test_get_by_id(self):
+        result = self.customer_repository.get_by_id(self.customer_model.id)
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, CustomerModel)
+        self.assertEqual(self.customer_model, result)
 
-    def test_2_update(self):
-        customer = self.customer_repository.create(self.customer_data)
-        self.assertEqual(customer.full_name, "John")
-        updated_customer = self.customer_repository.update_by_id(
-            customer.id, {"full_name": "John Joe"}
+    @pytest.mark.repository
+    def test_update_by_id(self):
+        result = self.customer_repository.update_by_id(
+            self.customer_model.id, self.customer_test_data.update_customer
         )
-        self.assertEqual(updated_customer.full_name, "John Joe")
-        self.customer_repository.delete(customer.id)
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, CustomerModel)
+        self.assertEqual(
+            result.status.value,
+            self.customer_test_data.update_customer.get("status"),
+        )
 
-    def test_3_delete(self):
-        customer = self.customer_repository.create(self.customer_data)
-        customer_search = self.customer_repository.find_by_id(customer.id)
-
-        self.assertEqual(customer_search.id, customer.id)
-        self.assertEqual(customer_search.id_type, IDEnum.passport)
-
-        self.customer_repository.delete(customer.id)
-
-        with self.assertRaises(AppException.NotFoundException):
-            self.customer_repository.find_by_id(customer.id)
-
-    def test_4_required_fields(self):
-        customer_data = {
-            "full_name": "Doe",
-            "id_type": "passport",
-            "id_number": "4829h9445839",
-        }
-
-        with self.assertRaises(AppException.OperationError):
-            self.customer_repository.create(customer_data)
-
-    def test_5_duplicates(self):
-        self.customer_repository.create(self.customer_data)
-
-        with self.assertRaises(AppException.OperationError):
-            self.customer_repository.create(self.customer_data)
-        # self.customer_repository.delete(customer.id)
+    @pytest.mark.repository
+    def test_delete(self):
+        result = self.customer_repository.delete(self.customer_model.id)
+        self.assertIsNone(result)
+        self.assertEqual(CustomerModel.query.count(), 0)

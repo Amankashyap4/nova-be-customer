@@ -1,9 +1,8 @@
 import mongoengine
 from pymongo.errors import ServerSelectionTimeoutError
+
 from app.core.exceptions.app_exceptions import AppException
-from app.core.repository.base.crud_repository_interface import (
-    CRUDRepositoryInterface,
-)
+from app.core.repository.base.crud_repository_interface import CRUDRepositoryInterface
 
 
 class MongoBaseRepository(CRUDRepositoryInterface):

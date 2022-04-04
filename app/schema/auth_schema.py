@@ -1,9 +1,10 @@
-from marshmallow import fields, Schema, validate
-from app import constants
+from marshmallow import Schema, fields, validate
+
+from app.enums import regex_type
 
 
 class ConfirmTokenSchema(Schema):
-    token = fields.Str(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
+    token = fields.Str(required=True, validate=validate.Length(min=4, max=6))
     id = fields.UUID(required=True)
 
 
@@ -32,12 +33,20 @@ class PinChangeSchema(Schema):
 
 
 class PinResetRequestSchema(Schema):
-    phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
+    phone_number = fields.Str(
+        required=True, validate=validate.Regexp(regex_type().get("phone_number"))
+    )
+
+
+class PinRequestSchema(Schema):
+    phone_number = fields.Str(
+        required=True, validate=validate.Regexp(regex_type().get("phone_number"))
+    )
 
 
 class ResetPhoneSchema(Schema):
-    new_phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
-    token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
+    new_phone_number = fields.Str()
+    token = fields.String(required=True)
 
 
 class PinResetSchema(Schema):
@@ -52,7 +61,7 @@ class PasswordOtpSchema(Schema):
 
 
 class LoginSchema(Schema):
-    phone_number = fields.Str(validate=validate.Regexp(constants.PHONE_NUMBER_REGEX))
+    phone_number = fields.Str(validate=validate.Regexp(regex_type().get("phone_number")))
     pin = fields.Str(validate=validate.Length(min=4, max=4))
 
 
@@ -77,6 +86,6 @@ class ResetPinProcess(Schema):
     id = fields.UUID(required=True)
 
 
-class ConformInfo(Schema):
+class ConfirmInfo(Schema):
     password_token = fields.Str()
     id = fields.UUID(required=True)
