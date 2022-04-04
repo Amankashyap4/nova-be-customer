@@ -114,7 +114,6 @@ class TestCustomerController(BaseTestCase):
         )
         self.assertIsInstance(result, Result)
         self.assertIsInstance(result.value, dict)
-        self.assertEqual(len(result.value), 2)
         self.assertIn("access_token", result.value)
         self.assertIn("refresh_token", result.value)
         self.assertEqual(result.status_code, 200)

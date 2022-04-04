@@ -1,6 +1,7 @@
 from marshmallow import Schema, fields, validate
+from marshmallow_enum import EnumField
 
-from app.enums import regex_type
+from app.enums import IDEnum, regex_type
 
 
 class ConfirmTokenSchema(Schema):
@@ -75,7 +76,7 @@ class TokenLoginSchema(Schema):
     refresh_token = fields.Str()
     fullname = fields.Str()
     id_number = fields.Str()
-    id_type = fields.Str()
+    id_type = EnumField(IDEnum)
     phone_number = fields.Str()
     id = fields.UUID(required=True)
 
