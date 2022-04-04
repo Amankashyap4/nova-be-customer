@@ -12,7 +12,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 class Config:
     """Set Flask configuration vars from .env file."""
 
-    APP_NAME = "nova-be-retail"
+    APP_NAME = "nova-be-customer"
     FLASK_ENV = os.getenv("FLASK_ENV")
 
     DB_ENGINE = os.getenv("DB_ENGINE", default="POSTGRES")

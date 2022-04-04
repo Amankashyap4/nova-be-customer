@@ -1,4 +1,4 @@
-from .endpoints import customer
+from .endpoints import customer, file_manager
 
 
 def init_app(app):
@@ -9,3 +9,4 @@ def init_app(app):
     :return:
     """
     app.register_blueprint(customer, url_prefix="/api/v1/customers")
+    app.register_blueprint(file_manager, url_prefix="/api/v1/filemanager/files")

@@ -1,8 +1,8 @@
-"""empty message
+"""initial database setup
 
-Revision ID: 7e12ce00751a
+Revision ID: fd7dea8a1196
 Revises:
-Create Date: 2022-03-29 16:25:04.046616
+Create Date: 2022-04-04 10:16:50.083912
 
 """
 import sqlalchemy as sa
@@ -11,7 +11,7 @@ from alembic import op
 import app
 
 # revision identifiers, used by Alembic.
-revision = "7e12ce00751a"
+revision = "fd7dea8a1196"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -40,10 +40,13 @@ def upgrade():
             nullable=False,
         ),
         sa.Column("id_number", sa.String(length=20), nullable=True),
+        sa.Column("pin", sa.String(), nullable=True),
         sa.Column("auth_service_id", app.utils.guid.GUID(), nullable=True),
         sa.Column(
             "status",
-            sa.Enum("active", "inactive", "blocked", "first_time", name="status"),
+            sa.Enum(
+                "active", "inactive", "blocked", "first_time", "disabled", name="status"
+            ),
             nullable=False,
         ),
         sa.Column("auth_token", sa.String(), nullable=True),

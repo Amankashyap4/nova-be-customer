@@ -1,10 +1,11 @@
-from flask import Response, json
+from flask import Response, current_app, json
 from sqlalchemy.exc import DBAPIError
 from werkzeug.exceptions import HTTPException
 
 
 class AppExceptionCase(Exception):
     def __init__(self, status_code: int, context):
+        current_app.logger.error(context)
         self.exception_case = self.__class__.__name__
         self.status_code = status_code
         self.context = context
