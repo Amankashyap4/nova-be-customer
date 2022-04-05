@@ -3,7 +3,7 @@ from flask import Blueprint, request
 
 from app.controllers import CustomerController
 from app.core.service_result import handle_result
-from app.repositories import CustomerRepository
+from app.repositories import CustomerRepository, RegistrationRepository
 from app.schema import (
     AddPinSchema,
     ConfirmTokenSchema,
@@ -32,6 +32,7 @@ obj_graph = pinject.new_object_graph(
     classes=[
         CustomerController,
         CustomerRepository,
+        RegistrationRepository,
         AuthService,
         RedisService,
     ],

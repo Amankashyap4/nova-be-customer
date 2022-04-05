@@ -63,58 +63,6 @@ class CustomerTestData:
             "status": "active",
         }
 
-    #
-    # @property
-    # def event_data(self):
-    #     return {
-    #         "service_name": "test_service",
-    #         "details": "",
-    #         "meta": {
-    #             "event_action": "order_update",
-    #         },
-    #     }
-    #
-    # @property
-    # def upload_profile_image(self):
-    #     image = self.encode_profile_image("test_profile_image.jpeg")
-    #     return {
-    #         "profile_image": image,
-    #     }
-    #
-    # @property
-    # def upload_bad_encoded_image(self):
-    #     return {
-    #         "profile_image": "wrong encoded image data",
-    #     }
-    #
-    # @property
-    # def upload_invalid_image_file(self):
-    #     image = self.encode_profile_image("test_invalid_image_file.txt")
-    #     return {
-    #         "profile_image": image,
-    #     }
-    #
-    # @property
-    # def upload_invalid_image_format(self):
-    #     image = self.encode_profile_image("test_invalid_image_format.webp")
-    #     return {
-    #         "profile_image": image,
-    #     }
-    #
-    # # noinspection PyMethodMayBeStatic
-    # def encode_profile_image(self, image_name):
-    #     image_path = f"{APP_ROOT}/tests/utils"
-    #     with open(f"{image_path}/{image_name}", "rb") as test_image:
-    #         image = test_image.read()
-    #     encode_image = base64.b64encode(image)
-    #     image_str = encode_image.decode("utf-8")
-    #     return image_str
-    #
-    # # noinspection PyMethodMayBeStatic
-    # def remove_uploaded_profile_image(self, image_name):
-    #     image_path = f"{APP_ROOT}/app/static/image"
-    #     os.remove(f"{image_path}/{image_name}.jpeg")
-
 
 class KeycloakTestData:
     @property

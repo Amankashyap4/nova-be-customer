@@ -38,14 +38,15 @@ class TestCustomerRoutes(BaseTestCase):
 
     @pytest.mark.views
     def test_confirm_token(self):
+        register = self.customer_controller.register(
+            self.customer_test_data.register_customer
+        )
         with self.client:
-            self.customer_model.otp_token = "666666"
-            self.customer_model.otp_token_expiration = expiration_time
             response = self.client.post(
                 url_for("customer.confirm_token"),
                 json={
-                    "id": self.customer_model.id,
-                    "token": self.customer_model.otp_token,
+                    "id": register.value.get("id"),
+                    "token": "666666",
                 },
             )
             response_data = response.json
@@ -68,11 +69,18 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIn("id", response_data)
 
     @pytest.mark.views
-    @mock.patch("app.services.keycloak_service.AuthService.update_user")
-    def test_add_information(self, mock_update_user):
+    @mock.patch("app.services.keycloak_service.AuthService.create_user")
+    def test_add_information(self, mock_create_user):
+        register = self.customer_controller.register(
+            self.customer_test_data.register_customer
+        )
         data = self.customer_test_data.add_information.copy()
-        data["id"] = self.customer_model.id
-        mock_update_user.return_value = self.auth_service.update_user(
+        data["id"] = register.value.get("id")
+        token = self.customer_controller.confirm_token(
+            {"id": register.value.get("id"), "token": "666666"}
+        )
+        data["confirmation_token"] = token.value.get("confirmation_token")
+        mock_create_user.return_value = self.auth_service.create_user(
             self.customer_test_data.add_information
         )
         with self.client:
@@ -197,7 +205,6 @@ class TestCustomerRoutes(BaseTestCase):
         )
         with self.client:
             self.customer_model.auth_token = "666666"
-            # self.customer_model.otp_token_expiration = expiration_time
             response = self.client.post(
                 url_for("customer.reset_password"),
                 json={
@@ -231,7 +238,18 @@ class TestCustomerRoutes(BaseTestCase):
 
     @pytest.mark.views
     def test_pin_process(self):
-        self.customer_controller.register(self.customer_test_data.register_customer)
+        register = self.customer_controller.register(
+            self.customer_test_data.register_customer
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        token = self.customer_controller.confirm_token(
+            {"id": register.value.get("id"), "token": "666666"}
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        data["confirmation_token"] = token.value.get("confirmation_token")
+        self.customer_controller.add_information(data)
         with self.client:
             response = self.client.post(
                 url_for("customer.pin_process"),
@@ -247,7 +265,18 @@ class TestCustomerRoutes(BaseTestCase):
 
     @pytest.mark.views
     def test_request_reset_pin(self):
-        self.customer_controller.register(self.customer_test_data.register_customer)
+        register = self.customer_controller.register(
+            self.customer_test_data.register_customer
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        token = self.customer_controller.confirm_token(
+            {"id": register.value.get("id"), "token": "666666"}
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        data["confirmation_token"] = token.value.get("confirmation_token")
+        self.customer_controller.add_information(data)
         pin_process = self.customer_controller.pin_process(
             self.customer_test_data.register_customer
         )
@@ -268,7 +297,18 @@ class TestCustomerRoutes(BaseTestCase):
         mock_reset_password.return_value = self.auth_service.reset_password(
             self.customer_model.id
         )
-        self.customer_controller.register(self.customer_test_data.register_customer)
+        register = self.customer_controller.register(
+            self.customer_test_data.register_customer
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        token = self.customer_controller.confirm_token(
+            {"id": register.value.get("id"), "token": "666666"}
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        data["confirmation_token"] = token.value.get("confirmation_token")
+        self.customer_controller.add_information(data)
         pin_process = self.customer_controller.pin_process(
             self.customer_test_data.register_customer
         )
@@ -308,7 +348,7 @@ class TestCustomerRoutes(BaseTestCase):
             self.customer_controller.reset_phone_request(
                 {"phone_number": self.customer_model.phone_number}
             )
-            token = self.customer_controller.confirm_token(
+            token = self.customer_controller.password_otp_confirmation(
                 {"id": self.customer_model.id, "token": "666666"}
             )
             response = self.client.post(
@@ -317,7 +357,7 @@ class TestCustomerRoutes(BaseTestCase):
                     "new_phone_number": self.customer_test_data.register_customer.get(
                         "phone_number"
                     ),
-                    "token": token.value.get("confirmation_token"),
+                    "token": token.value.get("token"),
                 },
             )
             response_data = response.json
@@ -336,7 +376,7 @@ class TestCustomerRoutes(BaseTestCase):
             self.customer_controller.reset_phone_request(
                 {"phone_number": self.customer_model.phone_number}
             )
-            token = self.customer_controller.confirm_token(
+            token = self.customer_controller.password_otp_confirmation(
                 {"id": self.customer_model.id, "token": "666666"}
             )
             self.customer_controller.reset_phone(
@@ -345,7 +385,7 @@ class TestCustomerRoutes(BaseTestCase):
                         "phone_number"
                     ),
                     "customer_id": self.customer_model.id,
-                    "token": token.value.get("confirmation_token"),
+                    "token": token.value.get("token"),
                 }
             )
             response = self.client.post(

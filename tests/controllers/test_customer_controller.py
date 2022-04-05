@@ -6,7 +6,7 @@ import pytest
 
 from app.core import Result
 from app.core.exceptions import AppException
-from app.models import CustomerModel
+from app.models import CustomerModel, RegistrationModel
 from tests.base_test_case import BaseTestCase
 
 
@@ -28,14 +28,20 @@ class TestCustomerController(BaseTestCase):
         self.assertIn("id", result.value)
         self.assertEqual(result.status_code, 201)
         with self.assertRaises(AppException.ResourceExists) as obj_exist:
-            self.customer_controller.register(self.customer_test_data.register_customer)
+            self.customer_controller.register(
+                {
+                    "phone_number": self.customer_test_data.existing_customer.get(
+                        "phone_number"
+                    )
+                }
+            )
         self.assertTrue(obj_exist.exception)
         self.assertEqual(obj_exist.exception.status_code, 409)
 
     @pytest.mark.controller
     def test_confirm_token(self):
         self.customer_controller.register(self.customer_test_data.register_customer)
-        result = CustomerModel.query.filter_by(
+        result = RegistrationModel.query.filter_by(
             phone_number=self.customer_test_data.register_customer.get("phone_number")
         ).first()
         self.assertIsNotNone(result.otp_token)
@@ -60,7 +66,7 @@ class TestCustomerController(BaseTestCase):
     @pytest.mark.controller
     def test_add_information(self):
         self.customer_controller.register(self.customer_test_data.register_customer)
-        customer = CustomerModel.query.filter_by(
+        customer = RegistrationModel.query.filter_by(
             phone_number=self.customer_test_data.register_customer.get("phone_number")
         ).first()
         confirm_token = self.customer_controller.confirm_token(
@@ -251,7 +257,18 @@ class TestCustomerController(BaseTestCase):
 
     @pytest.mark.controller
     def test_pin_process(self):
-        self.customer_controller.register(self.customer_test_data.register_customer)
+        register = self.customer_controller.register(
+            self.customer_test_data.register_customer
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        token = self.customer_controller.confirm_token(
+            {"id": register.value.get("id"), "token": "666666"}
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        data["confirmation_token"] = token.value.get("confirmation_token")
+        self.customer_controller.add_information(data)
         pin_process = self.customer_controller.pin_process(
             self.customer_test_data.register_customer
         )
@@ -274,7 +291,18 @@ class TestCustomerController(BaseTestCase):
 
     @pytest.mark.controller
     def test_request_pin(self):
-        self.customer_controller.register(self.customer_test_data.register_customer)
+        register = self.customer_controller.register(
+            self.customer_test_data.register_customer
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        token = self.customer_controller.confirm_token(
+            {"id": register.value.get("id"), "token": "666666"}
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        data["confirmation_token"] = token.value.get("confirmation_token")
+        self.customer_controller.add_information(data)
         request_pin = self.customer_controller.request_pin(
             self.customer_test_data.register_customer
         )
@@ -372,7 +400,21 @@ class TestCustomerController(BaseTestCase):
 
     @pytest.mark.controller
     def test_password_otp_confirmation(self):
-        self.customer_controller.register(self.customer_test_data.register_customer)
+        register = self.customer_controller.register(
+            self.customer_test_data.register_customer
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        token = self.customer_controller.confirm_token(
+            {"id": register.value.get("id"), "token": "666666"}
+        )
+        data = self.customer_test_data.add_information.copy()
+        data["id"] = register.value.get("id")
+        data["confirmation_token"] = token.value.get("confirmation_token")
+        self.customer_controller.add_information(data)
+        self.customer_controller.forgot_password(
+            self.customer_test_data.register_customer
+        )
         result = CustomerModel.query.filter_by(
             phone_number=self.customer_test_data.register_customer.get("phone_number")
         ).first()
