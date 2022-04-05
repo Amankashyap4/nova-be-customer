@@ -7,7 +7,7 @@ from flask_testing import TestCase
 from app import APP_ROOT, create_app, db
 from app.controllers import CustomerController
 from app.models import CustomerModel
-from app.repositories import CustomerRepository
+from app.repositories import CustomerRepository, RegistrationRepository
 from config import Config
 from tests.utils.mock_auth_service import MockAuthService
 
@@ -26,9 +26,11 @@ class BaseTestCase(TestCase):
 
     def instantiate_classes(self, redis_service):
         self.customer_repository = CustomerRepository(redis_service=redis_service)
+        self.registration_repository = RegistrationRepository()
         self.auth_service = MockAuthService()
         self.customer_controller = CustomerController(
             customer_repository=self.customer_repository,
+            registration_repository=self.registration_repository,
             auth_service=self.auth_service,
         )
         self.customer_test_data = CustomerTestData()
@@ -45,18 +47,6 @@ class BaseTestCase(TestCase):
         )
         self.addCleanup(self.randint_patcher.stop)
         self.randint_patcher.start()
-        # kafka_sms_patcher = patch(
-        #     "app.notifications.sms_notification_handler.publish_to_kafka",
-        #     self.dummy_kafka_method,
-        # )
-        # self.addCleanup(kafka_sms_patcher.stop)
-        # kafka_sms_patcher.start()
-        # kafka_email_patcher = patch(
-        #     "app.notifications.email_notification_handler.publish_to_kafka",
-        #     self.dummy_kafka_method,
-        # )
-        # self.addCleanup(kafka_email_patcher.stop)
-        # kafka_email_patcher.start()
         jwt_decode = patch("app.utils.auth.jwt.decode", self.decode_token)
         self.addCleanup(jwt_decode.stop)
         jwt_decode.start()

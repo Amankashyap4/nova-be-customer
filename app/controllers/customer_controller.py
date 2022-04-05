@@ -8,7 +8,7 @@ from app.core import Result
 from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
 from app.core.service_interfaces import AuthServiceInterface
-from app.repositories import CustomerRepository
+from app.repositories import CustomerRepository, RegistrationRepository
 from app.utils import keycloak_fields, validate_uuid
 
 utc = pytz.UTC
@@ -20,9 +20,11 @@ class CustomerController(Notifier):
     def __init__(
         self,
         customer_repository: CustomerRepository,
+        registration_repository: RegistrationRepository,
         auth_service: AuthServiceInterface,
     ):
         self.customer_repository = customer_repository
+        self.registration_repository = registration_repository
         self.auth_service = auth_service
 
     def index(self):
@@ -33,40 +35,30 @@ class CustomerController(Notifier):
         assert obj_data, "missing data of object to be saved"
         assert "phone_number" in obj_data, "phone number missing"
         phone_number = obj_data.get("phone_number")
-        user_data = {
-            "phone_number": phone_number,
-        }
-        existing_customer = self.customer_repository.find({"phone_number": phone_number})
+        query_data = {"phone_number": phone_number}
+        existing_customer = self.customer_repository.find(query_data)
         if existing_customer:
             raise AppException.ResourceExists(
                 context={
-                    "controller.create": f"customer with phone number {phone_number} exists"  # noqa
+                    "controller.create": f"customer with phone number {phone_number} exists"
+                    # noqa
                 }
             )
+        customer = self.registration_repository.find(query_data)
+        if customer:
+            self.registration_repository.delete(customer.id)
+
         try:
-            customer = self.customer_repository.create(user_data)
+            register_customer = self.registration_repository.create(query_data)
         except AppException.OperationError as e:
             raise AppException.OperationError(context={"controller.create": e.context})
-        user_data = {
-            "username": str(customer.id),
-            "password": str(random.randint(1000, 9999)),
-            "phone_number": user_data.get("phone_number"),
-            "status": customer.status.value,
-            "group": "nova-customer-gp",
-        }
-        # Create user in auth service
-        auth_result = self.auth_service.create_user(user_data)
-        self.customer_repository.update_by_id(
-            customer.id,
-            {"auth_service_id": auth_result},
-        )
         otp = 666666
         otp_expiration = datetime.now() + timedelta(minutes=5)
-        self.customer_repository.update_by_id(
-            customer.id,
+        self.registration_repository.update_by_id(
+            register_customer.id,
             {"otp_token": otp, "otp_token_expiration": otp_expiration},
         )
-        return Result({"id": customer.id}, 201)
+        return Result({"id": register_customer.id}, 201)
 
     def confirm_token(self, obj_data):
         assert obj_data, "missing data of object"
@@ -74,27 +66,29 @@ class CustomerController(Notifier):
         customer_id = obj_data.get("id")
         validate_uuid(customer_id)
         otp = obj_data.get("token")
-        customer = self.customer_repository.find({"id": customer_id, "otp_token": otp})
-        if not customer:
+        registered_customer = self.registration_repository.find(
+            {"id": customer_id, "otp_token": otp}
+        )
+        if not registered_customer:
             raise AppException.BadRequest(
                 context={"controller.confirm_otp": "invalid user id or otp token passed"}
             )
 
-        if utc.localize(datetime.now()) > customer.otp_token_expiration:
+        if utc.localize(datetime.now()) > registered_customer.otp_token_expiration:
             raise AppException.ExpiredTokenException(
                 context={"controller.confirm_otp": "otp token has expired"}
             )
         password_token = secrets.token_urlsafe(16)
-        updated_customer = self.customer_repository.update_by_id(
-            customer.id,
+        update_customer = self.registration_repository.update_by_id(
+            registered_customer.id,
             {
                 "auth_token": password_token,
                 "auth_token_expiration": datetime.now() + timedelta(minutes=5),
             },
         )
         token_data = {
-            "confirmation_token": updated_customer.auth_token,
-            "id": updated_customer.id,
+            "confirmation_token": update_customer.auth_token,
+            "id": update_customer.id,
         }
         return Result(token_data, 200)
 
@@ -103,27 +97,45 @@ class CustomerController(Notifier):
 
         obj_id = obj_data.pop("id")
         validate_uuid(obj_id)
-        password_token = obj_data.get("confirmation_token")
-        customer = self.customer_repository.find({"id": obj_id})
-        if not customer:
+        password_token = obj_data.pop("confirmation_token", None)
+        registered_customer = self.registration_repository.find({"id": obj_id})
+        if not registered_customer:
             raise AppException.BadRequest("Invalid customer")
-        elif customer.auth_token != password_token:
+        elif registered_customer.auth_token != password_token:
             raise AppException.BadRequest("Something went wrong, please try again")
 
         obj_data["auth_token"] = secrets.token_urlsafe(16)
         obj_data["auth_token_expiration"] = datetime.now() + timedelta(minutes=10)
+        obj_data["phone_number"] = registered_customer.phone_number
 
-        try:
-            customer = self.customer_repository.update_by_id(obj_id, obj_data)
-        except AppException.NotFoundException:
-            raise AppException.NotFoundException(
-                context={
-                    "controller.update": f"customer with id {obj_id} does not exists"  # noqa
-                }
-            )
-        user_data = keycloak_fields(obj_id, obj_data)
-        auth = self.auth_service.update_user(user_data)
-        token_data = {"password_token": customer.auth_token, "id": auth}
+        customer = self.customer_repository.create(obj_data)
+
+        if obj_data.get("full_name"):
+            fullname = obj_data.pop("full_name").split(" ")
+            obj_data["first_name"] = fullname[0]
+            obj_data["last_name"] = " ".join(fullname[1:])
+
+        user_data = {
+            "username": str(customer.id),
+            "password": str(random.randint(1000, 9999)),
+            "first_name": obj_data.get("first_name"),
+            "last_name": obj_data.get("last_name"),
+            "phone_number": obj_data.get("phone_number"),
+            "id_type": obj_data.get("id_type"),
+            "id_expiry_date": obj_data.get("id_expiry_date"),
+            "id_number": obj_data.get("id_number"),
+            "status": customer.status.value,
+            "group": "nova-customer-gp",
+        }
+        # Create user in auth service
+        auth_result = self.auth_service.create_user(user_data)
+
+        # update customer in customer table
+        self.customer_repository.update_by_id(
+            customer.id,
+            {"auth_service_id": auth_result},
+        )
+        token_data = {"password_token": customer.auth_token, "id": auth_result}
 
         return Result(token_data, 200)
 

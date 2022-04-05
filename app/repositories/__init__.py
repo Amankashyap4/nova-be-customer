@@ -1,1 +1,2 @@
 from .customer_repository import CustomerRepository
+from .registration_repository import RegistrationRepository
