@@ -8,6 +8,7 @@ from .auth_schema import (
     PinRequestSchema,
     PinResetRequestSchema,
     PinResetSchema,
+    RefreshTokenSchema,
     RequestResetPinSchema,
     ResendTokenSchema,
     ResetPhoneSchema,

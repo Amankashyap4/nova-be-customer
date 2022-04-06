@@ -86,7 +86,7 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code != 200:
             raise AppException.KeyCloakAdminException(
-                {"refresh_token": [keycloak_response.json()]},
+                [keycloak_response.json()],
                 status_code=keycloak_response.status_code,
             )
 
