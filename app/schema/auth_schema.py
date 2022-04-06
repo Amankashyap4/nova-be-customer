@@ -95,3 +95,4 @@ class ConfirmInfo(Schema):
 class RefreshTokenSchema(Schema):
     id = fields.UUID(required=True)
     refresh_token = fields.Str(required=True)
+    access_token = fields.Str(dump_only=True)
