@@ -250,6 +250,19 @@ def add_information():
                   app_exception: ValidationException
                   errorMessage:
                     token: ["Missing data for required field."]
+        '500':
+          description: returns an internal server error exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  error_message:
+                    type: str
+                    example: keycloak server connection error
     """
     data = request.json
     result = customer_controller.add_information(data)
@@ -305,6 +318,19 @@ def add_pin():
                   errorMessage:
                     type: str
                     example: user does not exist.
+        '500':
+          description: returns an internal server error exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  error_message:
+                    type: str
+                    example: keycloak server connection error
       tags:
           - Customer Registration
     """
@@ -439,6 +465,19 @@ def update_customer(customer_id):
                   errorMessage:
                     type: str
                     example: user does not exist
+        '500':
+          description: returns an internal server error exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  error_message:
+                    type: str
+                    example: keycloak server connection error
       tags:
           - Customer
     """
@@ -944,6 +983,19 @@ def reset_pin(user_id):
                   errorMessage:
                     type: str
                     example: Something went wrong, please try again
+        '500':
+          description: returns an internal server error exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  error_message:
+                    type: str
+                    example: keycloak server connection error
       tags:
           - Pin-Process
     """

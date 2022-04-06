@@ -356,21 +356,17 @@ class AuthService(AuthServiceInterface):
                 method=method, url=url, headers=headers, json=json, data=data
             )
         except exceptions.ConnectionError:
-            raise AppException.OperationError(
-                context={f"{method} request error": "keycloak server connection error"}
+            raise AppException.InternalServerError(
+                context="keycloak server connection error"
             )
         except exceptions.HTTPError:
-            raise AppException.OperationError(
-                context={f"{method} request error": "keycloak server http error"}
-            )
+            raise AppException.InternalServerError(context="keycloak server http error")
         except exceptions.Timeout:
-            raise AppException.OperationError(
-                context={f"{method} request error": "keycloak server connection timeout"}
+            raise AppException.InternalServerError(
+                context="keycloak server connection timeout"
             )
         except exceptions.RequestException:
-            raise AppException.OperationError(
-                context={
-                    f"{method} request error": "error connecting to keycloak server"
-                }
+            raise AppException.InternalServerError(
+                context="error connecting to keycloak server"
             )
         return response

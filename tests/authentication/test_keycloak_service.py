@@ -243,7 +243,7 @@ class TestAuthService(MockSideEffects):
     @pytest.mark.auth_service
     @mock.patch("app.services.keycloak_service.requests.request")
     def test_request_connection_error(self, mock_request):
-        with self.assertRaises(AppException.OperationError) as error:
+        with self.assertRaises(AppException.InternalServerError) as error:
             mock_request.side_effect = self.request_connection_error
             self._auth_service.get_token(
                 {"username": "username", "password": "password"}
@@ -254,7 +254,7 @@ class TestAuthService(MockSideEffects):
     @pytest.mark.auth_service
     @mock.patch("app.services.keycloak_service.requests.request")
     def test_request_http_error(self, mock_request):
-        with self.assertRaises(AppException.OperationError) as error:
+        with self.assertRaises(AppException.InternalServerError) as error:
             mock_request.side_effect = self.request_http_error
             self._auth_service.get_token(
                 {"username": "username", "password": "password"}
@@ -265,7 +265,7 @@ class TestAuthService(MockSideEffects):
     @pytest.mark.auth_service
     @mock.patch("app.services.keycloak_service.requests.request")
     def test_request_timedout(self, mock_request):
-        with self.assertRaises(AppException.OperationError) as error:
+        with self.assertRaises(AppException.InternalServerError) as error:
             mock_request.side_effect = self.request_timed_out_error
             self._auth_service.get_token(
                 {"username": "username", "password": "password"}
@@ -276,7 +276,7 @@ class TestAuthService(MockSideEffects):
     @pytest.mark.auth_service
     @mock.patch("app.services.keycloak_service.requests.request")
     def test_request_exception(self, mock_request):
-        with self.assertRaises(AppException.OperationError) as error:
+        with self.assertRaises(AppException.InternalServerError) as error:
             mock_request.side_effect = self.request_exception
             self._auth_service.get_token(
                 {"username": "username", "password": "password"}
