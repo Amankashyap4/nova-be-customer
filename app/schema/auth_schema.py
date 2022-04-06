@@ -67,6 +67,7 @@ class LoginSchema(Schema):
 
 
 class TokenSchema(Schema):
+    id = fields.UUID()
     access_token = fields.Str()
     refresh_token = fields.Str()
 
