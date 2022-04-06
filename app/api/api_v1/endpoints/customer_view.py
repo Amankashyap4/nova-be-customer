@@ -1276,7 +1276,7 @@ def refresh_token():
           description: call successful
           content:
             application/json:
-              schema: TokenLoginSchema
+              schema: RefreshTokenSchema
         '400':
           description: returns a bad request exception
           content:
@@ -1310,4 +1310,4 @@ def refresh_token():
     """
     data = request.json
     result = customer_controller.refresh_token(data)
-    return handle_result(result, schema=TokenLoginSchema)
+    return handle_result(result, schema=RefreshTokenSchema)
