@@ -216,6 +216,7 @@ class CustomerController(Notifier):
             {"username": str(customer.id), "new_password": pin}
         )
         token = self.auth_service.get_token({"username": customer.id, "password": pin})
+        token["id"] = customer.id
         return Result(token, 200)
 
     def forgot_password(self, obj_phone):
