@@ -108,10 +108,10 @@ class TestCustomerController(BaseTestCase):
         self.assertIsNotNone(result.otp_token_expiration)
         self.assertIsInstance(resend_token, Result)
         self.assert200(resend_token)
-        with self.assertRaises(AppException.NotFoundException) as bad_request:
+        with self.assertRaises(AppException.BadRequest) as bad_request:
             self.customer_controller.resend_token({"id": uuid.uuid4()})
         self.assertTrue(bad_request.exception)
-        self.assert404(bad_request.exception)
+        self.assert400(bad_request.exception)
 
     @pytest.mark.controller
     def test_login_customer(self):
@@ -169,7 +169,8 @@ class TestCustomerController(BaseTestCase):
         self.assert200(add_pin)
         self.assertIsInstance(add_pin, Result)
         self.assertIsInstance(add_pin.value, dict)
-        self.assertIn("id", add_pin.value)
+        self.assertIn("access_token", add_pin.value)
+        self.assertIn("refresh_token", add_pin.value)
         with self.assertRaises(AppException.NotFoundException) as not_found:
             self.customer_controller.add_pin(
                 {"password_token": "not_found", "pin": "1234"}

@@ -15,7 +15,7 @@ class RequestResetPinSchema(Schema):
 
 
 class ConfirmedTokenSchema(Schema):
-    conformation_token = fields.Str(required=True)
+    confirmation_token = fields.Str(required=True)
     id = fields.UUID(required=True)
 
 
@@ -90,3 +90,8 @@ class ResetPinProcess(Schema):
 class ConfirmInfo(Schema):
     password_token = fields.Str()
     id = fields.UUID(required=True)
+
+
+class RefreshTokenSchema(Schema):
+    id = fields.UUID(required=True)
+    refresh_token = fields.Str(required=True)

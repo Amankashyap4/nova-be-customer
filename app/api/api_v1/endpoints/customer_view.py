@@ -16,6 +16,7 @@ from app.schema import (
     PinChangeSchema,
     PinResetRequestSchema,
     PinResetSchema,
+    RefreshTokenSchema,
     RequestResetPinSchema,
     ResendTokenSchema,
     ResetPhoneSchema,
@@ -604,7 +605,7 @@ def password_otp_confirmation():
                     type: str
                     example: Wrong otp, please try again
       tags:
-          - OTP conformation for change Forgot password or change phone
+          - OTP confirmation for change Forgot password or change phone
     """
     data = request.json
     result = customer_controller.password_otp_confirmation(data)
@@ -1204,3 +1205,57 @@ def delete_customer(customer_id):
     """
     result = customer_controller.delete(customer_id)
     return handle_result(result)
+
+
+@customer.route("/accounts/refresh-token", methods=["POST"])
+@validator(schema=RefreshTokenSchema)
+def refresh_token():
+    """
+    ---
+    post:
+      description: refresh access token of customer
+      requestBody:
+        required: true
+        content:
+            application/json:
+                schema: RefreshTokenSchema
+      responses:
+        '200':
+          description: call successful
+          content:
+            application/json:
+              schema: TokenLoginSchema
+        '400':
+          description: returns a bad request exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: KeyCloakAdminException
+                  errorMessage:
+                    oneOf:
+                      type: array
+                      items:
+                        error:
+                          type: str
+                          example: invalid_grant
+                        error_description:
+                          type: str
+                          example: Invalid refresh token
+                example:
+                  app_exception: KeyCloakAdminException
+                  errorMessage: [
+                    {
+                      "error": "invalid_grant",
+                      "error_description": "Invalid refresh token"
+                    }
+                  ]
+      tags:
+          - Authentication
+    """
+    data = request.json
+    result = customer_controller.refresh_token(data)
+    return handle_result(result, schema=TokenLoginSchema)

@@ -22,6 +22,7 @@ from app.schema import (
     PinRequestSchema,
     PinResetRequestSchema,
     PinResetSchema,
+    RefreshTokenSchema,
     ResendTokenSchema,
     ResetPhoneSchema,
     TokenSchema,
@@ -78,6 +79,7 @@ spec.components.schema("PinChangeSchema", schema=PinChangeSchema)
 spec.components.schema("PinResetSchema", schema=PinResetSchema)
 spec.components.schema("PinResetRequestSchema", schema=PinResetRequestSchema)
 spec.components.schema("ResetPhoneSchema", schema=ResetPhoneSchema)
+spec.components.schema("RefreshTokenSchema", schema=RefreshTokenSchema)
 
 # add swagger tags that are used for endpoint annotation
 tags = [

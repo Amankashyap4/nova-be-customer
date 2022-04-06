@@ -95,11 +95,13 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIn("password_token", response_data)
 
     @pytest.mark.views
+    @mock.patch("app.services.keycloak_service.AuthService.get_token")
     @mock.patch("app.services.keycloak_service.AuthService.reset_password")
-    def test_add_pin(self, mock_reset_password):
+    def test_add_pin(self, mock_reset_password, mock_get_token):
         mock_reset_password.return_value = self.auth_service.reset_password(
             self.customer_model.id
         )
+        mock_get_token.side_effect = self.auth_service.get_token
         with self.client:
             self.customer_model.auth_token = "auth_token"
             response = self.client.post(
