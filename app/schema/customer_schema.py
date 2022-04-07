@@ -52,26 +52,11 @@ class CustomerSchema(Schema):
 
 
 class CustomerUpdateSchema(CustomerSchema):
-    full_name = fields.String(validate=validate.Length(min=3))
     email = fields.Email()
-    birth_date = fields.Date()
-    id_expiry_date = fields.Date()
-    id_type = EnumField(IDEnum)
-    id_number = fields.String()
-    status = EnumField(StatusEnum)
     profile_image = fields.String()
 
     class Meta:
-        fields = [
-            "full_name",
-            "email",
-            "birth_date",
-            "id_expiry_date",
-            "id_type",
-            "id_number",
-            "profile_image",
-            "status",
-        ]
+        fields = ["email", "profile_image"]
 
 
 class CustomerSignUpSchema(CustomerSchema):

@@ -146,8 +146,8 @@ class TestCustomerController(BaseTestCase):
         self.assertIsInstance(result, Result)
         self.assertIsInstance(result.value, CustomerModel)
         self.assertEqual(
-            result.value.full_name,
-            self.customer_test_data.update_customer.get("full_name"),
+            result.value.email,
+            self.customer_test_data.update_customer.get("email"),
         )
         with self.assertRaises(AppException.NotFoundException) as not_found:
             self.customer_controller.update(

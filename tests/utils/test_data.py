@@ -59,8 +59,7 @@ class CustomerTestData:
     @property
     def update_customer(self):
         return {
-            "full_name": "customer update",
-            "status": "active",
+            "email": "customer@update.com",
         }
 
 
