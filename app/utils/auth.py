@@ -26,12 +26,16 @@ def auth_required(authorized_roles=None):
                 raise AppException.Unauthorized("Missing authentication token")
             token = authorization_header.split()[1]
             payload = decode_token(config=Config, token=token)
-            # Get retailer roles from token
-            available_roles = payload.get("resource_access").get(
-                Config.KEYCLOAK_CLIENT_ID
-            )
-            user_role = available_roles.get("roles")
+            # Get customer roles from token
+            # available_roles = payload.get("resource_access").get(
+            #     Config.KEYCLOAK_CLIENT_ID
+            # )
+            # user_role = available_roles.get("roles")
             if authorized_roles:
+                available_roles = payload.get("resource_access").get(
+                    Config.KEYCLOAK_CLIENT_ID
+                )
+                user_role = available_roles.get("roles")
                 resource_access_role = authorized_roles.split("|")
                 if user_is_authorized(user_role, resource_access_role):
                     if "user_id" in inspect.getfullargspec(func).args:
