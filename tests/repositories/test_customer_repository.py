@@ -32,8 +32,8 @@ class TestCustomerRepository(BaseTestCase):
         self.assertIsNotNone(result)
         self.assertIsInstance(result, CustomerModel)
         self.assertEqual(
-            result.status.value,
-            self.customer_test_data.update_customer.get("status"),
+            result.email,
+            self.customer_test_data.update_customer.get("email"),
         )
 
     @pytest.mark.repository
