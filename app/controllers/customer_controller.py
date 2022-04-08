@@ -9,7 +9,12 @@ from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
 from app.core.service_interfaces import AuthServiceInterface
 from app.repositories import CustomerRepository, RegistrationRepository
-from app.utils import keycloak_fields, validate_uuid
+from app.utils import (
+    keycloak_fields,
+    save_profile_image,
+    send_profile_image,
+    validate_uuid,
+)
 
 utc = pytz.UTC
 
@@ -192,6 +197,7 @@ class CustomerController(Notifier):
         assert obj_id, "missing id of object to update"
         assert obj_data, "missing data of object to update"
         validate_uuid(obj_id)
+        obj_data = save_profile_image(obj_id, obj_data)
         try:
             customer = self.customer_repository.update_by_id(obj_id, obj_data)
         except AppException.NotFoundException:
@@ -200,7 +206,7 @@ class CustomerController(Notifier):
             )
         user_data = keycloak_fields(obj_id, obj_data)
         self.auth_service.update_user(user_data)
-
+        customer.profile_image = send_profile_image(str(customer.id))
         return Result(customer, 200)
 
     def add_pin(self, obj_data):
