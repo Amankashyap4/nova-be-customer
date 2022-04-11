@@ -11,13 +11,13 @@ root_dir = os.path.join(os.path.dirname(__file__), "..")
 
 def save_profile_image(obj_id, obj_data):
     image_directory_path = os.path.join(root_dir, "static/profile_images")
-    image_data = obj_data.get("profile_image")
-    if image_data:
+    encoded_image = obj_data.get("profile_image")
+    if encoded_image:
         try:
-            decode_image_data = base64.b64decode(image_data)
+            decode_image = base64.b64decode(encoded_image)
         except Exception:
             raise AppException.OperationError(context="error decoding image data")
-        valid_image_info = validate_image_file(decode_image_data)
+        valid_image_info = validate_image_file(decode_image)
         image_name = f"{obj_id}.{valid_image_info.get('image_format')}"
         with open(f"{image_directory_path}/{image_name}", "wb") as profile_image:
             profile_image.write(valid_image_info.get("image_byte"))

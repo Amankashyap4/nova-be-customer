@@ -44,6 +44,7 @@ marshmallow-sqlalchemy==0.24.3; python_version >= "3.6"
 marshmallow==3.12.2; python_version >= "3.5"
 mongoengine==0.24.1; python_version >= "3.6"
 packaging==21.3; python_version >= "3.6"
+pillow==9.1.0; python_version >= "3.7"
 pinject==0.14.1
 platformdirs==2.5.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
 psycopg2-binary==2.9.3; python_version >= "3.6"
