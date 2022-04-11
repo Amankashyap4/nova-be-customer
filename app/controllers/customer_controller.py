@@ -429,6 +429,7 @@ class CustomerController(Notifier):
     def get_customer(self, obj_id):
         validate_uuid(obj_id)
         customer = self.customer_repository.get_by_id(obj_id)
+        customer.profile_image = send_profile_image(str(customer.id))
         return Result(customer, 200)
 
     def password_otp_confirmation(self, data):
