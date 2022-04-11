@@ -1,4 +1,3 @@
-import inspect
 import os
 from functools import wraps
 
@@ -26,24 +25,12 @@ def auth_required(authorized_roles=None):
                 raise AppException.Unauthorized("Missing authentication token")
             token = authorization_header.split()[1]
             payload = decode_token(config=Config, token=token)
-            # Get customer roles from token
-            # available_roles = payload.get("resource_access").get(
-            #     Config.KEYCLOAK_CLIENT_ID
-            # )
-            # user_role = available_roles.get("roles")
+            user_role = authorized_clients(config=Config, payload=payload)
             if authorized_roles:
-                available_roles = payload.get("resource_access").get(
-                    Config.KEYCLOAK_CLIENT_ID
-                )
-                user_role = available_roles.get("roles")
                 resource_access_role = authorized_roles.split("|")
                 if user_is_authorized(user_role, resource_access_role):
-                    if "user_id" in inspect.getfullargspec(func).args:
-                        kwargs["user_id"] = payload.get("preferred_username")
                     return func(*args, **kwargs)
             else:
-                if "user_id" in inspect.getfullargspec(func).args:
-                    kwargs["user_id"] = payload.get("preferred_username")
                 return func(*args, **kwargs)
             raise AppException.Unauthorized(context="operation unauthorized")
 
@@ -70,9 +57,17 @@ def decode_token(config, token):
         raise AppException.OperationError(context=e.args)
 
 
-def user_is_authorized(user_role, resource_role):
-    for role in user_role:
-        if role in resource_role:
-            return True
+def authorized_clients(config, payload):
+    resource_access = payload.get("resource_access")
+    for client in config.KEYCLOAK_CLIENT_ID:
+        if client in resource_access.keys():
+            user_role = resource_access.get(client).get("roles")
+            return user_role
+    return []
 
+
+def user_is_authorized(user_role, resource_role):
+    for role in resource_role:
+        if role in user_role:
+            return True
     return False
