@@ -413,7 +413,7 @@ def login():
 
 @customer.route("/accounts/<string:customer_id>", methods=["PATCH"])
 @validator(schema=CustomerUpdateSchema)
-# @auth_required()
+@auth_required()
 def update_customer(customer_id):
     """
     ---
