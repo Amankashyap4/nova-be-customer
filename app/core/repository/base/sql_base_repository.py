@@ -61,10 +61,7 @@ class SQLBaseRepository(CRUDRepositoryInterface):
         assert isinstance(obj_in, dict), "Update data should be a dictionary"
 
         db_obj = self.find_by_id(obj_id)
-        if not db_obj:
-            raise AppException.NotFoundException(
-                f"Resource of id {obj_id} does not exist"
-            )
+
         try:
             for field in obj_in:
                 if hasattr(db_obj, field):
@@ -86,7 +83,9 @@ class SQLBaseRepository(CRUDRepositoryInterface):
         try:
             db_obj = self.model.query.get(obj_id)
             if db_obj is None:
-                raise AppException.NotFoundException()
+                raise AppException.NotFoundException(
+                    context=f"resource with id {obj_id} does not exist"
+                )
             return db_obj
 
         except DBAPIError as e:
