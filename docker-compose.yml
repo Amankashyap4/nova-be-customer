@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   backend:
-    image: nova-be-customer:1.0.0
+    image: nova-be-customer:latest
     environment:
       DB_ENGINE: ${DB_ENGINE}
       DB_USER: ${DB_USER}
@@ -26,6 +26,7 @@ services:
       REDIS_PORT: ${REDIS_PORT}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_SUBSCRIPTIONS: ${$KAFKA_SUBSCRIPTIONS}
     command: ./gunicorn_starter.sh
     ports:
       - "8000:5000"
@@ -34,6 +35,8 @@ services:
     volumes:
       - .:/app
     depends_on:
+      consumer:
+        condition: service_started
       db:
         condition: service_healthy
       redis:
@@ -42,6 +45,41 @@ services:
           condition: service_started
       kafka:
           condition: service_started
+
+  consumer:
+    image: nova-be-customer:latest
+    container_name: "nova-be-customer-consumer"
+    environment:
+      DB_ENGINE: ${DB_ENGINE}
+      DB_USER: ${DB_USER}
+      DB_PORT: ${DB_PORT}
+      DEV_DB_HOST: ${DEV_DB_HOST}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      FLASK_ENV: ${FLASK_ENV}
+      KEYCLOAK_URI: ${KEYCLOAK_URI}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_DB_HOST: ${KEYCLOAK_DB_HOST}
+      KEYCLOAK_DB_PORT: ${KEYCLOAK_DB_PORT}
+      KEYCLOAK_DB_USER: ${KEYCLOAK_DB_USER}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KEYCLOAK_DB: ${KEYCLOAK_DB}
+      REDIS_SERVER: ${REDIS_SERVER}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PORT: ${REDIS_PORT}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_SUBSCRIPTIONS: ${$KAFKA_SUBSCRIPTIONS}
+    command: python3 ./app/consumer.py
+    networks:
+      - nova_service
+    volumes:
+      - .:/app
+    restart: always
 
   db:
     image: postgres:12
