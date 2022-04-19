@@ -49,7 +49,7 @@ class Config:
     LOG_MAIL_SUBJECT = f"error_log[{APP_NAME}]"
 
     # KEYCLOAK
-    KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
+    KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID", default="").split("|")
     KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
     KEYCLOAK_URI = os.getenv("KEYCLOAK_URI")
     KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM")

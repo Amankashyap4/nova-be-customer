@@ -47,7 +47,7 @@ class BaseTestCase(TestCase):
         )
         self.addCleanup(self.randint_patcher.stop)
         self.randint_patcher.start()
-        jwt_decode = patch("app.utils.auth.jwt.decode", self.decode_token)
+        jwt_decode = patch("app.utils.auth.jwt.decode")
         self.addCleanup(jwt_decode.stop)
         jwt_decode.start()
         utc_patcher = patch(
@@ -79,11 +79,11 @@ class BaseTestCase(TestCase):
     def dummy_kafka_method(self, topic, value):
         return True
 
-    def decode_token(self, token, key, algorithms, audience, issuer):  # noqa
-        return {
-            "resource_access": {Config.KEYCLOAK_CLIENT_ID: {"roles": ["retailer"]}},
-            "preferred_username": self.customer_model.id,
-        }
+    # def decode_token(self, token, key, algorithms, audience, issuer):  # noqa
+    #     return {
+    #         "resource_access": {Config.KEYCLOAK_CLIENT_ID: {"roles": ["retailer"]}},
+    #         "preferred_username": self.customer_model.id,
+    #     }
 
     def utc_side_effect(self, args):  # noqa
         return args
