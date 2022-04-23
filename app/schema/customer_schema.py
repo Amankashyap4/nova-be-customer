@@ -18,6 +18,7 @@ class CustomerSchema(Schema):
     status = EnumField(StatusEnum, allow_none=True)
     profile_image = fields.String(allow_none=True)
     auth_service_id = fields.UUID(allow_none=True)
+    level = fields.String()
     created = fields.DateTime()
     modified = fields.DateTime()
 
@@ -35,6 +36,7 @@ class CustomerSchema(Schema):
             "profile_image",
             "auth_service_id",
             "status",
+            "level",
             "created",
             "modified",
         ]
@@ -94,3 +96,14 @@ class UpdatePhoneSchema(Schema):
         required=True, validate=validate.Regexp(regex_type().get("phone_number"))
     )
     token = fields.Str(required=True)
+
+
+class CustomerRequestArgSchema(CustomerSchema):
+    phone_number = fields.String(
+        validate=validate.Regexp(regex_type().get("phone_number"))
+    )
+    customer_id = fields.UUID()
+    user_id = fields.UUID()
+
+    class Meta:
+        fields = ["phone_number", "customer_id", "user_id"]

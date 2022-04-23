@@ -423,3 +423,16 @@ class TestCustomerRoutes(BaseTestCase):
                 headers=self.headers,
             )
             self.assertEqual(response.status_code, 204)
+
+    @pytest.mark.views
+    def test_find_by_phone_number(self):
+        with self.client:
+            response = self.client.get(
+                url_for(
+                    "customer.find_by_phone_number",
+                    phone_number=self.customer_model.phone_number,
+                ),
+                headers=self.headers,
+            )
+            self.assert200(response)
+            self.assertIsInstance(response.json, dict)

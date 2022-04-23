@@ -1,4 +1,3 @@
-import uuid
 from functools import wraps
 
 from flask import request
@@ -26,16 +25,27 @@ def validator(schema):
     return validate_data
 
 
-def validate_uuid(obj_id):
-    if isinstance(obj_id, uuid.UUID):
-        obj_id = str(obj_id)
-    try:
-        uuid.UUID(obj_id)
-    except ValueError:
-        raise AppException.ValidationException(
-            context={"valueError": f"the id {obj_id} is inavlid"}
-        )
-    return True
+def arg_validator(schema, param):
+    def validate_args(func):
+        """
+        A wrapper to validate uuid using marshmallow schema
+        :param func: {function} the function to wrap around
+        """
+
+        @wraps(func)
+        def view_wrapper(*args, **kwargs):
+            errors = schema().validate(
+                {arg: request.view_args.get(arg) for arg in param.split("|")}
+            )
+
+            if errors:
+                raise AppException.ValidationException(context=errors)
+
+            return func(*args, **kwargs)
+
+        return view_wrapper
+
+    return validate_args
 
 
 def split_name(obj_data):
