@@ -17,6 +17,7 @@ from .auth_schema import (
 )
 from .customer_schema import (
     CustomerInfoSchema,
+    CustomerRequestArgSchema,
     CustomerSchema,
     CustomerSignUpSchema,
     CustomerUpdateSchema,

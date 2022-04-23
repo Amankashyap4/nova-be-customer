@@ -8,6 +8,7 @@ from app.schema import (
     AddPinSchema,
     ConfirmTokenSchema,
     CustomerInfoSchema,
+    CustomerRequestArgSchema,
     CustomerSchema,
     CustomerSignUpSchema,
     CustomerUpdateSchema,
@@ -24,7 +25,7 @@ from app.schema import (
     UpdatePhoneSchema,
 )
 from app.services import AuthService, RedisService
-from app.utils import auth_required, validator
+from app.utils import arg_validator, auth_required, validator
 
 customer = Blueprint("customer", __name__)
 
@@ -56,7 +57,7 @@ def get_customers():
                 type: array
                 items: CustomerSchema
       tags:
-          - Customer Registration
+          - Customer
     """
 
     result = customer_controller.index()
@@ -412,8 +413,9 @@ def login():
 
 
 @customer.route("/accounts/<string:customer_id>", methods=["PATCH"])
-@validator(schema=CustomerUpdateSchema)
 @auth_required()
+@arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
+@validator(schema=CustomerUpdateSchema)
 def update_customer(customer_id):
     """
     ---
@@ -489,6 +491,7 @@ def update_customer(customer_id):
 
 @customer.route("/accounts/<string:customer_id>", methods=["GET"])
 @auth_required()
+@arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 def find_customer(customer_id):
     """
     ---
@@ -734,8 +737,9 @@ def reset_password():
 
 
 @customer.route("/change-password/<string:user_id>", methods=["POST"])
-@validator(schema=PinChangeSchema)
 @auth_required()
+@arg_validator(schema=CustomerRequestArgSchema, param="user_id")
+@validator(schema=PinChangeSchema)
 def change_password(user_id):
     """
     ---
@@ -933,6 +937,7 @@ def request_reset_pin():
 
 
 @customer.route("/reset-pin/<string:user_id>", methods=["POST"])
+@arg_validator(schema=CustomerRequestArgSchema, param="user_id")
 @validator(schema=AddPinSchema)
 def reset_pin(user_id):
     """
@@ -1064,6 +1069,7 @@ def reset_phone_request():
 
 
 @customer.route("/reset-phone/<string:user_id>", methods=["POST"])
+@arg_validator(schema=CustomerRequestArgSchema, param="user_id")
 @validator(schema=ResetPhoneSchema)
 def reset_phone(user_id):
     """
@@ -1143,6 +1149,7 @@ def reset_phone(user_id):
 
 
 @customer.route("/update-phone/<string:user_id>", methods=["POST"])
+@arg_validator(schema=CustomerRequestArgSchema, param="user_id")
 @validator(schema=UpdatePhoneSchema)
 def update_phone(user_id):
     """
@@ -1209,6 +1216,7 @@ def update_phone(user_id):
 
 @customer.route("/accounts/<string:customer_id>", methods=["DELETE"])
 @auth_required()
+@arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 def delete_customer(customer_id):
     """
     ---
@@ -1311,3 +1319,46 @@ def refresh_token():
     data = request.json
     result = customer_controller.refresh_token(data)
     return handle_result(result, schema=RefreshTokenSchema)
+
+
+@customer.route("/accounts/query/<string:phone_number>", methods=["GET"])
+# @auth_required()
+@arg_validator(schema=CustomerRequestArgSchema, param="phone_number")
+def find_by_phone_number(phone_number):
+    """
+    ---
+    get:
+      description: refresh access token of customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: phone_number
+          required: true
+          schema:
+            type: string
+          description: The customer phone number
+      responses:
+        '200':
+          description: call successful
+          content:
+            application/json:
+              schema: CustomerSchema
+        '401':
+          description: unauthorised
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: Unauthorized
+                  errorMessage:
+                    type: str
+                    example: Missing authentication token
+      tags:
+          - Customer
+    """
+    result = customer_controller.find_by_phone_number(phone_number)
+    return handle_result(result, schema=CustomerSchema)

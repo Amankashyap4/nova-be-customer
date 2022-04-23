@@ -481,3 +481,12 @@ class TestCustomerController(BaseTestCase):
             self.customer_controller.delete(obj_id=uuid.uuid4())
         self.assertTrue(not_found.exception)
         self.assert404(not_found.exception)
+
+    @pytest.mark.controller
+    def test_find_by_phone_number(self):
+        result = self.customer_controller.find_by_phone_number(
+            self.customer_model.phone_number
+        )
+        self.assertIsInstance(result, Result)
+        self.assertEqual(result.status_code, 200)
+        self.assertIsInstance(result.value, CustomerModel)

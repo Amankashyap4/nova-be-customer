@@ -9,12 +9,7 @@ from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
 from app.core.service_interfaces import AuthServiceInterface
 from app.repositories import CustomerRepository, RegistrationRepository
-from app.utils import (
-    keycloak_fields,
-    save_profile_image,
-    send_profile_image,
-    validate_uuid,
-)
+from app.utils import keycloak_fields, save_profile_image, send_profile_image
 
 utc = pytz.UTC
 
@@ -66,7 +61,6 @@ class CustomerController(Notifier):
         assert obj_data, "missing data of object"
 
         customer_id = obj_data.get("id")
-        validate_uuid(customer_id)
         otp = obj_data.get("token")
         registered_customer = self.registration_repository.find(
             {"id": customer_id, "otp_token": otp}
@@ -94,7 +88,6 @@ class CustomerController(Notifier):
         assert obj_data, "missing data of object to update"
 
         obj_id = obj_data.pop("id")
-        validate_uuid(obj_id)
         password_token = obj_data.pop("confirmation_token", None)
         registered_customer = self.registration_repository.find({"id": obj_id})
         if not registered_customer:
@@ -139,7 +132,6 @@ class CustomerController(Notifier):
 
     def resend_token(self, obj_data):
         obj_id = obj_data.get("id")
-        validate_uuid(obj_id)
         registered_customer = None
         try:
             customer = self.customer_repository.find_by_id(obj_id)
@@ -196,7 +188,6 @@ class CustomerController(Notifier):
     def update(self, obj_id, obj_data):
         assert obj_id, "missing id of object to update"
         assert obj_data, "missing data of object to update"
-        validate_uuid(obj_id)
         obj_data = save_profile_image(obj_id, obj_data)
         try:
             customer = self.customer_repository.update_by_id(obj_id, obj_data)
@@ -247,7 +238,6 @@ class CustomerController(Notifier):
         assert obj_data, "Missing data of object"
 
         customer_id = obj_data.get("id")
-        validate_uuid(customer_id)
         new_pin = obj_data.get("new_pin")
         auth_token = obj_data.get("token")
         try:
@@ -276,7 +266,6 @@ class CustomerController(Notifier):
         assert obj_data, "missing data of object"
 
         customer_id = obj_data.get("customer_id")
-        validate_uuid(customer_id)
         new_pin = obj_data.get("new_pin")
         old_pin = obj_data.get("old_pin")
         try:
@@ -315,7 +304,6 @@ class CustomerController(Notifier):
     def reset_pin_process(self, data):
         customer_data = {}
         customer_id = data.get("id")
-        validate_uuid(customer_id)
         otp_pin = data.get("token")
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
@@ -340,7 +328,6 @@ class CustomerController(Notifier):
 
     def process_reset_pin(self, data):
         customer_id = data.get("customer_id")
-        validate_uuid(customer_id)
         password_token = data.get("password_token")
         new_pin = data.get("pin")
         customer = self.customer_repository.find_by_id(customer_id)
@@ -415,7 +402,6 @@ class CustomerController(Notifier):
 
     def request_phone_reset(self, data):
         customer_id = data.get("customer_id")
-        validate_uuid(customer_id)
         phone_number = data.get("phone_number")
         otp = data.get("token")
         customer = self.customer_repository.find_by_id(customer_id)
@@ -427,7 +413,6 @@ class CustomerController(Notifier):
         return Result({"detail": "Phone reset done successfully"}, 200)
 
     def get_customer(self, obj_id):
-        validate_uuid(obj_id)
         customer = self.customer_repository.get_by_id(obj_id)
         customer.profile_image = send_profile_image(str(customer.id))
         return Result(customer, 200)
@@ -435,7 +420,6 @@ class CustomerController(Notifier):
     def password_otp_confirmation(self, data):
         customer_data = {}
         customer_id = data.get("id")
-        validate_uuid(customer_id)
         otp = data.get("token")
         customer = self.customer_repository.find({"id": customer_id, "otp_token": otp})
         if not customer:
@@ -459,7 +443,6 @@ class CustomerController(Notifier):
 
     def delete(self, obj_id):
         assert obj_id, "missing id of object to delete"
-        validate_uuid(obj_id)
         try:
             result = self.customer_repository.update_by_id(
                 obj_id, {"status": "disabled"}
@@ -481,7 +464,6 @@ class CustomerController(Notifier):
         assert "refresh_token", "missing refresh token of object"
 
         customer_id = obj_data.get("id")
-        validate_uuid(customer_id)
         refresh_token = obj_data.get("refresh_token")
         try:
             self.customer_repository.find_by_id(customer_id)
@@ -493,3 +475,14 @@ class CustomerController(Notifier):
         access_token = self.auth_service.refresh_token(refresh_token)
         access_token["id"] = customer_id
         return Result(access_token, 200)
+
+    def find_by_phone_number(self, phone_number):
+        assert phone_number, "missing data of object"
+
+        customer = self.customer_repository.find({"phone_number": phone_number})
+        if not customer:
+            raise AppException.BadRequest(
+                context=f"customer with phone number {phone_number} does not exist"
+            )
+
+        return Result(customer, 200)
