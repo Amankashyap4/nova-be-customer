@@ -1322,7 +1322,7 @@ def refresh_token():
 
 
 @customer.route("/accounts/query/<string:phone_number>", methods=["GET"])
-# @auth_required()
+@auth_required()
 @arg_validator(schema=CustomerRequestArgSchema, param="phone_number")
 def find_by_phone_number(phone_number):
     """
