@@ -206,7 +206,7 @@ class CustomerController(Notifier):
         object_upload_url(customer)
 
         # set pre-signed url to download profile image
-        object_upload_url(customer)
+        object_download_url(customer)
 
         return Result(customer, 200)
 

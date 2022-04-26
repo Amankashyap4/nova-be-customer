@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timedelta
 from time import sleep
+from unittest import mock
 
 import pytest
 
@@ -156,6 +157,26 @@ class TestCustomerController(BaseTestCase):
             )
         self.assertTrue(not_found.exception)
         self.assert404(not_found.exception)
+        with mock.patch(
+            "app.utils.object_storage.s3_client.generate_presigned_url"
+        ) as boto3_exception:
+            boto3_exception.side_effect = self.botocore_client_error
+            with self.assertRaises(AppException.OperationError) as operation_error:
+                self.customer_controller.update(
+                    self.customer_model.id, self.customer_test_data.update_customer
+                )
+        self.assertTrue(operation_error.exception)
+        self.assert500(operation_error.exception)
+        with mock.patch(
+            "app.utils.object_storage.s3_client.generate_presigned_post"
+        ) as boto3_exception:
+            boto3_exception.side_effect = self.botocore_client_error
+            with self.assertRaises(AppException.OperationError) as operation_error:
+                self.customer_controller.update(
+                    self.customer_model.id, self.customer_test_data.update_customer
+                )
+        self.assertTrue(operation_error.exception)
+        self.assert500(operation_error.exception)
 
     @pytest.mark.controller
     def test_add_pin(self):
