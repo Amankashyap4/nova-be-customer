@@ -9,7 +9,7 @@ from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
 from app.core.service_interfaces import AuthServiceInterface
 from app.repositories import CustomerRepository, RegistrationRepository
-from app.utils import keycloak_fields, save_profile_image, send_profile_image
+from app.utils import keycloak_fields, object_download_url, object_upload_url
 
 utc = pytz.UTC
 
@@ -188,16 +188,26 @@ class CustomerController(Notifier):
     def update(self, obj_id, obj_data):
         assert obj_id, "missing id of object to update"
         assert obj_data, "missing data of object to update"
-        obj_data = save_profile_image(obj_id, obj_data)
+
+        if obj_data.get("profile_image"):
+            obj_data["profile_image"] = f"{obj_id}.{obj_data.get('profile_image')}"
+
         try:
             customer = self.customer_repository.update_by_id(obj_id, obj_data)
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
                 context=f"customer with id {obj_id} does not exists"
             )
+
         user_data = keycloak_fields(obj_id, obj_data)
         self.auth_service.update_user(user_data)
-        customer.profile_image = send_profile_image(str(customer.id))
+
+        # set pre-signed url to upload profile image
+        object_upload_url(customer)
+
+        # set pre-signed url to download profile image
+        object_upload_url(customer)
+
         return Result(customer, 200)
 
     def add_pin(self, obj_data):
@@ -414,7 +424,8 @@ class CustomerController(Notifier):
 
     def get_customer(self, obj_id):
         customer = self.customer_repository.get_by_id(obj_id)
-        customer.profile_image = send_profile_image(str(customer.id))
+        # set pre-signed url on object to download profile image
+        object_download_url(customer)
         return Result(customer, 200)
 
     def password_otp_confirmation(self, data):

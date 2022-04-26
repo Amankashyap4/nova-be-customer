@@ -18,7 +18,9 @@ class CustomerSchema(Schema):
     status = EnumField(StatusEnum, allow_none=True)
     profile_image = fields.String(allow_none=True)
     auth_service_id = fields.UUID(allow_none=True)
-    level = fields.String()
+    level = fields.String(allow_none=True)
+    pre_signed_post = fields.Dict(allow_none=True)
+    pre_signed_get = fields.String(allow_none=True)
     created = fields.DateTime()
     modified = fields.DateTime()
 
@@ -37,6 +39,8 @@ class CustomerSchema(Schema):
             "auth_service_id",
             "status",
             "level",
+            "pre_signed_post",
+            "pre_signed_get",
             "created",
             "modified",
         ]
@@ -55,7 +59,15 @@ class CustomerSchema(Schema):
 
 class CustomerUpdateSchema(CustomerSchema):
     email = fields.Email()
-    profile_image = fields.String()
+    profile_image = fields.String(
+        validate=validate.OneOf(
+            [
+                "jpeg",
+                "jpg",
+                "png",
+            ]
+        )
+    )
 
     class Meta:
         fields = ["email", "profile_image"]

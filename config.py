@@ -66,6 +66,12 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
     ADMIN_MAIL_ADDRESSES = os.getenv("ADMIN_MAIL_ADDRESSES", default="").split("|")
 
+    # OBJECT STORAGE (CEPH)
+    CEPH_SERVER_URL = os.getenv("CEPH_SERVER_URL")
+    CEPH_ACCESS_KEY = os.getenv("CEPH_ACCESS_KEY")
+    CEPH_SECRET_KEY = os.getenv("CEPH_SECRET_KEY")
+    CEPH_BUCKET = os.getenv("CEPH_BUCKET")
+
     @property
     def SQLALCHEMY_DATABASE_URI(self):  # noqa
         return "postgresql+psycopg2://{db_user}:{password}@{host}:{port}/{db_name}".format(  # noqa
