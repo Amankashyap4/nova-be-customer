@@ -39,7 +39,8 @@ class CustomerController(Notifier):
         existing_customer = self.customer_repository.find(query_data)
         if existing_customer:
             raise AppException.ResourceExists(
-                f"customer with phone number {phone_number} exists"
+                context=f"customer with phone number {phone_number} exists",
+                error_message={"controller.register": "existing customer"},
             )
         customer = self.registration_repository.find(query_data)
         if customer:
@@ -48,7 +49,9 @@ class CustomerController(Notifier):
         try:
             register_customer = self.registration_repository.create(query_data)
         except AppException.OperationError as e:
-            raise AppException.OperationError(context=e.context)
+            raise AppException.OperationError(
+                context=e.context, error_message={"controller.register": e}
+            )
         otp = 666666
         otp_expiration = datetime.now() + timedelta(minutes=5)
         self.registration_repository.update_by_id(
@@ -66,10 +69,16 @@ class CustomerController(Notifier):
             {"id": customer_id, "otp_token": otp}
         )
         if not registered_customer:
-            raise AppException.BadRequest(context="invalid user id or otp token passed")
+            raise AppException.BadRequest(
+                context="invalid user id or otp token passed",
+                error_message={"controller.confirm_token": "invalid user"},
+            )
 
         if utc.localize(datetime.now()) > registered_customer.otp_token_expiration:
-            raise AppException.ExpiredTokenException(context="otp token has expired")
+            raise AppException.ExpiredTokenException(
+                context="otp token has expired",
+                error_message={"controller.confirm_token": "token expiration"},
+            )
         password_token = secrets.token_urlsafe(16)
         update_customer = self.registration_repository.update_by_id(
             registered_customer.id,
@@ -91,9 +100,15 @@ class CustomerController(Notifier):
         password_token = obj_data.pop("confirmation_token", None)
         registered_customer = self.registration_repository.find({"id": obj_id})
         if not registered_customer:
-            raise AppException.BadRequest("Invalid customer")
+            raise AppException.BadRequest(
+                context="Invalid customer",
+                error_message={"controller.add_information": "unregistered customer"},
+            )
         elif registered_customer.auth_token != password_token:
-            raise AppException.BadRequest("Something went wrong, please try again")
+            raise AppException.BadRequest(
+                context="Something went wrong, please try again",
+                error_message={"controller.add_information": "wrong customer token"},
+            )
 
         obj_data["auth_token"] = secrets.token_urlsafe(16)
         obj_data["auth_token_expiration"] = datetime.now() + timedelta(minutes=10)
@@ -141,7 +156,10 @@ class CustomerController(Notifier):
             try:
                 registered_customer = self.registration_repository.find_by_id(obj_id)
             except AppException.NotFoundException:
-                raise AppException.BadRequest("Invalid customer")
+                raise AppException.BadRequest(
+                    context="Invalid customer",
+                    error_message={"controller.resend_token": "invalid customer"},
+                )
         otp = 666666
         otp_expiration = datetime.now() + timedelta(minutes=5)
         if customer:
@@ -165,7 +183,10 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find({"phone_number": phone_number})
         if not customer:
             raise AppException.NotFoundException(
-                context=f"customer with phone number {phone_number} does not exists"
+                context=f"customer with phone number {phone_number} does not exists",
+                error_message={
+                    "controller.login": f"phone number {phone_number} does not exist"
+                },
             )
         if customer.status.value not in ["blocked", "disabled"]:
             access_token = self.auth_service.get_token(
@@ -182,7 +203,8 @@ class CustomerController(Notifier):
             customer_data["refresh_token"] = access_token.get("refresh_token")
             return Result(customer_data, 200)
         raise AppException.NotFoundException(
-            context=f"account {phone_number} has been {customer.status.value}"
+            context=f"account {phone_number} has been {customer.status.value}",
+            error_message={"controller.login": "account disable or block"},
         )
 
     def update(self, obj_id, obj_data):
@@ -196,7 +218,8 @@ class CustomerController(Notifier):
             customer = self.customer_repository.update_by_id(obj_id, obj_data)
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
-                context=f"customer with id {obj_id} does not exists"
+                context=f"customer with id {obj_id} does not exists",
+                error_message={"controller.update": f"id {obj_id} does not exist"},
             )
 
         user_data = keycloak_fields(obj_id, obj_data)
@@ -217,7 +240,10 @@ class CustomerController(Notifier):
         password_token = obj_data.get("password_token")
         customer = self.customer_repository.find({"auth_token": password_token})
         if not customer:
-            raise AppException.NotFoundException(context="customer does not exists")
+            raise AppException.NotFoundException(
+                context="customer does not exists",
+                error_message={"controller.add_pin": "invalid password token"},
+            )
         customer = self.customer_repository.update_by_id(customer.id, {"pin": pin})
         self.auth_service.reset_password(
             {"username": str(customer.id), "new_password": pin}
@@ -233,7 +259,10 @@ class CustomerController(Notifier):
 
         if not customer:
             raise AppException.NotFoundException(
-                context=f"customer with phone number {phone_number} does not exists"
+                context=f"customer with phone number {phone_number} does not exists",
+                error_message={
+                    "controller.forgot_password": f"phone number {phone_number} does not exist"
+                },
             )
         # otp = random.randint(100000, 999999)
         otp = 666666
@@ -254,12 +283,21 @@ class CustomerController(Notifier):
             customer = self.customer_repository.find_by_id(customer_id)
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
-                context=f"customer with id {customer_id} does not exists"
+                context=f"customer with id {customer_id} does not exists",
+                error_message={
+                    "controller.reset_password": f"id {customer_id} does not exist"
+                },
             )
         if not customer.auth_token:
-            raise AppException.ExpiredTokenException("token expired")
+            raise AppException.ExpiredTokenException(
+                context="token expired",
+                error_message={"controller.reset_password": "auth token is None"},
+            )
         elif customer.auth_token != auth_token:
-            raise AppException.ValidationException("Invalid token")
+            raise AppException.ValidationException(
+                context="Invalid token",
+                error_message={"controller.reset_password": "invalid token "},
+            )
 
         self.auth_service.reset_password(
             {"username": customer_id, "new_password": new_pin}
@@ -282,7 +320,10 @@ class CustomerController(Notifier):
             self.customer_repository.find_by_id(customer_id)
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
-                context=f"customer with id {customer_id} does not exists"
+                context=f"customer with id {customer_id} does not exists",
+                error_message={
+                    "controller.change_password": f"id {customer_id} does not exist"
+                },
             )
 
         self.auth_service.get_token({"username": customer_id, "password": old_pin})
@@ -299,9 +340,19 @@ class CustomerController(Notifier):
         phone_number = data.get("phone_number")
         customer = self.customer_repository.find({"phone_number": phone_number})
         if not customer:
-            raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
+            raise AppException.NotFoundException(
+                context=USER_DOES_NOT_EXIST,
+                error_message={
+                    "controller.pin_process": f"phone number {phone_number} does not exist"
+                },
+            )
         if customer.pin:
-            raise AppException.BadRequest(f"pin already set for account {phone_number}")
+            raise AppException.BadRequest(
+                context=f"pin already set for account {phone_number}",
+                error_message={
+                    "controller.pin_process": f"pin set for account {phone_number}"
+                },
+            )
         otp_token = 6666
         # otp_token = random.randint(1000, 9999)
         otp_token_expiration = datetime.now() + timedelta(minutes=5)
@@ -317,9 +368,19 @@ class CustomerController(Notifier):
         otp_pin = data.get("token")
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
-            raise AppException.NotFoundException("user does not exist")
+            raise AppException.NotFoundException(
+                context="user does not exist",
+                error_message={
+                    "controller.reset_pin_process": f"id {customer} does not exist"
+                },
+            )
         if customer.otp_token != otp_pin:
-            raise AppException.Unauthorized("Wrong otp, please try again")
+            raise AppException.Unauthorized(
+                context="Wrong otp, please try again",
+                error_message={
+                    "controller.reset_pin_process": f"wrong token provided {otp_pin}"
+                },
+            )
         password_token_expiration = datetime.now() + timedelta(minutes=5)
         password_token = secrets.token_urlsafe(16)
         self.customer_repository.update_by_id(
@@ -343,9 +404,19 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find_by_id(customer_id)
 
         if not customer:
-            raise AppException.NotFoundException("user does not exist")
+            raise AppException.NotFoundException(
+                context="user does not exist",
+                error_message={
+                    "controller.process_reset_pin": f"id {customer_id} does not exist"
+                },
+            )
         if customer.auth_token != password_token:
-            raise AppException.Unauthorized("Something went wrong, please try again")
+            raise AppException.Unauthorized(
+                context="Something went wrong, please try again",
+                error_message={
+                    "controller.process_reset_pin": f"invalid auth token {password_token}"
+                },
+            )
         self.customer_repository.update_by_id(customer_id, {"pin": new_pin})
         self.auth_service.reset_password(
             {"username": customer_id, "new_password": new_pin}
@@ -357,7 +428,10 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find({"phone_number": phone_number})
         if not customer:
             raise AppException.NotFoundException(
-                context=f"customer with phone number {phone_number} does not exists"
+                context=f"customer with phone number {phone_number} does not exists",
+                error_message={
+                    "controller.request_pin": f"phone number {phone_number} does not exist"
+                },
             )
         # otp_token = random.randint(1000, 9999)
         otp = 6666
@@ -373,7 +447,10 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find({"phone_number": phone_number})
         if not customer:
             raise AppException.NotFoundException(
-                context=f"customer with phone number {phone_number} does not exists"
+                context=f"customer with phone number {phone_number} does not exists",
+                error_message={
+                    "controller.reset_phone_request": f"phone number {phone_number} does not exist"  # noqa
+                },
             )
         otp = 666666
         # otp = random.randint(100000, 999999)
@@ -388,15 +465,29 @@ class CustomerController(Notifier):
         phone_number = data.get("new_phone_number")
         auth_token = data.get("token")
         existing_customer = self.customer_repository.find({"phone_number": phone_number})
+        customer_id = data.get("customer_id")
         if existing_customer:
             raise AppException.ResourceExists(
-                f"customer with phone number {phone_number} exists"
+                context=f"customer with phone number {phone_number} exists",
+                error_message={
+                    "controller.reset_phone": f"phone number {phone_number} does not exist"
+                },
             )
-        customer = self.customer_repository.find_by_id(data.get("customer_id"))
+        customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
-            raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
+            raise AppException.NotFoundException(
+                context=USER_DOES_NOT_EXIST,
+                error_message={
+                    "controller.reset_phone": f"id {customer_id} does not exist"
+                },
+            )
         if customer.auth_token != auth_token:
-            raise AppException.BadRequest("Invalid token")
+            raise AppException.BadRequest(
+                context="Invalid token",
+                error_message={
+                    "controller.reset_phone": f"invalid auth token {auth_token}"
+                },
+            )
         otp_token = 666666
         # otp_token = random.randint(100000, 999999)
         otp_token_expiration = datetime.now() + timedelta(minutes=5)
@@ -416,9 +507,19 @@ class CustomerController(Notifier):
         otp = data.get("token")
         customer = self.customer_repository.find_by_id(customer_id)
         if not customer:
-            raise AppException.NotFoundException(USER_DOES_NOT_EXIST)
+            raise AppException.NotFoundException(
+                context=USER_DOES_NOT_EXIST,
+                error_message={
+                    "controller.request_phone_reset": f"id {customer_id} does not exist"
+                },
+            )
         if not customer.otp_token or customer.otp_token != otp:
-            raise AppException.ExpiredTokenException("Invalid OTP")
+            raise AppException.ExpiredTokenException(
+                context="Invalid OTP",
+                error_message={
+                    "controller.request_phone_reset": f"invalid otp token {otp}"
+                },
+            )
         self.update(customer_id, {"phone_number": phone_number})
         return Result({"detail": "Phone reset done successfully"}, 200)
 
@@ -434,10 +535,20 @@ class CustomerController(Notifier):
         otp = data.get("token")
         customer = self.customer_repository.find({"id": customer_id, "otp_token": otp})
         if not customer:
-            raise AppException.BadRequest(context="invalid user id or otp token passed")
+            raise AppException.BadRequest(
+                context="invalid user id or otp token passed",
+                error_message={
+                    "controller.password_otp_confirmation": f"invalid token {otp} or id {customer_id}"  # noqa
+                },
+            )
 
         if utc.localize(datetime.now()) > customer.otp_token_expiration:
-            raise AppException.ExpiredTokenException(context="otp token has expired")
+            raise AppException.ExpiredTokenException(
+                context="otp token has expired",
+                error_message={
+                    "controller.password_otp_confirmation": f"opt {otp} has expired"
+                },
+            )
         auth_token = random.randint(100000, 999999)
         auth_token_expiration = datetime.now() + timedelta(minutes=5)
         self.customer_repository.update_by_id(
@@ -460,7 +571,8 @@ class CustomerController(Notifier):
             )
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
-                context=f"customer with id {obj_id} does not exists"
+                context=f"customer with id {obj_id} does not exists",
+                error_message={"controller.delete": f"id {obj_id} does not exist"},
             )
         data = {
             "username": obj_id,
@@ -480,7 +592,10 @@ class CustomerController(Notifier):
             self.customer_repository.find_by_id(customer_id)
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
-                context=f"customer with id {customer_id} does not exists"
+                context=f"customer with id {customer_id} does not exists",
+                error_message={
+                    "controller.refresh_token": f"id {customer_id} does not exist"
+                },
             )
 
         access_token = self.auth_service.refresh_token(refresh_token)
@@ -493,7 +608,10 @@ class CustomerController(Notifier):
         customer = self.customer_repository.find({"phone_number": phone_number})
         if not customer:
             raise AppException.BadRequest(
-                context=f"customer with phone number {phone_number} does not exist"
+                context=f"customer with phone number {phone_number} does not exist",
+                error_message={
+                    "controller.find_by_phone_number": f"phone number {phone_number} does not exist"  # noqa
+                },
             )
 
         return Result(customer, 200)
