@@ -84,7 +84,7 @@ class SQLBaseRepository(CRUDRepositoryInterface):
             db_obj = self.model.query.get(obj_id)
             if db_obj is None:
                 raise AppException.NotFoundException(
-                    context=f"resource with id {obj_id} does not exist"
+                    context=f"resource with id {obj_id} does not exist",
                 )
             return db_obj
 

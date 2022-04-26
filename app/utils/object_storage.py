@@ -18,8 +18,11 @@ def object_upload_url(obj):
             response = s3_client.generate_presigned_post(
                 Bucket=Config.CEPH_BUCKET, Key=obj.profile_image, ExpiresIn=60
             )
-        except ClientError:
-            raise AppException.OperationError(context="error generating pre-signed url")
+        except ClientError as exc:
+            raise AppException.OperationError(
+                context="error generating pre-signed url",
+                error_message={"object_upload_url": exc},
+            )
         obj.pre_signed_post = response
         return obj
     return None
@@ -33,8 +36,11 @@ def object_download_url(obj):
                 Params={"Bucket": Config.CEPH_BUCKET, "Key": obj.profile_image},
                 ExpiresIn=60,
             )
-        except ClientError:
-            raise AppException.OperationError(context="error generating pre-signed url")
+        except ClientError as exc:
+            raise AppException.OperationError(
+                context="error generating pre-signed url",
+                error_message={"object_download_url": exc},
+            )
         obj.pre_signed_get = response
         return obj
     return None

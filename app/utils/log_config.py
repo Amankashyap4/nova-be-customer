@@ -100,6 +100,7 @@ def log_config():
             "error_file": {
                 "class": "logging.handlers.TimedRotatingFileHandler",
                 "formatter": "custom_formatter",
+                "level": "DEBUG",
                 "filename": "gunicorn.error.log",
                 "when": "D",
                 "interval": 30,
@@ -120,7 +121,7 @@ def log_config():
             },
             "custom_formatter": {
                 "()": "app.utils.log_config.RequestFormatter",
-                "format": "log_date: [%(asctime)s]\n%(remote_addr)s requested %(url)s %(levelname)s in %(module)s: %(message)s",  # noqa
+                "format": "log_date: [%(asctime)s]\n%(remote_addr)s requested %(url)s %(levelname)s in %(module)s: %(message)s\n",  # noqa
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
         },
