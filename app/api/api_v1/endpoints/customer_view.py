@@ -413,7 +413,7 @@ def login():
 
 
 @customer.route("/accounts/<string:customer_id>", methods=["PATCH"])
-@auth_required()
+# @auth_required()
 @arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 @validator(schema=CustomerUpdateSchema)
 def update_customer(customer_id):
@@ -490,7 +490,7 @@ def update_customer(customer_id):
 
 
 @customer.route("/accounts/<string:customer_id>", methods=["GET"])
-@auth_required()
+# @auth_required()
 @arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 def find_customer(customer_id):
     """
@@ -1328,7 +1328,7 @@ def find_by_phone_number(phone_number):
     """
     ---
     get:
-      description: refresh access token of customer
+      description: retrieve customer info with phone number specified in path
       security:
         - bearerAuth: []
       parameters:
@@ -1337,10 +1337,10 @@ def find_by_phone_number(phone_number):
           required: true
           schema:
             type: string
-          description: The customer phone number
+          description: the customer's phone number
       responses:
         '200':
-          description: call successful
+          description: returns customer's info
           content:
             application/json:
               schema: CustomerSchema
