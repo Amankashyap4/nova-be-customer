@@ -2,6 +2,7 @@ import os
 from unittest.mock import patch
 
 import fakeredis
+from botocore.exceptions import ClientError
 from flask_testing import TestCase
 
 from app import APP_ROOT, create_app, db
@@ -78,6 +79,9 @@ class BaseTestCase(TestCase):
 
     def dummy_kafka_method(self, topic, value):
         return True
+
+    def botocore_client_error(self, *args, **kwargs):
+        raise ClientError(error_response={}, operation_name="client_error")
 
     # def decode_token(self, token, key, algorithms, audience, issuer):  # noqa
     #     return {

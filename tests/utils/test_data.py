@@ -19,6 +19,7 @@ class CustomerTestData:
             "id_expiry_date": datetime.datetime.utcnow().date(),
             "id_number": "existing",
             "id_type": "national_id",
+            # "profile_image": str(uuid.uuid4())+ ".jpg"
         }
 
     @property
@@ -58,9 +59,7 @@ class CustomerTestData:
 
     @property
     def update_customer(self):
-        return {
-            "email": "customer@update.com",
-        }
+        return {"email": "customer@update.com", "profile_image": "jpg"}
 
 
 class KeycloakTestData:
