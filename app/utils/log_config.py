@@ -56,6 +56,26 @@ class RequestFormatter(logging.Formatter):
         return super().format(record)
 
 
+def get_full_class_name(obj):
+    module = obj.__class__.__module__
+    if module is None or module == str.__class__.__module__:
+        return obj.__class__.__name__
+    return module + "." + obj.__class__.__name__
+
+
+def message_struct(
+    module, method, error, calling_method=None, calling_module=None, exc_class=None
+):
+    return {
+        "exception_class": exc_class,
+        "module": module,
+        "method": method,
+        "calling module": calling_module,
+        "calling method": calling_method,
+        "error": error,
+    }
+
+
 def log_config():
     return {
         "version": 1,
@@ -121,7 +141,7 @@ def log_config():
             },
             "custom_formatter": {
                 "()": "app.utils.log_config.RequestFormatter",
-                "format": "log_date: [%(asctime)s]\n%(remote_addr)s requested %(url)s %(levelname)s in %(module)s: %(message)s\n",  # noqa
+                "format": "log_date: [%(asctime)s]\n%(remote_addr)s requested %(url)s %(levelname)s in %(module)s \n%(levelname)s : %(message)s",  # noqa
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
         },

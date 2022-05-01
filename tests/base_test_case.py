@@ -56,6 +56,12 @@ class BaseTestCase(TestCase):
         )
         self.addCleanup(utc_patcher.stop)
         utc_patcher.start()
+        kafka_sms_patcher = patch(
+            "app.notifications.sms_notification_handler.publish_to_kafka",
+            self.dummy_kafka_method,
+        )
+        self.addCleanup(kafka_sms_patcher.stop)
+        kafka_sms_patcher.start()
 
     def setUp(self):
         """

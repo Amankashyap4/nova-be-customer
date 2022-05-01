@@ -55,15 +55,6 @@ class MockSideEffects(BaseTestCase):
             json=None,
         )
 
-    def request_connection_error(self, *args, **kwargs):
-        raise requests_exceptions.ConnectionError
-
-    def request_http_error(self, *args, **kwargs):
-        raise requests_exceptions.HTTPError
-
-    def request_timed_out_error(self, *args, **kwargs):
-        raise requests_exceptions.Timeout
-
     def request_exception(self, *args, **kwargs):
         raise requests_exceptions.RequestException
 

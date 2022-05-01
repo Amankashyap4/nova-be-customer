@@ -12,6 +12,7 @@ class TestAuthService(BaseTestCase):
                 url_for("customer.find_customer", customer_id=self.customer_model.id),
             )
             response_data = response.json
+            print()
             self.assertIsInstance(response_data, dict)
             self.assertIn("app_exception", response_data)
             self.assertIn("Unauthorized", response_data.values())

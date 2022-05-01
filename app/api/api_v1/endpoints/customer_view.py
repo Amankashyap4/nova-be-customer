@@ -490,7 +490,7 @@ def update_customer(customer_id):
 
 
 @customer.route("/accounts/<string:customer_id>", methods=["GET"])
-# @auth_required()
+@auth_required()
 @arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 def find_customer(customer_id):
     """

@@ -83,11 +83,8 @@ class SQLBaseRepository(CRUDRepositoryInterface):
         try:
             db_obj = self.model.query.get(obj_id)
             if db_obj is None:
-                raise AppException.NotFoundException(
-                    context=f"resource with id {obj_id} does not exist",
-                )
+                raise AppException.NotFoundException(context="")
             return db_obj
-
         except DBAPIError as e:
             raise AppException.OperationError(e.orig.args[0])
 
@@ -103,6 +100,8 @@ class SQLBaseRepository(CRUDRepositoryInterface):
 
         try:
             db_obj = self.model.query.filter_by(**filter_param).first()
+            if db_obj is None:
+                raise AppException.NotFoundException(context="")
             return db_obj
         except DBAPIError as e:
             raise AppException.OperationError(e.orig.args[0])
@@ -120,7 +119,6 @@ class SQLBaseRepository(CRUDRepositoryInterface):
         try:
             db_obj = self.model.query.filter_by(**filter_param).all()
             return db_obj
-
         except DBAPIError as e:
             raise AppException.OperationError(e.orig.args[0])
 
@@ -133,10 +131,7 @@ class SQLBaseRepository(CRUDRepositoryInterface):
 
         db_obj = self.find_by_id(obj_id)
         try:
-            if not db_obj:
-                raise AppException.NotFoundException()
             db.session.delete(db_obj)
             db.session.commit()
-
         except DBAPIError as e:
             raise AppException.OperationError(e.orig.args[0])

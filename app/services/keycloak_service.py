@@ -1,3 +1,4 @@
+import inspect
 from dataclasses import dataclass
 
 import requests
@@ -6,6 +7,7 @@ from requests import exceptions
 import config
 from app.core.exceptions import AppException
 from app.core.service_interfaces.auth_service_interface import AuthServiceInterface
+from app.utils import get_full_class_name, message_struct
 
 CLIENT_ID = config.Config.KEYCLOAK_CLIENT_ID or ""
 CLIENT_SECRET = config.Config.KEYCLOAK_CLIENT_SECRET or ""
@@ -53,8 +55,15 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code != 200:
             raise AppException.KeyCloakAdminException(
-                {"access_token": [keycloak_response.json()]},
+                context=keycloak_response.json(),
                 status_code=keycloak_response.status_code,
+                error_message=message_struct(
+                    module=__name__,
+                    method=inspect.currentframe().f_code.co_name,
+                    calling_module=inspect.stack()[1],
+                    calling_method=inspect.currentframe().f_back.f_code.co_name,
+                    error=keycloak_response.json(),
+                ),
             )
 
         tokens_data: dict = keycloak_response.json()
@@ -86,8 +95,15 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code != 200:
             raise AppException.KeyCloakAdminException(
-                [keycloak_response.json()],
+                context=keycloak_response.json(),
                 status_code=keycloak_response.status_code,
+                error_message=message_struct(
+                    module=__name__,
+                    method=inspect.currentframe().f_code.co_name,
+                    calling_module=inspect.stack()[1],
+                    calling_method=inspect.currentframe().f_back.f_code.co_name,
+                    error=keycloak_response.json(),
+                ),
             )
 
         data: dict = keycloak_response.json()
@@ -187,8 +203,15 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                {"realm_groups": [keycloak_response.json()]},
+                context=keycloak_response.json(),
                 status_code=keycloak_response.status_code,
+                error_message=message_struct(
+                    module=__name__,
+                    method=inspect.currentframe().f_code.co_name,
+                    calling_module=inspect.stack()[1],
+                    calling_method=inspect.currentframe().f_back.f_code.co_name,
+                    error=keycloak_response.json(),
+                ),
             )
         return keycloak_response.json()
 
@@ -207,8 +230,15 @@ class AuthService(AuthServiceInterface):
         )
         if keycloak_response.status_code != 200:
             raise AppException.KeyCloakAdminException(
-                {"realm_user": [keycloak_response.json()]},
+                context=keycloak_response.json(),
                 status_code=keycloak_response.status_code,
+                error_message=message_struct(
+                    module=__name__,
+                    method=inspect.currentframe().f_code.co_name,
+                    calling_module=inspect.stack()[1],
+                    calling_method=inspect.currentframe().f_back.f_code.co_name,
+                    error=keycloak_response.json(),
+                ),
             )
         user = keycloak_response.json()
         if len(user) == 0:
@@ -228,8 +258,15 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                {"assign_group": [keycloak_response.json()]},
+                context=keycloak_response.json(),
                 status_code=keycloak_response.status_code,
+                error_message=message_struct(
+                    module=__name__,
+                    method=inspect.currentframe().f_code.co_name,
+                    calling_module=inspect.stack()[1],
+                    calling_method=inspect.currentframe().f_back.f_code.co_name,
+                    error=keycloak_response.json(),
+                ),
             )
         return True
 
@@ -263,8 +300,15 @@ class AuthService(AuthServiceInterface):
         )
         if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                {"keycloak_post_request": [keycloak_response.json()]},
+                context=keycloak_response.json(),
                 status_code=keycloak_response.status_code,
+                error_message=message_struct(
+                    module=__name__,
+                    method=inspect.currentframe().f_code.co_name,
+                    calling_module=inspect.stack()[1],
+                    calling_method=inspect.currentframe().f_back.f_code.co_name,
+                    error=keycloak_response.json(),
+                ),
             )
         return keycloak_response
 
@@ -285,8 +329,15 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                {"keycloak_put_request": [keycloak_response.json()]},
+                context=keycloak_response.json(),
                 status_code=keycloak_response.status_code,
+                error_message=message_struct(
+                    module=__name__,
+                    method=inspect.currentframe().f_code.co_name,
+                    calling_module=inspect.stack()[1],
+                    calling_method=inspect.currentframe().f_back.f_code.co_name,
+                    error=keycloak_response.json(),
+                ),
             )
         return keycloak_response
 
@@ -306,8 +357,15 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                {"keycloak_delete_request": [keycloak_response.json()]},
+                context=keycloak_response.json(),
                 status_code=keycloak_response.status_code,
+                error_message=message_struct(
+                    module=__name__,
+                    method=inspect.currentframe().f_code.co_name,
+                    calling_module=inspect.stack()[1],
+                    calling_method=inspect.currentframe().f_back.f_code.co_name,
+                    error=keycloak_response.json(),
+                ),
             )
         return keycloak_response
 
@@ -342,7 +400,15 @@ class AuthService(AuthServiceInterface):
         # handle keycloak response
         if keycloak_response.status_code != requests.codes.ok:
             raise AppException.KeyCloakAdminException(
-                {"realm_openid_config": [keycloak_response.json()]}, status_code=500
+                context=keycloak_response.json(),
+                status_code=keycloak_response.status_code,
+                error_message=message_struct(
+                    module=__name__,
+                    method=inspect.currentframe().f_code.co_name,
+                    calling_module=inspect.stack()[1],
+                    calling_method=inspect.currentframe().f_back.f_code.co_name,
+                    error=keycloak_response.json(),
+                ),
             )
         data = keycloak_response.json()
         return data
@@ -355,18 +421,16 @@ class AuthService(AuthServiceInterface):
             response = requests.request(
                 method=method, url=url, headers=headers, json=json, data=data
             )
-        except exceptions.ConnectionError:
+        except exceptions.RequestException as exc:
             raise AppException.InternalServerError(
-                context="keycloak server connection error"
-            )
-        except exceptions.HTTPError:
-            raise AppException.InternalServerError(context="keycloak server http error")
-        except exceptions.Timeout:
-            raise AppException.InternalServerError(
-                context="keycloak server connection timeout"
-            )
-        except exceptions.RequestException:
-            raise AppException.InternalServerError(
-                context="error connecting to keycloak server"
+                context="error connecting to keycloak server",
+                error_message=message_struct(
+                    exc_class=get_full_class_name(exc),
+                    module=__name__,
+                    method=inspect.currentframe().f_code.co_name,
+                    calling_module=inspect.stack()[1],
+                    calling_method=inspect.currentframe().f_back.f_code.co_name,
+                    error=exc,
+                ),
             )
         return response

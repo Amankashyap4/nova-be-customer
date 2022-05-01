@@ -12,7 +12,7 @@ class AppExceptionCase(Exception):
         if self.context:
             current_app.logger.error(context)
         if self.error_message:
-            current_app.logger.debug(error_message)
+            current_app.logger.info(f"{error_message}\n")
 
     def __str__(self):
         return (
@@ -34,7 +34,6 @@ def app_exception_handler(exc):
             json.dumps({"app_exception": "HTTP Error", "errorMessage": exc.description}),
             status=exc.code,
         )
-
     return Response(
         json.dumps({"app_exception": exc.exception_case, "errorMessage": exc.context}),
         status=exc.status_code,
@@ -50,7 +49,7 @@ class AppException:
 
         def __init__(self, context, error_message=None):
 
-            status_code = 500
+            status_code = 400
             AppExceptionCase.__init__(self, status_code, context, error_message)
 
     class InternalServerError(AppExceptionCase):
@@ -58,7 +57,7 @@ class AppException:
         Generic Exception to catch failed operations
         """
 
-        def __init__(self, context="Internal Server Error", error_message=None):
+        def __init__(self, context, error_message=None):
 
             status_code = 500
             AppExceptionCase.__init__(self, status_code, context, error_message)
@@ -70,19 +69,11 @@ class AppException:
 
         def __init__(self, context, error_message=None):
 
-            status_code = 409
-            AppExceptionCase.__init__(self, status_code, context, error_message)
-
-    class ResourceDoesNotExist(AppExceptionCase):
-        def __init__(self, context=None, error_message=None):
-            """
-            Resource does not exist
-            """
-            status_code = 404
+            status_code = 400
             AppExceptionCase.__init__(self, status_code, context, error_message)
 
     class NotFoundException(AppExceptionCase):
-        def __init__(self, context="Resource does not exists", error_message=None):
+        def __init__(self, context, error_message=None):
             """
             Resource does not exist
             """
@@ -90,12 +81,11 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, context, error_message)
 
     class Unauthorized(AppExceptionCase):
-        def __init__(self, context="Unauthorized", error_message=None):
+        def __init__(self, context, status_code=401, error_message=None):
             """
             Unauthorized
             :param context: extra dictionary object to give the error more context
             """
-            status_code = 401
             AppExceptionCase.__init__(self, status_code, context, error_message)
 
     class ValidationException(AppExceptionCase):
@@ -118,7 +108,7 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, context, error_message)
 
     class BadRequest(AppExceptionCase):
-        def __init__(self, context=None, error_message=None):
+        def __init__(self, context, error_message=None):
             """
             Bad Request
 
@@ -128,7 +118,7 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, context, error_message)
 
     class ExpiredTokenException(AppExceptionCase):
-        def __init__(self, context=None, error_message=None):
+        def __init__(self, context, error_message=None):
             """
             Expired Token
             :param context:

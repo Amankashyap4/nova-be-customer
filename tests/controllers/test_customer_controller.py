@@ -25,19 +25,22 @@ class TestCustomerController(BaseTestCase):
         result = self.customer_controller.register(
             self.customer_test_data.register_customer
         )
+        data = self.customer_test_data.register_customer.copy()
+        self.assertIsInstance(result, Result)
+        self.assertIn("id", result.value)
+        self.assertEqual(result.status_code, 201)
+        data["phone_number"] = self.registration_repository.find_by_id(
+            result.value.get("id")
+        ).phone_number
+        result = self.customer_controller.register(data)
         self.assertIsInstance(result, Result)
         self.assertIn("id", result.value)
         self.assertEqual(result.status_code, 201)
         with self.assertRaises(AppException.ResourceExists) as obj_exist:
-            self.customer_controller.register(
-                {
-                    "phone_number": self.customer_test_data.existing_customer.get(
-                        "phone_number"
-                    )
-                }
-            )
+            data["phone_number"] = self.customer_model.phone_number
+            self.customer_controller.register(data)
         self.assertTrue(obj_exist.exception)
-        self.assertEqual(obj_exist.exception.status_code, 409)
+        self.assert400(obj_exist.exception)
 
     @pytest.mark.controller
     def test_confirm_token(self):
@@ -166,7 +169,7 @@ class TestCustomerController(BaseTestCase):
                     self.customer_model.id, self.customer_test_data.update_customer
                 )
         self.assertTrue(operation_error.exception)
-        self.assert500(operation_error.exception)
+        self.assert400(operation_error.exception)
         with mock.patch(
             "app.utils.object_storage.s3_client.generate_presigned_post"
         ) as boto3_exception:
@@ -176,7 +179,7 @@ class TestCustomerController(BaseTestCase):
                     self.customer_model.id, self.customer_test_data.update_customer
                 )
         self.assertTrue(operation_error.exception)
-        self.assert500(operation_error.exception)
+        self.assert400(operation_error.exception)
 
     @pytest.mark.controller
     def test_add_pin(self):
@@ -325,13 +328,13 @@ class TestCustomerController(BaseTestCase):
         data["id"] = register.value.get("id")
         data["confirmation_token"] = token.value.get("confirmation_token")
         self.customer_controller.add_information(data)
-        request_pin = self.customer_controller.request_pin(
+        request_pin = self.customer_controller.pin_process(
             self.customer_test_data.register_customer
         )
         self.assert200(request_pin)
         self.assertIn("id", request_pin.value)
         with self.assertRaises(AppException.NotFoundException) as not_found_exc:
-            self.customer_controller.request_pin({"phone_number": "0245555555"})
+            self.customer_controller.pin_process({"phone_number": "0245555555"})
         self.assertTrue(not_found_exc.exception)
         self.assert404(not_found_exc.exception)
 
@@ -384,7 +387,7 @@ class TestCustomerController(BaseTestCase):
             )
             self.customer_controller.reset_phone(data)
         self.assertTrue(resource_exist.exception)
-        self.assertEqual(resource_exist.exception.status_code, 409)
+        self.assert400(resource_exist.exception)
 
     @pytest.mark.controller
     def test_request_phone_reset(self):
@@ -396,7 +399,7 @@ class TestCustomerController(BaseTestCase):
         reset_phone = self.customer_controller.request_phone_reset(data)
         self.assert200(reset_phone)
         self.assertIn("detail", reset_phone.value)
-        with self.assertRaises(AppException.ExpiredTokenException) as expired_token:
+        with self.assertRaises(AppException.BadRequest) as expired_token:
             data["token"] = "1234"
             self.customer_controller.request_phone_reset(data)
         self.assertTrue(expired_token.exception)
@@ -474,6 +477,11 @@ class TestCustomerController(BaseTestCase):
             self.customer_controller.reset_pin_process(data)
         self.assertTrue(unauthorize_exc.exception)
         self.assert401(unauthorize_exc.exception)
+        with self.assertRaises(AppException.NotFoundException) as not_found:
+            data["id"] = uuid.uuid4()
+            self.customer_controller.reset_pin_process(data)
+        self.assertTrue(not_found.exception)
+        self.assert404(not_found.exception)
 
     @pytest.mark.controller
     def test_process_reset_pin(self):
@@ -491,6 +499,11 @@ class TestCustomerController(BaseTestCase):
             self.customer_controller.process_reset_pin(data)
         self.assertTrue(unauthorize_exc.exception)
         self.assert401(unauthorize_exc.exception)
+        with self.assertRaises(AppException.NotFoundException) as not_found:
+            data["customer_id"] = uuid.uuid4()
+            self.customer_controller.process_reset_pin(data)
+        self.assertTrue(not_found.exception)
+        self.assert404(not_found.exception)
 
     @pytest.mark.controller
     def test_delete_customer(self):
@@ -511,3 +524,21 @@ class TestCustomerController(BaseTestCase):
         self.assertIsInstance(result, Result)
         self.assertEqual(result.status_code, 200)
         self.assertIsInstance(result.value, CustomerModel)
+        with self.assertRaises(AppException.NotFoundException) as not_found:
+            self.customer_controller.find_by_phone_number("0234566555")
+        self.assertTrue(not_found.exception)
+        self.assert404(not_found.exception)
+
+    @pytest.mark.controller
+    def test_refresh_token(self):
+        data = {"id": self.customer_model.id, "refresh_token": self.refresh_token}
+        result = self.customer_controller.refresh_token(data)
+        print(result.value)
+        self.assertIsInstance(result.value, dict)
+        self.assertIn("access_token", result.value)
+        self.assertIn("refresh_token", result.value)
+        with self.assertRaises(AppException.NotFoundException) as not_found:
+            data["id"] = uuid.uuid4()
+            self.customer_controller.refresh_token(data)
+        self.assertTrue(not_found.exception)
+        self.assert404(not_found.exception)
