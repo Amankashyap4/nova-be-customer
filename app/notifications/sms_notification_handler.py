@@ -1,9 +1,6 @@
-import os
-
 from app.core import NotificationHandler
 from app.producer import publish_to_kafka
-
-KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", default="SMS_NOTIFICATION")
+from config import Config
 
 
 class SMSNotificationHandler(NotificationHandler):
@@ -20,16 +17,18 @@ class SMSNotificationHandler(NotificationHandler):
     Check out https://github.com/theQuantumGroup/nova-be-notification for more info
     """
 
-    def __init__(self, recipient, details, meta):
-        self.recipient = recipient
+    def __init__(self, recipients: list, details: dict, meta: dict):
+        self.recipients = recipients
         self.details = details
         self.meta = meta
+        self.service_name = Config.APP_NAME
 
     def send(self):
         data = {
-            "meta": self.meta,
+            "service_name": self.service_name,
+            "meta": {"entity": "customer", **self.meta},
             "details": self.details,
-            "recipient": self.recipient,
+            "recipients": self.recipients,
         }
 
-        publish_to_kafka(KAFKA_TOPIC, data)
+        publish_to_kafka("SMS_NOTIFICATION", data)

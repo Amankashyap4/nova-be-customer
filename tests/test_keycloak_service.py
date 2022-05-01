@@ -72,7 +72,7 @@ class TestAuthService(MockSideEffects):
             mock_get_all_groups.return_value = {}
             self._auth_service.create_user(self.keycloak_test_data.create_user)
         self.assertTrue(group_error.exception)
-        self.assert500(group_error.exception)
+        self.assert400(group_error.exception)
 
     @pytest.mark.auth_service
     @mock.patch("app.services.keycloak_service.requests.request")
@@ -237,39 +237,6 @@ class TestAuthService(MockSideEffects):
         with self.assertRaises(AppException.KeyCloakAdminException) as error:
             mock_requests.side_effect = self.keycloak_exception
             self._auth_service.realm_openid_configuration()
-        self.assertTrue(error.exception)
-        self.assert500(error.exception)
-
-    @pytest.mark.auth_service
-    @mock.patch("app.services.keycloak_service.requests.request")
-    def test_request_connection_error(self, mock_request):
-        with self.assertRaises(AppException.InternalServerError) as error:
-            mock_request.side_effect = self.request_connection_error
-            self._auth_service.get_token(
-                {"username": "username", "password": "password"}
-            )
-        self.assertTrue(error.exception)
-        self.assert500(error.exception)
-
-    @pytest.mark.auth_service
-    @mock.patch("app.services.keycloak_service.requests.request")
-    def test_request_http_error(self, mock_request):
-        with self.assertRaises(AppException.InternalServerError) as error:
-            mock_request.side_effect = self.request_http_error
-            self._auth_service.get_token(
-                {"username": "username", "password": "password"}
-            )
-        self.assertTrue(error.exception)
-        self.assert500(error.exception)
-
-    @pytest.mark.auth_service
-    @mock.patch("app.services.keycloak_service.requests.request")
-    def test_request_timedout(self, mock_request):
-        with self.assertRaises(AppException.InternalServerError) as error:
-            mock_request.side_effect = self.request_timed_out_error
-            self._auth_service.get_token(
-                {"username": "username", "password": "password"}
-            )
         self.assertTrue(error.exception)
         self.assert500(error.exception)
 
