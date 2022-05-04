@@ -16,7 +16,7 @@ def object_upload_url(obj):
     if obj.profile_image and obj.profile_image != "null":
         try:
             response = s3_client.generate_presigned_post(
-                Bucket=Config.CEPH_BUCKET, Key=obj.profile_image, ExpiresIn=60
+                Bucket=Config.CEPH_BUCKET, Key=obj.profile_image, ExpiresIn=300
             )
         except ClientError as exc:
             raise AppException.OperationError(
@@ -34,7 +34,7 @@ def object_download_url(obj):
             response = s3_client.generate_presigned_url(
                 "get_object",
                 Params={"Bucket": Config.CEPH_BUCKET, "Key": obj.profile_image},
-                ExpiresIn=60,
+                ExpiresIn=300,
             )
         except ClientError as exc:
             raise AppException.OperationError(
