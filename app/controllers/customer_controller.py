@@ -218,7 +218,8 @@ class CustomerController(Notifier):
         assert obj_id, "missing id of object to update"
         assert obj_data, "missing data of object to update"
 
-        if obj_data.get("profile_image"):
+        profile_image = obj_data.get("profile_image")
+        if profile_image and profile_image != "null":
             obj_data["profile_image"] = f"{obj_id}.{obj_data.get('profile_image')}"
 
         try:

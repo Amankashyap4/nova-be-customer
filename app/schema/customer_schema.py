@@ -65,6 +65,7 @@ class CustomerUpdateSchema(CustomerSchema):
                 "jpeg",
                 "jpg",
                 "png",
+                "null",
             ]
         )
     )
