@@ -67,10 +67,10 @@ class Config:
     ADMIN_MAIL_ADDRESSES = os.getenv("ADMIN_MAIL_ADDRESSES", default="").split("|")
 
     # OBJECT STORAGE (CEPH)
-    CEPH_SERVER_URL = os.getenv("CEPH_SERVER_URL")
-    CEPH_ACCESS_KEY = os.getenv("CEPH_ACCESS_KEY")
-    CEPH_SECRET_KEY = os.getenv("CEPH_SECRET_KEY")
-    CEPH_BUCKET = os.getenv("CEPH_BUCKET")
+    CEPH_SERVER_URL = os.getenv("CEPH_SERVER_URL", default="http://localhost")
+    CEPH_ACCESS_KEY = os.getenv("CEPH_ACCESS_KEY", default="")
+    CEPH_SECRET_KEY = os.getenv("CEPH_SECRET_KEY", default="")
+    CEPH_BUCKET = os.getenv("CEPH_BUCKET", default="nova-bucket")
 
     @property
     def SQLALCHEMY_DATABASE_URI(self):  # noqa

@@ -1,9 +1,9 @@
 import json
 import os
 
-import loguru
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
+from loguru import logger
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", default="localhost:90")
 bootstrap_servers = KAFKA_BOOTSTRAP_SERVERS.split("|")
@@ -30,7 +30,5 @@ def publish_to_kafka(topic, value):
         producer.send(topic=topic, value=value)
         return True
     except KafkaError as e:
-        loguru.Logger.error(
-            f"Failed to publish record on to Kafka broker with error {e}"
-        )
+        logger.error(f"Failed to publish record on to Kafka broker with error {e}")
         return False
