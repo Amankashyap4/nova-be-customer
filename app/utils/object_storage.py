@@ -13,7 +13,7 @@ s3_client = boto3.client(
 
 
 def object_upload_url(obj):
-    if obj.profile_image:
+    if obj.profile_image and obj.profile_image != "null":
         try:
             response = s3_client.generate_presigned_post(
                 Bucket=Config.CEPH_BUCKET, Key=obj.profile_image, ExpiresIn=60
@@ -29,7 +29,7 @@ def object_upload_url(obj):
 
 
 def object_download_url(obj):
-    if obj.profile_image:
+    if obj.profile_image and obj.profile_image != "null":
         try:
             response = s3_client.generate_presigned_url(
                 "get_object",
