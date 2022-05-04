@@ -24,8 +24,9 @@ def object_upload_url(obj):
                 error_message={"object_upload_url": exc},
             )
         obj.pre_signed_post = response
-        return obj
-    return None
+    elif obj.profile_image == "null":
+        s3_client.delete_object(Bucket="nova-bucket", Key="sample")
+    return obj
 
 
 def object_download_url(obj):
@@ -42,5 +43,16 @@ def object_download_url(obj):
                 error_message={"object_download_url": exc},
             )
         obj.pre_signed_get = response
-        return obj
-    return None
+    return obj
+
+
+def saved_objects(key=None):
+    images = []
+    response = s3_client.list_objects(Bucket="nova-bucket")
+    if response.get("Contents"):
+        for obj in response.get("Contents"):
+            if not key:
+                images.append(obj)
+            elif key and key in obj.values():
+                return obj
+    return images

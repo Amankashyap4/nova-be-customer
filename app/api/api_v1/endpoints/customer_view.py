@@ -1362,3 +1362,16 @@ def find_by_phone_number(phone_number):
     """
     result = customer_controller.find_by_phone_number(phone_number)
     return handle_result(result, schema=CustomerSchema)
+
+
+@customer.route("/accounts/profile-images/", methods=["GET"])
+def saved_images():
+    result = customer_controller.customer_profile_images()
+    return handle_result(result)
+
+
+@customer.route("/accounts/profile-images/<string:customer_id>", methods=["GET"])
+@arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
+def saved_image(customer_id):
+    result = customer_controller.customer_profile_image(customer_id)
+    return handle_result(result)

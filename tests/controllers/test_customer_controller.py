@@ -533,7 +533,6 @@ class TestCustomerController(BaseTestCase):
     def test_refresh_token(self):
         data = {"id": self.customer_model.id, "refresh_token": self.refresh_token}
         result = self.customer_controller.refresh_token(data)
-        print(result.value)
         self.assertIsInstance(result.value, dict)
         self.assertIn("access_token", result.value)
         self.assertIn("refresh_token", result.value)
@@ -542,3 +541,22 @@ class TestCustomerController(BaseTestCase):
             self.customer_controller.refresh_token(data)
         self.assertTrue(not_found.exception)
         self.assert404(not_found.exception)
+
+    def test_customer_profile_images(self):
+        with mock.patch("app.utils.object_storage.s3_client.list_objects") as boto3_list:
+            boto3_list.side_effect = self.botocore_client_list
+            result = self.customer_controller.customer_profile_images()
+            self.assertIsInstance(result, Result)
+            self.assertEqual(result.status_code, 200)
+            self.assertIsInstance(result.value, list)
+
+    def test_customer_profile_image(self):
+        with mock.patch("app.utils.object_storage.s3_client.list_objects") as boto3_list:
+            boto3_list.side_effect = self.botocore_client_list
+            self.customer_model.profile_image = str(self.customer_model.id)
+            result = self.customer_controller.customer_profile_image(
+                self.customer_model.id
+            )
+            self.assertIsInstance(result, Result)
+            self.assertEqual(result.status_code, 200)
+            self.assertIsInstance(result.value, dict)
