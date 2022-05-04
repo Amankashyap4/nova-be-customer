@@ -10,7 +10,12 @@ from app.core.notifications.notifier import Notifier
 from app.core.service_interfaces import AuthServiceInterface
 from app.notifications import SMSNotificationHandler
 from app.repositories import CustomerRepository, RegistrationRepository
-from app.utils import keycloak_fields, object_download_url, object_upload_url
+from app.utils import (
+    keycloak_fields,
+    object_download_url,
+    object_upload_url,
+    saved_objects,
+)
 
 utc = pytz.UTC
 OBJECT = "customer"
@@ -608,3 +613,20 @@ class CustomerController(Notifier):
             )
 
         return Result(customer, 200)
+
+    # noinspection PyMethodMayBeStatic
+    def customer_profile_images(self):
+
+        profile_images = saved_objects()
+        return Result(profile_images, 200)
+
+    # noinspection PyMethodMayBeStatic
+    def customer_profile_image(self, obj_id):
+        try:
+            customer = self.customer_repository.find_by_id(obj_id)
+        except AppException.NotFoundException:
+            raise AppException.NotFoundException(
+                context=f"{OBJECT} with id {obj_id} does not exist"
+            )
+        profile_images = saved_objects(key=customer.profile_image)
+        return Result(profile_images, 200)

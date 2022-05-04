@@ -89,11 +89,25 @@ class BaseTestCase(TestCase):
     def botocore_client_error(self, *args, **kwargs):
         raise ClientError(error_response={}, operation_name="client_error")
 
-    # def decode_token(self, token, key, algorithms, audience, issuer):  # noqa
-    #     return {
-    #         "resource_access": {Config.KEYCLOAK_CLIENT_ID: {"roles": ["retailer"]}},
-    #         "preferred_username": self.customer_model.id,
-    #     }
+    def botocore_client_list(self, *args, **kwargs):
+        return {
+            "Contents": [
+                {
+                    "ETag": "9be06213594c993e1957ed3980f8a3a0",
+                    "Key": str(self.customer_model.id),
+                    "LastModified": "Wed, 04 May 2022 15:19:59 GMT",
+                    "Owner": {"DisplayName": "Nova Project", "ID": "nova"},
+                    "Size": 3812,
+                    "StorageClass": "STANDARD",
+                }
+            ]
+        }
+
+        # def decode_token(self, token, key, algorithms, audience, issuer):  # noqa
+        #     return {
+        #         "resource_access": {Config.KEYCLOAK_CLIENT_ID: {"roles": ["retailer"]}},
+        #         "preferred_username": self.customer_model.id,
+        #     }
 
     def utc_side_effect(self, args):  # noqa
         return args

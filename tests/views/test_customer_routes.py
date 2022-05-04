@@ -451,3 +451,28 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIn("id", response_data)
             self.assertIn("access_token", response_data)
             self.assertIn("refresh_token", response_data)
+
+    @pytest.mark.views
+    @mock.patch("app.utils.object_storage.s3_client.list_objects")
+    def test_saved_images(self, mock_boto_client):
+        mock_boto_client.side_effect = self.botocore_client_list
+        with self.client:
+            response = self.client.get(
+                url_for("customer.saved_images"),
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, list)
+
+    @pytest.mark.views
+    @mock.patch("app.utils.object_storage.s3_client.list_objects")
+    def test_saved_image(self, mock_boto_client):
+        mock_boto_client.side_effect = self.botocore_client_list
+        self.customer_model.profile_image = str(self.customer_model.id)
+        with self.client:
+            response = self.client.get(
+                url_for("customer.saved_image", customer_id=self.customer_model.id),
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
