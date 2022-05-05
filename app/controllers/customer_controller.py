@@ -492,7 +492,7 @@ class CustomerController(Notifier):
         data = {"id": customer.id, "phone_number": phone_number}
         self.notify(
             SMSNotificationHandler(
-                recipients=[customer.phone_number],
+                recipients=[phone_number],
                 details={"verification_code": otp_token},
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
