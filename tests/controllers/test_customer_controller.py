@@ -123,9 +123,9 @@ class TestCustomerController(BaseTestCase):
             self.customer_test_data.customer_credential
         )
         self.assertIsInstance(result, Result)
-        self.assertIsInstance(result.value, dict)
-        self.assertIn("access_token", result.value)
-        self.assertIn("refresh_token", result.value)
+        self.assertIsInstance(result.value, CustomerModel)
+        self.assertTrue(hasattr(result.value, "refresh_token"))
+        self.assertTrue(hasattr(result.value, "access_token"))
         self.assertEqual(result.status_code, 200)
         with self.assertRaises(AppException.NotFoundException) as not_found_exc:
             credentials = {"phone_number": "2345678921", "pin": "1234"}
