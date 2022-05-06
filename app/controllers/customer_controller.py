@@ -11,10 +11,11 @@ from app.core.service_interfaces import AuthServiceInterface
 from app.notifications import SMSNotificationHandler
 from app.repositories import CustomerRepository, RegistrationRepository
 from app.utils import (
+    download_object,
     keycloak_fields,
-    object_download_url,
-    object_upload_url,
     saved_objects,
+    set_object,
+    unset_object,
 )
 
 utc = pytz.UTC
@@ -191,7 +192,6 @@ class CustomerController(Notifier):
 
     def login(self, obj_credential):
         assert obj_credential, "missing credentials of object"
-        customer_data = {}
         phone_number = obj_credential.get("phone_number")
         pin = obj_credential.get("pin")
         try:
@@ -204,29 +204,35 @@ class CustomerController(Notifier):
             access_token = self.auth_service.get_token(
                 {"username": customer.id, "password": pin}
             )
-            self.update(str(customer.id), {"status": "first_time"})
-            customer_data["full_name"] = customer.full_name
-            customer_data["birth_date"] = customer.birth_date
-            customer_data["id_number"] = customer.id_number
-            customer_data["id_type"] = customer.id_type
-            customer_data["phone_number"] = customer.phone_number
-            customer_data["id"] = customer.id
-            customer_data["access_token"] = access_token.get("access_token")
-            customer_data["refresh_token"] = access_token.get("refresh_token")
-            return Result(customer_data, 200)
+            if customer.status.value == "inactive":
+                self.customer_repository.update_by_id(
+                    str(customer.id), {"status": "first_time"}
+                )
+                user_data = keycloak_fields(str(customer.id), {"status": "first_time"})
+                self.auth_service.update_user(user_data)
+            customer.access_token = access_token.get("access_token")
+            customer.refresh_token = access_token.get("refresh_token")
+            return Result(customer, 200)
         raise AppException.NotFoundException(
             context=f"account {phone_number} has been {customer.status.value}",
-            error_message={"controller.login": "account disable or block"},
         )
 
     def update(self, obj_id, obj_data):
         assert obj_id, "missing id of object to update"
         assert obj_data, "missing data of object to update"
-
         profile_image = obj_data.get("profile_image")
-        if profile_image and profile_image != "null":
-            obj_data["profile_image"] = f"{obj_id}.{obj_data.get('profile_image')}"
 
+        if profile_image not in [None, "null"]:
+            obj_data["profile_image"] = f"{obj_id}.{obj_data.get('profile_image')}"
+        elif profile_image == "null":
+            try:
+                customer_info = self.customer_repository.find_by_id(obj_id)
+                if customer_info.profile_image not in [None, "null"]:
+                    unset_object(customer_info)
+            except AppException.NotFoundException:
+                raise AppException.NotFoundException(
+                    context=f"{OBJECT} with id {obj_id} does not exists",
+                )
         try:
             customer = self.customer_repository.update_by_id(obj_id, obj_data)
         except AppException.NotFoundException:
@@ -237,12 +243,11 @@ class CustomerController(Notifier):
         user_data = keycloak_fields(obj_id, obj_data)
         self.auth_service.update_user(user_data)
 
-        # set pre-signed url to upload profile image
-        object_upload_url(customer)
+        # generate pre-signed url to set profile image
+        set_object(customer)
 
-        # set pre-signed url to download profile image
-        object_download_url(customer)
-
+        # generate pre-signed url to download profile image
+        download_object(customer)
         return Result(customer, 200)
 
     def add_pin(self, obj_data):
@@ -530,7 +535,7 @@ class CustomerController(Notifier):
                 context=f"{OBJECT} with id {obj_id} does not exists"
             )
         # set pre-signed url on object to download profile image
-        object_download_url(customer)
+        download_object(customer)
         return Result(customer, 200)
 
     def password_otp_confirmation(self, data):
