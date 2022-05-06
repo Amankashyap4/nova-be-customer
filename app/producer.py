@@ -5,6 +5,8 @@ from kafka import KafkaProducer
 from kafka.errors import KafkaError
 from loguru import logger
 
+from app.core.exceptions import AppException
+
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", default="localhost:90")
 bootstrap_servers = KAFKA_BOOTSTRAP_SERVERS.split("|")
 
@@ -21,14 +23,14 @@ def get_partition(key, all, available):
 
 
 def publish_to_kafka(topic, value):
-    producer = KafkaProducer(
-        bootstrap_servers=bootstrap_servers,
-        value_serializer=json_serializer,
-        partitioner=get_partition,
-    )
     try:
+        producer = KafkaProducer(
+            bootstrap_servers=bootstrap_servers,
+            value_serializer=json_serializer,
+            partitioner=get_partition,
+        )
         producer.send(topic=topic, value=value)
         return True
-    except KafkaError as e:
-        logger.error(f"Failed to publish record on to Kafka broker with error {e}")
-        return False
+    except KafkaError as exc:
+        logger.error(f"Failed to publish record on to Kafka broker with error {exc}")
+        raise AppException.OperationError(context=f"kafka error with error {exc}")

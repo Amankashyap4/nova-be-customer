@@ -1215,7 +1215,7 @@ def update_phone(user_id):
 
 
 @customer.route("/accounts/<string:customer_id>", methods=["DELETE"])
-@auth_required()
+# @auth_required()
 @arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 def delete_customer(customer_id):
     """
