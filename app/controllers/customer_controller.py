@@ -568,19 +568,16 @@ class CustomerController(Notifier):
 
     def delete(self, obj_id):
         assert obj_id, "missing id of object to delete"
+
         try:
-            customer = self.customer_repository.update_by_id(
-                obj_id, {"status": "disabled"}
-            )
+            customer = self.customer_repository.find_by_id(obj_id)
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
                 context=f"customer with id {obj_id} does not exists",
             )
-        data = {
-            "username": obj_id,
-            "status": customer.status.value,
-        }
-        self.auth_service.update_user(data)
+        self.customer_repository.delete(customer.id)
+        self.auth_service.delete_user(obj_id)
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],

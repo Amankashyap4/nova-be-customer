@@ -412,7 +412,7 @@ class TestCustomerRoutes(BaseTestCase):
             )
 
     @pytest.mark.views
-    @mock.patch("app.services.keycloak_service.AuthService.update_user")
+    @mock.patch("app.services.keycloak_service.AuthService.delete_user")
     def test_delete(self, mock_delete_user):
         mock_delete_user.return_value = self.auth_service.delete_user(
             self.customer_model.id
