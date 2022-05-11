@@ -25,7 +25,7 @@ class MockSideEffects(BaseTestCase):
     def requests_response(self, *args, **kwargs):
         return MockResponse(
             status_code=self.status_code,
-            json=self.json,
+            json={"error_description": "keycloak error"},
         )
 
     def get_token_response(self, *args, **kwargs):
@@ -52,7 +52,7 @@ class MockSideEffects(BaseTestCase):
     def keycloak_exception(self, *args, **kwargs):
         return MockResponse(
             status_code=500,
-            json=None,
+            json={"error_description": "keycloak error"},
         )
 
     def request_exception(self, *args, **kwargs):
