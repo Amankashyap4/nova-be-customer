@@ -55,7 +55,7 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code != 200:
             raise AppException.KeyCloakAdminException(
-                context=keycloak_response.json(),
+                context=keycloak_response.json().get("error_description"),
                 status_code=keycloak_response.status_code,
                 error_message=message_struct(
                     module=__name__,
@@ -95,7 +95,7 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code != 200:
             raise AppException.KeyCloakAdminException(
-                context=keycloak_response.json(),
+                context=keycloak_response.json().get("error_description"),
                 status_code=keycloak_response.status_code,
                 error_message=message_struct(
                     module=__name__,
@@ -203,7 +203,7 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                context=keycloak_response.json(),
+                context=keycloak_response.json().get("error_description"),
                 status_code=keycloak_response.status_code,
                 error_message=message_struct(
                     module=__name__,
@@ -230,7 +230,7 @@ class AuthService(AuthServiceInterface):
         )
         if keycloak_response.status_code != 200:
             raise AppException.KeyCloakAdminException(
-                context=keycloak_response.json(),
+                context=keycloak_response.json().get("error_description"),
                 status_code=keycloak_response.status_code,
                 error_message=message_struct(
                     module=__name__,
@@ -258,7 +258,7 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                context=keycloak_response.json(),
+                context=keycloak_response.json().get("error_description"),
                 status_code=keycloak_response.status_code,
                 error_message=message_struct(
                     module=__name__,
@@ -300,7 +300,7 @@ class AuthService(AuthServiceInterface):
         )
         if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                context=keycloak_response.json(),
+                context=keycloak_response.json().get("error_description"),
                 status_code=keycloak_response.status_code,
                 error_message=message_struct(
                     module=__name__,
@@ -329,7 +329,7 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                context=keycloak_response.json(),
+                context=keycloak_response.json().get("error_description"),
                 status_code=keycloak_response.status_code,
                 error_message=message_struct(
                     module=__name__,
@@ -357,7 +357,7 @@ class AuthService(AuthServiceInterface):
 
         if keycloak_response.status_code >= 300:
             raise AppException.KeyCloakAdminException(
-                context=keycloak_response.json(),
+                context=keycloak_response.json().get("error_description"),
                 status_code=keycloak_response.status_code,
                 error_message=message_struct(
                     module=__name__,
@@ -400,7 +400,7 @@ class AuthService(AuthServiceInterface):
         # handle keycloak response
         if keycloak_response.status_code != requests.codes.ok:
             raise AppException.KeyCloakAdminException(
-                context=keycloak_response.json(),
+                context=keycloak_response.json().get("error_description"),
                 status_code=keycloak_response.status_code,
                 error_message=message_struct(
                     module=__name__,
