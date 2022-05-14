@@ -1,6 +1,6 @@
 import json
 
-from app.core.exceptions import HTTPException
+from app.core.exceptions import AppException, HTTPException
 from app.core.repository import SQLBaseRepository
 from app.models import CustomerModel
 from app.schema import CustomerSchema
@@ -84,3 +84,17 @@ class CustomerRepository(SQLBaseRepository):
             return server_result
         except HTTPException:
             return super().delete(obj_id)
+
+    def cache_record(self, key):
+        try:
+            cache_data = self.redis_service.get(key)
+        except HTTPException:
+            raise AppException.NotFoundException(
+                context="error connecting to redis server",
+            )
+        else:
+            if not cache_data:
+                raise AppException.NotFoundException(
+                    context="record not available in cache"
+                )
+            return cache_data
