@@ -22,6 +22,7 @@ class CustomerModel(db.Model):
     pin: str
     status: str
     auth_service_id: str
+    level: str
     profile_image: str
     created: datetime.datetime
     modified: datetime.datetime
