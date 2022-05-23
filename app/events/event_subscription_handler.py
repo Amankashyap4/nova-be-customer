@@ -18,14 +18,14 @@ class EventSubscriptionHandler(EventHandlerInterface):
     def event_handler(self):
         valid_event = self.validate_event(event=self.event_action)
         if valid_event:
-            getattr(self, self.meta.get("event_action"))(valid_event)
+            getattr(self, self.event_action)(valid_event)
 
     def validate_event(self, event):
         if event in events_subscribed_to() and hasattr(self, event):
             event_data = {}
             for field in fields_subscribed_to(event):
                 event_triggers = triggers_subscribed_to(event, field)
-                if field in self.details.keys():
+                if field in self.details:
                     field_value = self.details.get(field)
                     if self.validate_event_trigger(event_triggers, field):
                         event_data[field] = field_value
@@ -44,9 +44,11 @@ class EventSubscriptionHandler(EventHandlerInterface):
         try:
             self.customer_controller.update(
                 event_data.get("customer_id"),
-                {"level": self.details.get("cylinder_size")},
+                {"level": self.details.get("product_name")},
             )
         except AppException.NotFoundException as exc:
+            # record not available on postgres
             logger.error(exc.context)
         except AppException.InternalServerError as exc:
+            # keycloak server not available
             logger.error(exc.context)
