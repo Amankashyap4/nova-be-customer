@@ -736,18 +736,18 @@ def reset_password():
     return handle_result(result)
 
 
-@customer.route("/change-password/<string:user_id>", methods=["POST"])
+@customer.route("/change-password/<string:customer_id>", methods=["POST"])
 @auth_required()
-@arg_validator(schema=CustomerRequestArgSchema, param="user_id")
+@arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 @validator(schema=PinChangeSchema)
-def change_password(user_id):
+def change_password(customer_id):
     """
     ---
     post:
       description: changes a customer's password
       parameters:
         - in: path
-          name: user_id
+          name: customer_id
           required: true
           schema:
             type: string
@@ -822,7 +822,7 @@ def change_password(user_id):
           - Authentication
     """
     data = request.json
-    data["customer_id"] = user_id
+    data["customer_id"] = customer_id
     result = customer_controller.change_password(data)
     return handle_result(result)
 
@@ -936,17 +936,17 @@ def request_reset_pin():
     return handle_result(result)
 
 
-@customer.route("/reset-pin/<string:user_id>", methods=["POST"])
-@arg_validator(schema=CustomerRequestArgSchema, param="user_id")
+@customer.route("/reset-pin/<string:customer_id>", methods=["POST"])
+@arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 @validator(schema=AddPinSchema)
-def reset_pin(user_id):
+def reset_pin(customer_id):
     """
     ---
     post:
       description: pin reset
       parameters:
         - in: path
-          name: user_id
+          name: customer_id
           required: true
           schema:
             type: string
@@ -1005,7 +1005,7 @@ def reset_pin(user_id):
           - Pin-Process
     """
     data = request.json
-    data["customer_id"] = user_id
+    data["customer_id"] = customer_id
     result = customer_controller.process_reset_pin(data)
     return handle_result(result, schema=CustomerSchema)
 
@@ -1068,17 +1068,17 @@ def reset_phone_request():
     return handle_result(result)
 
 
-@customer.route("/reset-phone/<string:user_id>", methods=["POST"])
-@arg_validator(schema=CustomerRequestArgSchema, param="user_id")
+@customer.route("/reset-phone/<string:customer_id>", methods=["POST"])
+@arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 @validator(schema=ResetPhoneSchema)
-def reset_phone(user_id):
+def reset_phone(customer_id):
     """
     ---
     post:
       description: register customer new phone number
       parameters:
         - in: path
-          name: user_id
+          name: customer_id
           required: true
           schema:
             type: string
@@ -1143,22 +1143,22 @@ def reset_phone(user_id):
     """
 
     data = request.json
-    data["customer_id"] = user_id
+    data["customer_id"] = customer_id
     result = customer_controller.reset_phone(data)
     return handle_result(result)
 
 
-@customer.route("/update-phone/<string:user_id>", methods=["POST"])
-@arg_validator(schema=CustomerRequestArgSchema, param="user_id")
+@customer.route("/update-phone/<string:customer_id>", methods=["POST"])
+@arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 @validator(schema=UpdatePhoneSchema)
-def update_phone(user_id):
+def update_phone(customer_id):
     """
     ---
     post:
       description: update customer's new phone number
       parameters:
         - in: path
-          name: user_id
+          name: customer_id
           required: true
           schema:
             type: string
@@ -1209,7 +1209,7 @@ def update_phone(user_id):
           - Customer Reset Phone
     """
     data = request.json
-    data["customer_id"] = user_id
+    data["customer_id"] = customer_id
     result = customer_controller.request_phone_reset(data)
     return handle_result(result)
 
