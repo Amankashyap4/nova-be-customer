@@ -230,7 +230,7 @@ class TestCustomerRoutes(BaseTestCase):
         data = {"old_pin": "1234", "new_pin": "0000"}
         with self.client:
             response = self.client.post(
-                url_for("customer.change_password", user_id=self.customer_model.id),
+                url_for("customer.change_password", customer_id=self.customer_model.id),
                 json=data,
                 headers=self.headers,
             )
@@ -319,7 +319,7 @@ class TestCustomerRoutes(BaseTestCase):
         )
         with self.client:
             response = self.client.post(
-                url_for("customer.reset_pin", user_id=pin_process.value.get("id")),
+                url_for("customer.reset_pin", customer_id=pin_process.value.get("id")),
                 json={
                     "password_token": reset.value.get("password_token"),
                     "pin": "0000",
@@ -354,7 +354,7 @@ class TestCustomerRoutes(BaseTestCase):
                 {"id": self.customer_model.id, "token": "666666"}
             )
             response = self.client.post(
-                url_for("customer.reset_phone", user_id=self.customer_model.id),
+                url_for("customer.reset_phone", customer_id=self.customer_model.id),
                 json={
                     "new_phone_number": self.customer_test_data.register_customer.get(
                         "phone_number"
@@ -391,7 +391,7 @@ class TestCustomerRoutes(BaseTestCase):
                 }
             )
             response = self.client.post(
-                url_for("customer.update_phone", user_id=self.customer_model.id),
+                url_for("customer.update_phone", customer_id=self.customer_model.id),
                 json={
                     "phone_number": self.customer_test_data.register_customer.get(
                         "phone_number"
