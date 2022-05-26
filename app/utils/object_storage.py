@@ -50,6 +50,9 @@ def set_object(obj):
                 ),
             )
         obj.pre_signed_post = response
+        # files = {"file": ("newfile", open("config.py", "r"))}
+        # requests.post(response["url"], data=response["fields"], files=files)
+
     return obj
 
 
