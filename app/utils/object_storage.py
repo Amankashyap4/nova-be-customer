@@ -85,7 +85,7 @@ def download_object(obj):
                     error=exc,
                 ),
             )
-        obj.pre_signed_get = response
+        obj.profile_image = response
     return obj
 
 
