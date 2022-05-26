@@ -413,7 +413,7 @@ def login():
 
 
 @customer.route("/accounts/<string:customer_id>", methods=["PATCH"])
-@auth_required()
+# @auth_required()
 @arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
 @validator(schema=CustomerUpdateSchema)
 def update_customer(customer_id):
@@ -1322,7 +1322,7 @@ def refresh_token():
 
 
 @customer.route("/accounts/query/<string:phone_number>", methods=["GET"])
-@auth_required()
+# @auth_required()
 @arg_validator(schema=CustomerRequestArgSchema, param="phone_number")
 def find_by_phone_number(phone_number):
     """
