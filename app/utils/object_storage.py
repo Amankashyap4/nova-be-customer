@@ -91,7 +91,7 @@ def download_object(obj):
 
 def unset_object(obj):
     try:
-        s3_client.delete_object(Bucket="nova-bucket", Key=obj.profile_image)
+        s3_client.delete_object(Bucket=Config.CEPH_BUCKET, Key=obj.profile_image)
     except ClientError as exc:
         raise AppException.OperationError(
             context="error generating pre-signed url",
