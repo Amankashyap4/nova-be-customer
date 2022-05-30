@@ -56,14 +56,6 @@ class EventNotificationHandler(NotificationHandler):
                 return True
             return False
         return True
-        # if not event_triggers:
-        #     return True
-        # # else:
-        # #     if field_value in event_triggers:
-        # #         return True
-        # elif event_triggers and field_value in event_triggers:
-        #     return True
-        # return False
 
     def generate_event_data(self):
         return {
