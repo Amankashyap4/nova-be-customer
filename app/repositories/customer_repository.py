@@ -6,20 +6,18 @@ from app.models import CustomerModel
 from app.schema import CustomerSchema
 from app.services import RedisService
 
-OBJECT_SCHEMA = CustomerSchema(unknown="include")
-OBJECT = "customer"
-
 
 class CustomerRepository(SQLBaseRepository):
     model = CustomerModel
 
-    def __init__(self, redis_service: RedisService):
+    def __init__(self, redis_service: RedisService, customer_schema: CustomerSchema):
         self.redis_service = redis_service
+        self.customer_schema = customer_schema
         super().__init__()
 
     def index(self):
         try:
-            all_cache_data = self.redis_service.get(f"all_{OBJECT}s")
+            all_cache_data = self.redis_service.get("all_customers")
             if all_cache_data:
                 self.deserialize_list_of_object(all_cache_data)
             return super().index()
@@ -27,7 +25,7 @@ class CustomerRepository(SQLBaseRepository):
             return super().index()
 
     def create(self, data):
-        server_data = super().create(OBJECT_SCHEMA.load(data))
+        server_data = super().create(self.customer_schema.load(data, unknown="include"))
         try:
             object_data = self.serialize_object(server_data.id, server_data)
             self.serialize_list_of_object()
@@ -37,7 +35,7 @@ class CustomerRepository(SQLBaseRepository):
 
     def get_by_id(self, obj_id):
         try:
-            cache_data = self.redis_service.get(f"{OBJECT}_{obj_id}")
+            cache_data = self.redis_service.get(f"customer_{obj_id}")
             if cache_data:
                 self.deserialize_object(cache_data)
             object_data = self.serialize_object(obj_id, super().find_by_id(obj_id))
@@ -46,11 +44,13 @@ class CustomerRepository(SQLBaseRepository):
             return super().find_by_id(obj_id)
 
     def update_by_id(self, obj_id, obj_in):
-        server_result = super().update_by_id(obj_id, OBJECT_SCHEMA.load(obj_in))
+        server_result = super().update_by_id(
+            obj_id, self.customer_schema.load(obj_in, unknown="include")
+        )
         try:
-            cache_data = self.redis_service.get(f"{OBJECT}_{obj_id}")
+            cache_data = self.redis_service.get(f"customer_{obj_id}")
             if cache_data:
-                self.redis_service.delete(f"{OBJECT}_{obj_id}")
+                self.redis_service.delete(f"customer_{obj_id}")
             object_data = self.serialize_object(obj_id, server_result)
             self.serialize_list_of_object()
             return object_data
@@ -60,9 +60,9 @@ class CustomerRepository(SQLBaseRepository):
     def delete(self, obj_id):
         server_result = super().delete(obj_id)
         try:
-            cache_data = self.redis_service.get(f"{OBJECT}_{obj_id}")
+            cache_data = self.redis_service.get(f"customer_{obj_id}")
             if cache_data:
-                self.redis_service.delete(f"{OBJECT}_{obj_id}")
+                self.redis_service.delete(f"customer_{obj_id}")
             self.serialize_list_of_object()
             return server_result
         except HTTPException:
@@ -83,20 +83,22 @@ class CustomerRepository(SQLBaseRepository):
             return cache_data
 
     def serialize_object(self, obj_id, obj_data: dict):
-        serialize_data = OBJECT_SCHEMA.dumps(obj_data)
-        self.redis_service.set(f"{OBJECT}_{obj_id}", serialize_data)
+        serialize_data = self.customer_schema.dumps(obj_data)
+        self.redis_service.set(f"customer_{obj_id}", serialize_data)
         return obj_data
 
     def serialize_list_of_object(self):
-        serialize_all_data = OBJECT_SCHEMA.dumps(super().index(), many=True)
-        self.redis_service.set(f"all_{OBJECT}s", serialize_all_data)
+        serialize_all_data = self.customer_schema.dumps(super().index(), many=True)
+        self.redis_service.set("all_customers", serialize_all_data)
 
     def deserialize_object(self, obj_data: str):
-        deserialize_data = OBJECT_SCHEMA.loads(json.dumps(obj_data))
+        deserialize_data = self.customer_schema.loads(json.dumps(obj_data))
         return self.model(**deserialize_data)
 
     def deserialize_list_of_object(self, object_data: str):
-        deserialize_object_data = OBJECT_SCHEMA.loads(json.dumps(object_data), many=True)
+        deserialize_object_data = self.customer_schema.loads(
+            json.dumps(object_data), many=True
+        )
         for count, value in enumerate(deserialize_object_data):
             deserialize_object_data[count] = self.model(**value)
         return deserialize_object_data
