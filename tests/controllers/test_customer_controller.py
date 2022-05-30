@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
 from time import sleep
-from unittest import mock
 
 import pytest
 
@@ -160,26 +159,6 @@ class TestCustomerController(BaseTestCase):
             )
         self.assertTrue(not_found.exception)
         self.assert404(not_found.exception)
-        with mock.patch(
-            "app.utils.object_storage.s3_client.generate_presigned_url"
-        ) as boto3_exception:
-            boto3_exception.side_effect = self.botocore_client_error
-            with self.assertRaises(AppException.OperationError) as operation_error:
-                self.customer_controller.update(
-                    self.customer_model.id, self.customer_test_data.update_customer
-                )
-        self.assertTrue(operation_error.exception)
-        self.assert400(operation_error.exception)
-        with mock.patch(
-            "app.utils.object_storage.s3_client.generate_presigned_post"
-        ) as boto3_exception:
-            boto3_exception.side_effect = self.botocore_client_error
-            with self.assertRaises(AppException.OperationError) as operation_error:
-                self.customer_controller.update(
-                    self.customer_model.id, self.customer_test_data.update_customer
-                )
-        self.assertTrue(operation_error.exception)
-        self.assert400(operation_error.exception)
 
     @pytest.mark.controller
     def test_add_pin(self):
@@ -543,20 +522,14 @@ class TestCustomerController(BaseTestCase):
         self.assert404(not_found.exception)
 
     def test_customer_profile_images(self):
-        with mock.patch("app.utils.object_storage.s3_client.list_objects") as boto3_list:
-            boto3_list.side_effect = self.botocore_client_list
-            result = self.customer_controller.customer_profile_images()
-            self.assertIsInstance(result, Result)
-            self.assertEqual(result.status_code, 200)
-            self.assertIsInstance(result.value, list)
+        result = self.customer_controller.customer_profile_images()
+        self.assertIsInstance(result, Result)
+        self.assertEqual(result.status_code, 200)
+        self.assertIsInstance(result.value, list)
 
     def test_customer_profile_image(self):
-        with mock.patch("app.utils.object_storage.s3_client.list_objects") as boto3_list:
-            boto3_list.side_effect = self.botocore_client_list
-            self.customer_model.profile_image = str(self.customer_model.id)
-            result = self.customer_controller.customer_profile_image(
-                self.customer_model.id
-            )
-            self.assertIsInstance(result, Result)
-            self.assertEqual(result.status_code, 200)
-            self.assertIsInstance(result.value, dict)
+        self.customer_model.profile_image = str(self.customer_model.id)
+        result = self.customer_controller.customer_profile_image(self.customer_model.id)
+        self.assertIsInstance(result, Result)
+        self.assertEqual(result.status_code, 200)
+        self.assertIsInstance(result.value, dict)

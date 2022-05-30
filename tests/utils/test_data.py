@@ -19,7 +19,7 @@ class CustomerTestData:
             "id_expiry_date": datetime.datetime.utcnow().date(),
             "id_number": "existing",
             "id_type": "national_id",
-            # "profile_image": str(uuid.uuid4())+ ".jpg"
+            "profile_image": f"{str(uuid.uuid4())}.jpg",
         }
 
     @property

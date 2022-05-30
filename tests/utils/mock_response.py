@@ -1,5 +1,6 @@
 import uuid
 
+from botocore.exceptions import ClientError, ConnectionError
 from requests import exceptions as requests_exceptions
 
 from tests.base_test_case import BaseTestCase
@@ -15,7 +16,6 @@ class MockResponse:
 
 
 class MockSideEffects(BaseTestCase):
-
     mock_groups = [
         {"id": str(uuid.uuid4()), "name": "nova-customer-gp"},
     ]
@@ -60,3 +60,15 @@ class MockSideEffects(BaseTestCase):
 
     def realm_openid_config(self, *args, **kwargs):
         return MockResponse(status_code=200, json={"url": "localhost"})
+
+    def boto3_list_objects(self, *args, **kwargs):
+        return {"Contents": [{"Key": "obj_key"}]}
+
+    def boto3_request(self, *args, **kwargs):
+        return {"status": "success"}
+
+    def boto3_client_error(self, *args, **kwargs):
+        raise ClientError(error_response={"Error": {}}, operation_name="pre_signed_post")
+
+    def boto3_connection_error(self, *args, **kwargs):
+        raise ConnectionError(error="connection error")

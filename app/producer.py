@@ -17,7 +17,9 @@ def json_serializer(data):
 
 def get_partition(key, all, available):
     """
-    return 0
+
+    :param key, all, available:
+    :return:
     """
     return 0
 

@@ -2,7 +2,6 @@ import os
 from unittest.mock import patch
 
 import fakeredis
-from botocore.exceptions import ClientError
 from flask_testing import TestCase
 
 from app import APP_ROOT, create_app, db
@@ -11,6 +10,7 @@ from app.models import CustomerModel
 from app.repositories import CustomerRepository, RegistrationRepository
 from config import Config
 from tests.utils.mock_auth_service import MockAuthService
+from tests.utils.mock_ceph_storage_service import MockStorageService
 
 from .utils.test_data import CustomerTestData, KeycloakTestData
 
@@ -29,10 +29,12 @@ class BaseTestCase(TestCase):
         self.customer_repository = CustomerRepository(redis_service=redis_service)
         self.registration_repository = RegistrationRepository()
         self.auth_service = MockAuthService()
+        self.object_storage = MockStorageService()
         self.customer_controller = CustomerController(
             customer_repository=self.customer_repository,
             registration_repository=self.registration_repository,
             auth_service=self.auth_service,
+            object_storage=self.object_storage,
         )
         self.customer_test_data = CustomerTestData()
         self.keycloak_test_data = KeycloakTestData()
@@ -86,30 +88,7 @@ class BaseTestCase(TestCase):
     def dummy_kafka_method(self, topic, value):
         return True
 
-    def botocore_client_error(self, *args, **kwargs):
-        raise ClientError(error_response={}, operation_name="client_error")
-
-    def botocore_client_list(self, *args, **kwargs):
-        return {
-            "Contents": [
-                {
-                    "ETag": "9be06213594c993e1957ed3980f8a3a0",
-                    "Key": str(self.customer_model.id),
-                    "LastModified": "Wed, 04 May 2022 15:19:59 GMT",
-                    "Owner": {"DisplayName": "Nova Project", "ID": "nova"},
-                    "Size": 3812,
-                    "StorageClass": "STANDARD",
-                }
-            ]
-        }
-
-        # def decode_token(self, token, key, algorithms, audience, issuer):  # noqa
-        #     return {
-        #         "resource_access": {Config.KEYCLOAK_CLIENT_ID: {"roles": ["retailer"]}},
-        #         "preferred_username": self.customer_model.id,
-        #     }
-
-    def utc_side_effect(self, args):  # noqa
+    def utc_side_effect(self, args):
         return args
 
     def randint(self, *args):

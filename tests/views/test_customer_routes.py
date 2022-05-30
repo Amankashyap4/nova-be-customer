@@ -453,9 +453,7 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIn("refresh_token", response_data)
 
     @pytest.mark.views
-    @mock.patch("app.utils.object_storage.s3_client.list_objects")
-    def test_saved_images(self, mock_boto_client):
-        mock_boto_client.side_effect = self.botocore_client_list
+    def test_saved_images(self):
         with self.client:
             response = self.client.get(
                 url_for("customer.saved_images"),
@@ -465,9 +463,7 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIsInstance(response_data, list)
 
     @pytest.mark.views
-    @mock.patch("app.utils.object_storage.s3_client.list_objects")
-    def test_saved_image(self, mock_boto_client):
-        mock_boto_client.side_effect = self.botocore_client_list
+    def test_saved_image(self):
         self.customer_model.profile_image = str(self.customer_model.id)
         with self.client:
             response = self.client.get(
