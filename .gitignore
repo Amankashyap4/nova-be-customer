@@ -41,6 +41,7 @@ htmlcov/
 .tox/
 .nox/
 .coverage
+.coveragerc
 .coverage.*
 .cache
 nosetests.xml
@@ -57,12 +58,12 @@ cover/
 
 # Django stuff:
 *.log
-*.log.*
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
 # Flask stuff:
+instance/
 .webassets-cache
 *.sqlite
 *.sqlite3
@@ -107,9 +108,8 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-data/
-.venv
 .env
+.venv
 env/
 venv/
 ENV/
@@ -147,6 +147,18 @@ cython_debug/
 # Containers
 .devcontainer
 
-# SonarQube
-sonar.sh
+# Jwt Private Key and Public Key
+keycloak_private_key.pem
+keycloak_public_key.pub
+
+# docker volume
+.dbdata
+.keycloakdata
+
+# ignore docker compose dev file
+docker-compose-dev.yml
+
+# ignore sonarqube files
+.scannerwork
 sonar-project.properties
+sonar.sh
