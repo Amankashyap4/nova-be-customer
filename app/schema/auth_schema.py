@@ -10,7 +10,7 @@ class ConfirmTokenSchema(Schema):
 
 
 class RequestResetPinSchema(Schema):
-    token = fields.Str(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
+    token = fields.Str(required=True, validate=validate.Regexp(regex_type().get("pin")))
     id = fields.UUID(required=True)
 
 
@@ -20,7 +20,7 @@ class ConfirmedTokenSchema(Schema):
 
 
 class AddPinSchema(Schema):
-    pin = fields.Str(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
+    pin = fields.Str(required=True, validate=validate.Regexp(regex_type().get("pin")))
     password_token = fields.Str(required=True)
 
 
@@ -29,8 +29,12 @@ class ResendTokenSchema(Schema):
 
 
 class PinChangeSchema(Schema):
-    old_pin = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
-    new_pin = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
+    old_pin = fields.String(
+        required=True, validate=validate.Regexp(regex_type().get("pin"))
+    )
+    new_pin = fields.String(
+        required=True, validate=validate.Regexp(regex_type().get("pin"))
+    )
 
 
 class PinResetRequestSchema(Schema):
@@ -51,13 +55,19 @@ class ResetPhoneSchema(Schema):
 
 
 class PinResetSchema(Schema):
-    token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
-    new_pin = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{4}\b"))
+    token = fields.String(
+        required=True, validate=validate.Regexp(regex_type().get("token"))
+    )
+    new_pin = fields.String(
+        required=True, validate=validate.Regexp(regex_type().get("pin"))
+    )
     id = fields.UUID(required=True)
 
 
 class PasswordOtpSchema(Schema):
-    token = fields.String(required=True, validate=validate.Regexp(r"\b[0-9]{6}\b"))
+    token = fields.String(
+        required=True, validate=validate.Regexp(regex_type().get("token"))
+    )
     id = fields.UUID(required=True)
 
 

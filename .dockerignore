@@ -161,3 +161,4 @@ docker-compose.yml
 docker-compose-dev.yml
 sonar-project.properties
 htmlcov
+sonar.sh

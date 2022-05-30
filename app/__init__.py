@@ -37,9 +37,8 @@ dictConfig(log_config())
 
 def create_app(config="config.DevelopmentConfig"):
     """Construct the core application"""
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    path = os.path.join(basedir, "../instance")
-    app = Flask(__name__, instance_relative_config=False, instance_path=path)
+
+    app = Flask(__name__, instance_relative_config=False)
     app.logger.removeHandler(default_handler)
 
     with app.app_context():

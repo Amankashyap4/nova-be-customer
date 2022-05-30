@@ -1,3 +1,4 @@
 from .auth_service_interface import AuthServiceInterface
 from .cache_service_interface import CacheServiceInterface
 from .event_handler_interface import EventHandlerInterface
+from .storage_service_interface import StorageServiceInterface

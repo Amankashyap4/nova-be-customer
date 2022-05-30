@@ -24,7 +24,7 @@ from app.schema import (
     TokenLoginSchema,
     UpdatePhoneSchema,
 )
-from app.services import AuthService, RedisService
+from app.services import AuthService, ObjectStorage, RedisService
 from app.utils import arg_validator, auth_required, validator
 
 customer = Blueprint("customer", __name__)
@@ -37,6 +37,7 @@ obj_graph = pinject.new_object_graph(
         RegistrationRepository,
         AuthService,
         RedisService,
+        ObjectStorage,
     ],
 )
 customer_controller = obj_graph.provide(CustomerController)
@@ -980,7 +981,7 @@ def reset_pin(customer_id):
           content:
             application/json:
               schema:
-                type: object
+                type: objectAuthServiceInterface
                 properties:
                   app_exception:
                     type: str

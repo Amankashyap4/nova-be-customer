@@ -57,6 +57,7 @@ cover/
 
 # Django stuff:
 *.log
+*.log.*
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -145,3 +146,7 @@ cython_debug/
 
 # Containers
 .devcontainer
+
+# SonarQube
+sonar.sh
+sonar-project.properties
