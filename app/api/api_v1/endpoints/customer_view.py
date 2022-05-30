@@ -38,6 +38,7 @@ obj_graph = pinject.new_object_graph(
         AuthService,
         RedisService,
         ObjectStorage,
+        CustomerSchema,
     ],
 )
 customer_controller = obj_graph.provide(CustomerController)

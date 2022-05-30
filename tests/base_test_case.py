@@ -8,6 +8,7 @@ from app import APP_ROOT, create_app, db
 from app.controllers import CustomerController
 from app.models import CustomerModel
 from app.repositories import CustomerRepository, RegistrationRepository
+from app.schema import CustomerSchema
 from config import Config
 from tests.utils.mock_auth_service import MockAuthService
 from tests.utils.mock_ceph_storage_service import MockStorageService
@@ -26,7 +27,10 @@ class BaseTestCase(TestCase):
         return app
 
     def instantiate_classes(self, redis_service):
-        self.customer_repository = CustomerRepository(redis_service=redis_service)
+        self.customer_schema = CustomerSchema()
+        self.customer_repository = CustomerRepository(
+            redis_service=redis_service, customer_schema=self.customer_schema
+        )
         self.registration_repository = RegistrationRepository()
         self.auth_service = MockAuthService()
         self.object_storage = MockStorageService()
