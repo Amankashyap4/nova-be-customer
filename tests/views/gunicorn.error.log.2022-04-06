@@ -1,0 +1,32 @@
+log_date: [2022-04-05 08:06:12]
+None requested http://localhost/ ERROR in app_exceptions: Invalid token
+log_date: [2022-04-05 08:06:50]
+None requested http://localhost/ ERROR in app_exceptions: Invalid token
+log_date: [2022-04-05 08:07:00]
+None requested http://localhost/ ERROR in app_exceptions: Invalid token
+log_date: [2022-04-05 08:11:38]
+None requested http://localhost/ ERROR in app_exceptions: pin already set for account 0500000000
+log_date: [2022-04-05 08:15:29]
+127.0.0.1 requested http://localhost/api/v1/customers/reset-phone/0f193024-c18d-40ba-8b78-8cc1fc7b546c ERROR in app_exceptions: {'token': ['Field may not be null.']}
+log_date: [2022-04-05 08:15:55]
+127.0.0.1 requested http://localhost/api/v1/customers/reset-phone/6dcf39ff-f650-4b42-81d6-e8e867bbdb4d ERROR in app_exceptions: {'token': ['Field may not be null.']}
+log_date: [2022-04-05 08:17:16]
+None requested http://localhost/ ERROR in app_exceptions: user does not exist
+log_date: [2022-04-05 08:18:33]
+127.0.0.1 requested http://localhost/api/v1/customers/request-pin-process ERROR in app_exceptions: user does not exist
+log_date: [2022-04-05 08:20:51]
+127.0.0.1 requested http://localhost/api/v1/customers/confirm-token ERROR in app_exceptions: {'token': ['Field may not be null.']}
+log_date: [2022-04-05 08:21:31]
+127.0.0.1 requested http://localhost/api/v1/customers/confirm-token ERROR in app_exceptions: {'token': ['Field may not be null.']}
+log_date: [2022-04-05 08:21:47]
+127.0.0.1 requested http://localhost/api/v1/customers/confirm-token ERROR in app_exceptions: {'token': ['Field may not be null.']}
+log_date: [2022-04-05 08:22:22]
+127.0.0.1 requested http://localhost/api/v1/customers/confirm-token ERROR in app_exceptions: {'token': ['Field may not be null.']}
+log_date: [2022-04-05 08:23:23]
+127.0.0.1 requested http://localhost/api/v1/customers/add-information ERROR in app_exceptions: Invalid customer
+log_date: [2022-04-05 08:25:10]
+127.0.0.1 requested http://localhost/api/v1/customers/add-information ERROR in app_exceptions: Invalid customer
+log_date: [2022-04-05 08:27:11]
+127.0.0.1 requested http://localhost/api/v1/customers/add-information ERROR in app_exceptions: {'post request error': 'keycloak server connection error'}
+log_date: [2022-04-06 10:38:53]
+127.0.0.1 requested http://localhost/api/v1/customers/add-pin ERROR in app_exceptions: {'access_token': [{'error': 'invalid_grant', 'error_description': 'Invalid user credentials'}]}

@@ -453,8 +453,10 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIn("refresh_token", response_data)
 
     @pytest.mark.views
-    def test_saved_images(self):
+    @mock.patch("app.services.ceph_storage.ObjectStorage.list_objects")
+    def test_saved_images(self, mock_storage):
         with self.client:
+            mock_storage.side_effect = self.object_storage.list_objects
             response = self.client.get(
                 url_for("customer.saved_images"),
             )
@@ -463,9 +465,11 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIsInstance(response_data, list)
 
     @pytest.mark.views
-    def test_saved_image(self):
+    @mock.patch("app.services.ceph_storage.ObjectStorage.get_object")
+    def test_saved_image(self, mock_storage):
         self.customer_model.profile_image = str(self.customer_model.id)
         with self.client:
+            mock_storage.side_effect = self.object_storage.get_object
             response = self.client.get(
                 url_for("customer.saved_image", customer_id=self.customer_model.id),
             )
