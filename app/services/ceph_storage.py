@@ -25,7 +25,6 @@ class ObjectStorage(StorageServiceInterface):
     )
 
     def create_object(self, obj_key):
-        assert obj_key, ASSERT_KEY
 
         if self.validate_object_key(obj_key):
             response = self.object_storage_request(
@@ -36,6 +35,7 @@ class ObjectStorage(StorageServiceInterface):
         return {}
 
     def download_object(self, obj_key):
+        assert obj_key, ASSERT_KEY
 
         if self.validate_object_key(obj_key):
             response = self.object_storage_request(
@@ -78,7 +78,6 @@ class ObjectStorage(StorageServiceInterface):
 
     # noinspection PyMethodMayBeStatic
     def validate_object_key(self, key):
-        assert key, ASSERT_KEY
 
         if key not in [None, "null"]:
             return key
