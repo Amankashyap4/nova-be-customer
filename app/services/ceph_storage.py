@@ -35,7 +35,6 @@ class ObjectStorage(StorageServiceInterface):
         return {}
 
     def download_object(self, obj_key):
-        assert obj_key, ASSERT_KEY
 
         if self.validate_object_key(obj_key):
             response = self.object_storage_request(
@@ -66,8 +65,6 @@ class ObjectStorage(StorageServiceInterface):
         return []
 
     def delete_object(self, obj_key):
-        assert obj_key, ASSERT_KEY
-
         if self.validate_object_key(obj_key):
             response = self.object_storage_request(
                 method="delete_object",
