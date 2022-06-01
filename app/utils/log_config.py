@@ -14,7 +14,10 @@ class MailHandler(SMTPHandler):
         Emit a record.
         Format the record and send it to the specified addressees.
         """
-        Thread(target=self.send_mail, kwargs={"record": record}).start()
+        try:
+            Thread(target=self.send_mail, kwargs={"record": record}).start()
+        except Exception:
+            self.handleError(record)
 
     def send_mail(self, record):
         try:
@@ -49,10 +52,11 @@ class RequestFormatter(logging.Formatter):
         if has_request_context():
             record.url = request.url
             record.remote_addr = request.remote_addr
+            record.method = request.method
         else:
             record.url = None
             record.remote_addr = None
-
+            record.method = None
         return super().format(record)
 
 
@@ -80,11 +84,11 @@ def log_config():
     return {
         "version": 1,
         "disable_existing_loggers": True,
+        "root": {
+            "level": "ERROR",
+            "handlers": ["console", "error_file"],
+        },
         "loggers": {
-            "root": {
-                "level": "ERROR",
-                "handlers": ["console", "error_file"],
-            },
             "gunicorn.error": {
                 "handlers": ["console", "email", "error_file"],
                 "level": "ERROR",
@@ -141,7 +145,7 @@ def log_config():
             },
             "custom_formatter": {
                 "()": "app.utils.log_config.RequestFormatter",
-                "format": "log_date: [%(asctime)s]\n%(remote_addr)s requested %(url)s %(levelname)s in %(module)s \n%(levelname)s : %(message)s",  # noqa
+                "format": "log_date: [%(asctime)s]\n%(remote_addr)s made a %(method)s request to %(url)s %(levelname)s in %(module)s \n%(levelname)s : %(message)s",  # noqa
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
         },
