@@ -24,6 +24,9 @@ from app.utils.log_config import log_config
 APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to application_top
 dotenv_path = os.path.join(APP_ROOT, ".env")
 
+# configure log before creating application instance
+dictConfig(log_config())
+
 # SWAGGER
 SWAGGER_URL = "/api/v1/customer/docs"
 API_URL = "/static/swagger.json"
@@ -32,15 +35,15 @@ SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
     SWAGGER_URL, API_URL, config={"app_name": "Nova Customer Service"}
 )
 
-dictConfig(log_config())
-
 
 def create_app(config="config.DevelopmentConfig"):
     """Construct the core application"""
 
-    app = Flask(__name__, instance_relative_config=False)
-    app.logger.removeHandler(default_handler)
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.join(basedir, "../instance")
+    app = Flask(__name__, instance_relative_config=False, instance_path=path)
 
+    app.logger.removeHandler(default_handler)
     with app.app_context():
         environment = os.getenv("FLASK_ENV")
         cfg = import_string(config)()
