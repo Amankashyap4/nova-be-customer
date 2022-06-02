@@ -1,4 +1,5 @@
 import enum
+import json
 
 from app.core import NotificationHandler
 from app.enums import events_to_publish, fields_to_publish, triggers_to_publish
@@ -18,10 +19,10 @@ class EventNotificationHandler(NotificationHandler):
     the event details, a record may be altered in the rightful service.
     """
 
-    def __init__(self, publish, data, schema):
+    def __init__(self, publish, data, schema=None):
         self.publish = publish
         self.data = data
-        self.schema = schema()
+        self.schema = schema
         self.service_name = Config.APP_NAME
 
     def send(self):
@@ -58,9 +59,13 @@ class EventNotificationHandler(NotificationHandler):
         return True
 
     def generate_event_data(self):
+        if self.schema:
+            details = self.schema().dumps(self.data)
+        else:
+            details = json.dumps(self.data)
         return {
             "service_name": self.service_name,
-            "details": self.schema.dumps(self.data),
+            "details": details,
             "meta": {
                 "event_action": self.publish,
             },

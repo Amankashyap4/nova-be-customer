@@ -48,6 +48,8 @@ class ServiceEventPublishing(enum.Enum):
                }
     """
 
+    create_user = {"id": []}
+
 
 def status_type():
     return [status.value for status in StatusEnum]
