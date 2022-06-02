@@ -7,8 +7,11 @@ import pytz
 from app.core import Result
 from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
+from app.enums import ServiceEventPublishing
+from app.events import EventNotificationHandler
 from app.notifications import SMSNotificationHandler
 from app.repositories import CustomerRepository, RegistrationRepository
+from app.schema import CustomerSchema
 from app.services import AuthService, ObjectStorage
 from app.utils import keycloak_fields
 
@@ -152,6 +155,14 @@ class CustomerController(Notifier):
             {"auth_service_id": auth_result},
         )
         token_data = {"password_token": customer.auth_token, "id": customer.id}
+
+        self.notify(
+            EventNotificationHandler(
+                publish=ServiceEventPublishing.create_user.name,
+                data=customer,
+                schema=CustomerSchema,
+            )
+        )
 
         return Result(token_data, 200)
 
