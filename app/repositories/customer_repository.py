@@ -78,7 +78,7 @@ class CustomerRepository(SQLBaseRepository):
         else:
             if not cache_data:
                 raise AppException.NotFoundException(
-                    context="record not available in cache"
+                    context=f"record with key {key} not available in cache"
                 )
             return cache_data
 

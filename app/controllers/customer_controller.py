@@ -3,12 +3,12 @@ import secrets
 from datetime import datetime, timedelta
 
 import pytz
+from loguru import logger
 
 from app.core import Result
 from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
-from app.enums import ServiceEventPublishing
-from app.events import EventNotificationHandler
+from app.events import EventNotificationHandler, ServiceEventPublishing
 from app.notifications import SMSNotificationHandler
 from app.repositories import CustomerRepository, RegistrationRepository
 from app.schema import CustomerSchema
@@ -158,7 +158,7 @@ class CustomerController(Notifier):
 
         self.notify(
             EventNotificationHandler(
-                publish=ServiceEventPublishing.create_user.name,
+                publish=ServiceEventPublishing.new_customer.name,
                 data=customer,
                 schema=CustomerSchema,
             )
@@ -664,3 +664,14 @@ class CustomerController(Notifier):
             )
         profile_images = self.object_storage.get_object(customer.profile_image)
         return Result(profile_images, 200)
+
+    # below methods handles event subscription for the service
+    def first_time_deposit(self, obj_data):
+        customer_id = obj_data.get("customer_id")
+        level = obj_data.get("product_name")
+        try:
+            self.customer_repository.update_by_id(customer_id, {"level": level})
+        except AppException.NotFoundException:
+            logger.error(
+                f"event first time deposit with error: customer with id {customer_id} does not exist"  # noqa
+            )
