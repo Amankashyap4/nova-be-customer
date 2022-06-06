@@ -68,6 +68,12 @@ class BaseTestCase(TestCase):
         )
         self.addCleanup(kafka_sms_patcher.stop)
         kafka_sms_patcher.start()
+        kafka_event_patcher = patch(
+            "app.events.event_notification_handler.publish_to_kafka",
+            self.dummy_kafka_method,
+        )
+        self.addCleanup(kafka_event_patcher.stop)
+        kafka_event_patcher.start()
 
     def setUp(self):
         """
