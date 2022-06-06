@@ -1,9 +1,8 @@
-import enum
-
 from app.core import NotificationHandler
-from app.enums import events_to_publish, fields_to_publish, triggers_to_publish
 from app.producer import publish_to_kafka
 from config import Config
+
+from .event_data_structure import ServiceEventPublishing
 
 
 class EventNotificationHandler(NotificationHandler):
@@ -18,49 +17,34 @@ class EventNotificationHandler(NotificationHandler):
     the event details, a record may be altered in the rightful service.
     """
 
-    def __init__(self, publish, data, schema):
+    def __init__(self, publish, data, schema=None):
         self.publish = publish
-        self.data = data
-        self.schema = schema()
         self.service_name = Config.APP_NAME
+        if schema:
+            self.data = schema().dumps(data)
+        else:
+            self.data = data
 
     def send(self):
-        if self.validate_event(self.publish, self.data):
+        if self.validate_event(self.data):
             publish_to_kafka(
                 topic=self.publish.upper(), value=self.generate_event_data()
             )
 
-    def validate_event(self, event, data):
-        if event in events_to_publish():
-            event_data = {}
-            for field in fields_to_publish(event):
-                # get triggers registered for event fields
-                event_triggers = triggers_to_publish(event, field)
-                field_value = None
-                # check if the data has any event field associated with it
-                if hasattr(data, field) and isinstance(getattr(data, field), enum.Enum):
-                    field_value = getattr(data, field).value
-                elif hasattr(data, field):
-                    field_value = getattr(data, field)
-                # check if data field has any event triggers associated with it
-                if self.validate_event_trigger(event_triggers, field_value):
-                    event_data[field] = str(field_value)
-            return event_data
-        return None
-
-    # noinspection PyMethodMayBeStatic
-    @staticmethod
-    def validate_event_trigger(event_triggers, field_value):
-        if event_triggers:
-            if field_value in event_triggers:
-                return True
-            return False
-        return True
+    def validate_event(self, data):
+        validator = ServiceEventPublishing[self.publish].value
+        for field in validator:
+            if field not in data:
+                return None
+            if isinstance(validator.get(field), list):
+                if data.get(field) not in validator.get(field):
+                    return None
+        return data
 
     def generate_event_data(self):
         return {
             "service_name": self.service_name,
-            "details": self.schema.dumps(self.data),
+            "details": self.data,
             "meta": {
                 "event_action": self.publish,
             },
