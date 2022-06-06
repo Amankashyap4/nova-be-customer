@@ -39,6 +39,7 @@ if __name__ == "__main__":
         logger.error(f"Failed to consume message on Kafka broker with error {exc}")
     else:
         consumer.subscribe(subscriptions)
+        logger.info(f"Event Subscription List: {subscriptions}")
         logger.info("AWAITING MESSAGES\n")
 
         app = create_app()
@@ -49,7 +50,8 @@ if __name__ == "__main__":
         from app.controllers import CustomerController
         from app.events import EventSubscriptionHandler
         from app.repositories import CustomerRepository, RegistrationRepository
-        from app.services import AuthService, RedisService
+        from app.schema import CustomerSchema
+        from app.services import AuthService, ObjectStorage, RedisService
 
         for msg in consumer:
             data = json.loads(msg.value)
@@ -63,11 +65,11 @@ if __name__ == "__main__":
                     RedisService,
                     RegistrationRepository,
                     AuthService,
+                    CustomerSchema,
+                    ObjectStorage,
                 ],
             )
             customer_controller = obj_graph.provide(CustomerController)
-            event_subscription_handler = EventSubscriptionHandler(
-                customer_controller, data
-            )
-            event_subscription_handler.event_handler()
+            event_subscription_handler = EventSubscriptionHandler(customer_controller)
+            event_subscription_handler.event_handler(data)
             logger.info("message status: successfully consumed\n")

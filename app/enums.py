@@ -29,28 +29,6 @@ class RegularExpression(enum.Enum):
     token = r"([0-9]{6}$)"
 
 
-class ServiceEventSubscription(enum.Enum):
-    """
-    This class defines all events subscribed by this service. Events are created in the
-    form: event_to_subscribe = {
-               event_field: [field_trigger(s)]
-          }
-    """
-
-    first_time_deposit = {"customer_id": []}
-
-
-class ServiceEventPublishing(enum.Enum):
-    """
-    This class defines all events to be published by this service. Events are created in
-    the form: event_to_publish = {
-                    event_field: [event_trigger(s)]
-               }
-    """
-
-    create_user = {"id": []}
-
-
 def status_type():
     return [status.value for status in StatusEnum]
 
@@ -66,35 +44,3 @@ def regex_type():
 
 def deposit_type():
     return [deposit.value for deposit in DepositEnum]
-
-
-def events_subscribed_to():
-    return [event.name for event in ServiceEventSubscription]
-
-
-def fields_subscribed_to(event):
-    for event_subscribed_to in ServiceEventSubscription:
-        if event_subscribed_to.name == event:
-            return event_subscribed_to.value.keys()
-
-
-def triggers_subscribed_to(event, event_field):
-    for event_subscribed_to in ServiceEventSubscription:
-        if event_subscribed_to.name == event:
-            return event_subscribed_to.value.get(event_field)
-
-
-def events_to_publish():
-    return [event.name for event in ServiceEventPublishing]
-
-
-def fields_to_publish(event):
-    for event_to_publish in ServiceEventPublishing:
-        if event_to_publish.name == event:
-            return event_to_publish.value.keys()
-
-
-def triggers_to_publish(event, event_field):
-    for event_to_publish in ServiceEventPublishing:
-        if event_to_publish.name == event:
-            return event_to_publish.value.get(event_field)
