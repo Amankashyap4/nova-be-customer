@@ -19,17 +19,20 @@ class CustomerRepository(SQLBaseRepository):
         try:
             all_cache_data = self.redis_service.get("all_customers")
             if all_cache_data:
-                self.deserialize_list_of_object(all_cache_data)
-            return super().index()
+                deserialized_objects = self.deserialize_list_of_object(all_cache_data)
+                return deserialized_objects
+            server_data = super().index()
+            self.serialize_list_of_object(server_data)
+            return server_data
         except HTTPException:
             return super().index()
 
     def create(self, data):
         server_data = super().create(self.customer_schema.load(data, unknown="include"))
         try:
-            object_data = self.serialize_object(server_data.id, server_data)
-            self.serialize_list_of_object()
-            return object_data
+            obj_data = self.serialize_object(server_data.id, server_data)
+            self.serialize_list_of_object(super().index())
+            return obj_data
         except HTTPException:
             return server_data
 
@@ -37,34 +40,35 @@ class CustomerRepository(SQLBaseRepository):
         try:
             cache_data = self.redis_service.get(f"customer_{obj_id}")
             if cache_data:
-                self.deserialize_object(cache_data)
+                deserialized_object = self.deserialize_object(cache_data)
+                return deserialized_object
             object_data = self.serialize_object(obj_id, super().find_by_id(obj_id))
             return object_data
         except HTTPException:
             return super().find_by_id(obj_id)
 
     def update_by_id(self, obj_id, obj_in):
-        server_result = super().update_by_id(
+        server_data = super().update_by_id(
             obj_id, self.customer_schema.load(obj_in, unknown="include")
         )
         try:
             cache_data = self.redis_service.get(f"customer_{obj_id}")
             if cache_data:
                 self.redis_service.delete(f"customer_{obj_id}")
-            object_data = self.serialize_object(obj_id, server_result)
-            self.serialize_list_of_object()
+            object_data = self.serialize_object(obj_id, server_data)
+            self.serialize_list_of_object(super().index())
             return object_data
         except HTTPException:
             return super().update_by_id(obj_id, obj_in)
 
     def delete(self, obj_id):
-        server_result = super().delete(obj_id)
+        server_data = super().delete(obj_id)
         try:
             cache_data = self.redis_service.get(f"customer_{obj_id}")
             if cache_data:
                 self.redis_service.delete(f"customer_{obj_id}")
-            self.serialize_list_of_object()
-            return server_result
+            self.serialize_list_of_object(super().index())
+            return server_data
         except HTTPException:
             return super().delete(obj_id)
 
@@ -87,8 +91,8 @@ class CustomerRepository(SQLBaseRepository):
         self.redis_service.set(f"customer_{obj_id}", serialize_data)
         return obj_data
 
-    def serialize_list_of_object(self):
-        serialize_all_data = self.customer_schema.dumps(super().index(), many=True)
+    def serialize_list_of_object(self, obj_list):
+        serialize_all_data = self.customer_schema.dumps(obj_list, many=True)
         self.redis_service.set("all_customers", serialize_all_data)
 
     def deserialize_object(self, obj_data: str):
