@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime, timedelta
 
 import pytz
-from loguru import logger
+from flask import current_app
 
 from app.core import Result
 from app.core.exceptions import AppException
@@ -672,6 +672,6 @@ class CustomerController(Notifier):
         try:
             self.customer_repository.update_by_id(customer_id, {"level": level})
         except AppException.NotFoundException:
-            logger.error(
+            current_app.logger.error(
                 f"event first time deposit with error: customer with id {customer_id} does not exist"  # noqa
             )
