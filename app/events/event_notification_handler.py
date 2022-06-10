@@ -21,7 +21,7 @@ class EventNotificationHandler(NotificationHandler):
         self.publish = publish
         self.service_name = Config.APP_NAME
         if schema:
-            self.data = schema().dumps(data)
+            self.data = schema().dump(data)
         else:
             self.data = data
 
