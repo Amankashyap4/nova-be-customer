@@ -9,7 +9,6 @@ from .event_data_structure import ServiceEventSubscription
 
 class EventSubscriptionHandler(EventHandlerInterface):
     def __init__(self, customer_controller):
-        current_app.logger.critical("lakfjsdla")
         self.customer_controller = customer_controller
         self.data = None
         self.details = None

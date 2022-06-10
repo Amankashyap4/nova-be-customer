@@ -1,3 +1,4 @@
+import inspect
 import random
 import secrets
 from datetime import datetime, timedelta
@@ -679,6 +680,7 @@ class CustomerController(Notifier):
         try:
             self.customer_repository.update_by_id(customer_id, {"level": level})
         except AppException.NotFoundException:
-            current_app.logger.error(
-                f"event first time deposit with error: customer with id {customer_id} does not exist"  # noqa
+            method_name = inspect.currentframe().f_back.f_code.co_name
+            current_app.logger.critical(
+                f"event <{method_name}> with data {obj_data} encountered an error customer with id {customer_id} does not exist"  # noqa
             )
