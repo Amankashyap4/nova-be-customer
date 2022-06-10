@@ -86,7 +86,7 @@ def log_config():
         "disable_existing_loggers": True,
         "root": {
             "level": "ERROR",
-            "handlers": ["console", "error_file"],
+            "handlers": ["console", "error_file", "consumer"],
         },
         "loggers": {
             "gunicorn.error": {
@@ -137,6 +137,20 @@ def log_config():
                 "when": "D",
                 "interval": 30,
                 "backupCount": 1,
+            },
+            "consumer": {
+                "()": "app.utils.log_config.MailHandler",
+                "formatter": "access",
+                "level": "CRITICAL",
+                "mailhost": (Config.MAIL_SERVER, Config.MAIL_SERVER_PORT),
+                "fromaddr": Config.DEFAULT_MAIL_SENDER_ADDRESS,
+                "toaddrs": Config.ADMIN_MAIL_ADDRESSES,
+                "subject": f"{Config.CONSUMER_LOG_MAIL_SUBJECT} {datetime.utcnow().date()}",
+                "credentials": (
+                    Config.DEFAULT_MAIL_SENDER_ADDRESS,
+                    Config.DEFAULT_MAIL_SENDER_PASSWORD,
+                ),
+                "secure": (),
             },
         },
         "formatters": {
