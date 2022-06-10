@@ -545,6 +545,13 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "change_phone"},
             )
         )
+        self.notify(
+            EventNotificationHandler(
+                publish=ServiceEventPublishing.update_customer.name,
+                data=customer,
+                schema=CustomerSchema,
+            )
+        )
         return Result({"detail": "Phone reset done successfully"}, 200)
 
     def get_customer(self, obj_id):

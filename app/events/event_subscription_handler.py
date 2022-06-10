@@ -1,7 +1,6 @@
 import json
 
 from flask import current_app
-from loguru import logger
 
 from app.core.service_interfaces import EventHandlerInterface
 
@@ -10,6 +9,7 @@ from .event_data_structure import ServiceEventSubscription
 
 class EventSubscriptionHandler(EventHandlerInterface):
     def __init__(self, customer_controller):
+        current_app.logger.critical("lakfjsdla")
         self.customer_controller = customer_controller
         self.data = None
         self.details = None
@@ -26,7 +26,7 @@ class EventSubscriptionHandler(EventHandlerInterface):
         if valid_event_data:
             getattr(self, self.event_action, self.unhandled_event)()
         else:
-            logger.error(
+            current_app.logger.critical(
                 f"event {self.event_action} with data {self.data} did not pass data validation"  # noqa
             )
 
