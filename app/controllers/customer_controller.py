@@ -537,7 +537,7 @@ class CustomerController(Notifier):
         )
         user_data = keycloak_fields(customer_id, {"phone_number": phone_number})
         self.auth_service.update_user(user_data)
-        # self.update(customer_id, {"phone_number": phone_number})
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
