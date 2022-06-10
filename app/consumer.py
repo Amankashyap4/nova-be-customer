@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 
@@ -54,8 +53,8 @@ if __name__ == "__main__":
         from app.services import AuthService, ObjectStorage, RedisService
 
         for msg in consumer:
-            data = json.loads(msg.value)
-            logger.info(f"originating service: {data.get('service_name')}")
+            # data = json.loads(msg.value)
+            # logger.info(f"originating service: {data.get('service_name')}")
             logger.info(f"topic consuming: {msg.topic}")
             obj_graph = pinject.new_object_graph(
                 modules=None,
@@ -71,5 +70,5 @@ if __name__ == "__main__":
             )
             customer_controller = obj_graph.provide(CustomerController)
             event_subscription_handler = EventSubscriptionHandler(customer_controller)
-            event_subscription_handler.event_handler(data)
+            # event_subscription_handler.event_handler(data)
             logger.info("message status: successfully consumed\n")

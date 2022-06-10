@@ -46,8 +46,8 @@ class Config:
     FLASK_RUN_PORT = 6000
     TESTING = False
     LOGFILE = "log.log"
-    LOG_MAIL_SUBJECT = f"error_log[{APP_NAME}]"
-    CONSUMER_LOG_MAIL_SUBJECT = f"error_log[{APP_NAME}:consumer]"
+    APP_LOG_SUBJECT = f"error_log[{APP_NAME}]"
+    CONSUMER_LOG_SUBJECT = f"error_log[{APP_NAME}:consumer]"
 
     # KEYCLOAK
     KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID", default="").split("|")
