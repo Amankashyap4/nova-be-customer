@@ -1,5 +1,3 @@
-import json
-
 from flask import current_app
 
 from app.core.service_interfaces import EventHandlerInterface
@@ -17,7 +15,7 @@ class EventSubscriptionHandler(EventHandlerInterface):
 
     def event_handler(self, event_data: dict):
         self.data = event_data
-        self.details = json.loads(event_data.get("details"))
+        self.details = event_data.get("details")
         self.meta = event_data.get("meta")
         self.event_action = self.meta.get("event_action")
 
@@ -57,3 +55,14 @@ class EventSubscriptionHandler(EventHandlerInterface):
 
         """
         self.customer_controller.first_time_deposit(self.details)
+
+    def new_customer_order(self):
+        """
+
+        This event sends sms notification to customer when new order is created.
+         Event is published to the kafka topic <NEW_CUSTOMER_ORDER> by the Order Service
+         to be consumed by this service.
+        :return: None
+
+        """
+        self.customer_controller.new_customer_order(self.details)

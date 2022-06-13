@@ -10,6 +10,7 @@ class ServiceEventSubscription(enum.Enum):
     """
 
     first_time_deposit = {"customer_id": "", "product_name": ""}
+    new_customer_order = {"id": "", "order_by_id": "", "order_status": ""}
 
 
 class ServiceEventPublishing(enum.Enum):
