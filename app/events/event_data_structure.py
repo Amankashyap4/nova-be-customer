@@ -21,3 +21,4 @@ class ServiceEventPublishing(enum.Enum):
     """
 
     new_customer = {"id": "", "full_name": "", "phone_number": ""}
+    update_customer = {"id": "", "phone_number": ""}

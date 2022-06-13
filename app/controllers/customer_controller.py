@@ -1,9 +1,10 @@
+import inspect
 import random
 import secrets
 from datetime import datetime, timedelta
 
 import pytz
-from loguru import logger
+from flask import current_app
 
 from app.core import Result
 from app.core.exceptions import AppException
@@ -537,12 +538,19 @@ class CustomerController(Notifier):
         )
         user_data = keycloak_fields(customer_id, {"phone_number": phone_number})
         self.auth_service.update_user(user_data)
-        # self.update(customer_id, {"phone_number": phone_number})
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
                 details={},
                 meta={"type": "sms_notification", "subtype": "change_phone"},
+            )
+        )
+        self.notify(
+            EventNotificationHandler(
+                publish=ServiceEventPublishing.update_customer.name,
+                data=customer,
+                schema=CustomerSchema,
             )
         )
         return Result({"detail": "Phone reset done successfully"}, 200)
@@ -672,6 +680,7 @@ class CustomerController(Notifier):
         try:
             self.customer_repository.update_by_id(customer_id, {"level": level})
         except AppException.NotFoundException:
-            logger.error(
-                f"event first time deposit with error: customer with id {customer_id} does not exist"  # noqa
+            method_name = inspect.currentframe().f_back.f_code.co_name
+            current_app.logger.critical(
+                f"event <{method_name}> with data {obj_data} encountered an error customer with id {customer_id} does not exist"  # noqa
             )
