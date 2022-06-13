@@ -86,7 +86,7 @@ def log_config():
         "disable_existing_loggers": True,
         "root": {
             "level": "ERROR",
-            "handlers": ["console", "error_file"],
+            "handlers": ["console", "error_file", "consumer"],
         },
         "loggers": {
             "gunicorn.error": {
@@ -114,7 +114,7 @@ def log_config():
                 "mailhost": (Config.MAIL_SERVER, Config.MAIL_SERVER_PORT),
                 "fromaddr": Config.DEFAULT_MAIL_SENDER_ADDRESS,
                 "toaddrs": Config.ADMIN_MAIL_ADDRESSES,
-                "subject": f"{Config.LOG_MAIL_SUBJECT} {datetime.utcnow().date()}",
+                "subject": f"{Config.APP_LOG_SUBJECT} {datetime.utcnow().date()}",
                 "credentials": (
                     Config.DEFAULT_MAIL_SENDER_ADDRESS,
                     Config.DEFAULT_MAIL_SENDER_PASSWORD,
@@ -138,6 +138,20 @@ def log_config():
                 "interval": 30,
                 "backupCount": 1,
             },
+            "consumer": {
+                "()": "app.utils.log_config.MailHandler",
+                "formatter": "consumer",
+                "level": "CRITICAL",
+                "mailhost": (Config.MAIL_SERVER, Config.MAIL_SERVER_PORT),
+                "fromaddr": Config.DEFAULT_MAIL_SENDER_ADDRESS,
+                "toaddrs": Config.ADMIN_MAIL_ADDRESSES,
+                "subject": f"{Config.CONSUMER_LOG_SUBJECT} {datetime.utcnow().date()}",
+                "credentials": (
+                    Config.DEFAULT_MAIL_SENDER_ADDRESS,
+                    Config.DEFAULT_MAIL_SENDER_PASSWORD,
+                ),
+                "secure": (),
+            },
         },
         "formatters": {
             "access": {
@@ -147,6 +161,9 @@ def log_config():
                 "()": "app.utils.log_config.RequestFormatter",
                 "format": "log_date: [%(asctime)s]\n%(remote_addr)s made a %(method)s request to %(url)s %(levelname)s in %(module)s \n%(levelname)s : %(message)s",  # noqa
                 "datefmt": "%Y-%m-%d %H:%M:%S",
+            },
+            "consumer": {
+                "format": "log_date: [%(asctime)s]\n%(message)s",
             },
         },
     }
