@@ -9,12 +9,16 @@ from flask import current_app
 from app.core import Result
 from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
-from app.events import EventNotificationHandler, ServiceEventPublishing
+from app.events import (
+    EventNotificationHandler,
+    ServiceEventPublishing,
+    ServiceEventSubscription,
+)
 from app.notifications import SMSNotificationHandler
 from app.repositories import CustomerRepository, RegistrationRepository
 from app.schema import CustomerSchema
 from app.services import AuthService, ObjectStorage
-from app.utils import keycloak_fields
+from app.utils import extract_valid_data, keycloak_fields
 
 utc = pytz.UTC
 OBJECT = "customer"
@@ -675,12 +679,37 @@ class CustomerController(Notifier):
 
     # below methods handles event subscription for the service
     def first_time_deposit(self, obj_data):
-        customer_id = obj_data.get("customer_id")
-        level = obj_data.get("product_name")
+        data = extract_valid_data(
+            obj_data=obj_data,
+            validator=ServiceEventSubscription.first_time_deposit.value,
+        )
         try:
-            self.customer_repository.update_by_id(customer_id, {"level": level})
+            self.customer_repository.update_by_id(
+                data.get("customer_id"), {"level": data.get("product_name")}
+            )
         except AppException.NotFoundException:
             method_name = inspect.currentframe().f_back.f_code.co_name
             current_app.logger.critical(
-                f"event <{method_name}> with data {obj_data} encountered an error customer with id {customer_id} does not exist"  # noqa
+                f"event <{method_name}> with data {obj_data} encountered an error: customer with id {data.get('customer_id')} does not exist"  # noqa
+            )
+
+    def new_customer_order(self, obj_data):
+        data = extract_valid_data(
+            obj_data=obj_data,
+            validator=ServiceEventSubscription.new_customer_order.value,
+        )
+        try:
+            result = self.customer_repository.get_by_id(data.get("order_by_id"))
+        except AppException.NotFoundException:
+            method_name = inspect.currentframe().f_back.f_code.co_name
+            current_app.logger.critical(
+                f"event <{method_name}> with data {obj_data} encountered an error: customer with id {data.get('order_by_id')} does not exist"  # noqa
+            )
+        else:
+            self.notify(
+                SMSNotificationHandler(
+                    recipients=result.phone_number,
+                    details={"order_status": ""},
+                    meta={"type": "sms_notification", "subtype": "otp"},
+                )
             )
