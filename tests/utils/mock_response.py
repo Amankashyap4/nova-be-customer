@@ -62,7 +62,7 @@ class MockSideEffects(BaseTestCase):
         return MockResponse(status_code=200, json={"url": "localhost"})
 
     def boto3_list_objects(self, *args, **kwargs):
-        return {"Contents": [{"Key": "obj_key"}]}
+        return {"Contents": [{"Key": "customer/obj_key"}]}
 
     def boto3_request(self, *args, **kwargs):
         return {"status": "success"}

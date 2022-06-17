@@ -29,7 +29,7 @@ class ObjectStorage(StorageServiceInterface):
         if self.validate_object_key(obj_key):
             response = self.object_storage_request(
                 method="generate_presigned_post",
-                kwarg={"Bucket": Config.CEPH_BUCKET, "Key": obj_key},
+                kwarg={"Bucket": Config.CEPH_BUCKET, "Key": f"customer/{obj_key}"},
             )
             return response
         return {}
@@ -40,7 +40,12 @@ class ObjectStorage(StorageServiceInterface):
             response = self.object_storage_request(
                 method="generate_presigned_url",
                 arg="get_object",
-                kwarg={"Params": {"Bucket": Config.CEPH_BUCKET, "Key": obj_key}},
+                kwarg={
+                    "Params": {
+                        "Bucket": Config.CEPH_BUCKET,
+                        "Key": f"customer/{obj_key}",
+                    }
+                },
             )
             return response
         return obj_key
@@ -51,7 +56,7 @@ class ObjectStorage(StorageServiceInterface):
         )
         contents = response.get("Contents")
         for obj in contents:
-            if obj_key == obj.get("Key"):
+            if f"customer/{obj_key}" == obj.get("Key"):
                 return obj
         return {}
 
@@ -61,21 +66,21 @@ class ObjectStorage(StorageServiceInterface):
         )
         contents = response.get("Contents")
         if contents:
-            return contents
+            obj_list = [obj for obj in contents if "customer" in obj.get("Key")]
+            return obj_list
         return []
 
     def delete_object(self, obj_key):
         if self.validate_object_key(obj_key):
             response = self.object_storage_request(
                 method="delete_object",
-                kwarg={"Bucket": Config.CEPH_BUCKET, "Key": obj_key},
+                kwarg={"Bucket": Config.CEPH_BUCKET, "Key": f"customer/{obj_key}"},
             )
             return response
         return obj_key
 
     # noinspection PyMethodMayBeStatic
     def validate_object_key(self, key):
-
         if key not in [None, "null"]:
             return key
         return None
