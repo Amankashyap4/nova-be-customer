@@ -10,8 +10,6 @@ from app.core.service_interfaces import StorageServiceInterface
 from app.utils import get_full_class_name, message_struct
 from config import Config
 
-ASSERT_KEY = "missing key of object"
-
 
 @dataclass
 class ObjectStorage(StorageServiceInterface):
@@ -24,18 +22,16 @@ class ObjectStorage(StorageServiceInterface):
         config=boto3_config,
     )
 
-    def create_object(self, obj_key):
-
+    def save_object(self, obj_key):
         if self.validate_object_key(obj_key):
             response = self.object_storage_request(
                 method="generate_presigned_post",
-                kwarg={"Bucket": Config.CEPH_BUCKET, "Key": f"customer/{obj_key}"},
+                kwarg={"Bucket": Config.CEPH_BUCKET, "Key": obj_key},
             )
             return response
-        return {}
+        return None
 
     def download_object(self, obj_key):
-
         if self.validate_object_key(obj_key):
             response = self.object_storage_request(
                 method="generate_presigned_url",
@@ -43,12 +39,25 @@ class ObjectStorage(StorageServiceInterface):
                 kwarg={
                     "Params": {
                         "Bucket": Config.CEPH_BUCKET,
-                        "Key": f"customer/{obj_key}",
+                        "Key": obj_key,
                     }
                 },
             )
             return response
-        return obj_key
+        return None
+
+    def create_object(self, object_path, obj_key):
+        if self.validate_object_key(obj_key):
+            response = self.object_storage_request(
+                method="put_object",
+                kwarg={
+                    "Body": open(object_path, "rb"),
+                    "Bucket": Config.CEPH_BUCKET,
+                    "Key": obj_key,
+                },
+            )
+            return response
+        return None
 
     def get_object(self, obj_key):
         response = self.object_storage_request(
@@ -56,31 +65,35 @@ class ObjectStorage(StorageServiceInterface):
         )
         contents = response.get("Contents")
         for obj in contents:
-            if f"customer/{obj_key}" == obj.get("Key"):
+            if obj_key == obj.get("Key"):
                 return obj
         return {}
 
-    def list_objects(self):
+    def list_objects(self, directory_name=None):
         response = self.object_storage_request(
             method="list_objects", kwarg={"Bucket": Config.CEPH_BUCKET}
         )
         contents = response.get("Contents")
         if contents:
-            obj_list = [obj for obj in contents if "customer" in obj.get("Key")]
-            return obj_list
+            if directory_name:
+                obj_list = [obj for obj in contents if directory_name in obj.get("Key")]
+                return obj_list
+            else:
+                return contents
         return []
 
     def delete_object(self, obj_key):
         if self.validate_object_key(obj_key):
             response = self.object_storage_request(
                 method="delete_object",
-                kwarg={"Bucket": Config.CEPH_BUCKET, "Key": f"customer/{obj_key}"},
+                kwarg={"Bucket": Config.CEPH_BUCKET, "Key": obj_key},
             )
             return response
-        return obj_key
+        return None
 
     # noinspection PyMethodMayBeStatic
     def validate_object_key(self, key):
+        key = key.split("/")[-1]
         if key not in [None, "null"]:
             return key
         return None

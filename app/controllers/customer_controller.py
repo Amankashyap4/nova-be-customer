@@ -41,8 +41,10 @@ class CustomerController(Notifier):
 
     def index(self):
         result = self.customer_repository.index()
-        for user in result:
-            user.profile_image = self.object_storage.download_object(user.profile_image)
+        for customer in result:
+            customer.profile_image = self.object_storage.download_object(
+                f"customer/{customer.profile_image}"
+            )
         return Result(result, 200)
 
     def register(self, obj_data):
@@ -253,13 +255,12 @@ class CustomerController(Notifier):
         self.auth_service.update_user(user_data)
 
         # generate ceph server url to save profile image
-        customer.pre_signed_post = self.object_storage.create_object(
-            customer.profile_image
+        customer.pre_signed_post = self.object_storage.save_object(
+            f"customer/{customer.profile_image}"
         )
-        # #
-        # # # generate ceph server url to retrieve profile image
+        # generate ceph server url to retrieve profile image
         customer.profile_image = self.object_storage.download_object(
-            customer.profile_image
+            f"customer/{customer.profile_image}"
         )
 
         return Result(customer, 200)
@@ -571,7 +572,7 @@ class CustomerController(Notifier):
 
         # generate ceph server url for retrieving profile image
         customer.profile_image = self.object_storage.download_object(
-            customer.profile_image
+            f"customer/{customer.profile_image}"
         )
         return Result(customer, 200)
 
@@ -654,14 +655,14 @@ class CustomerController(Notifier):
             )
         # generate ceph server url for retrieving profile image
         customer.profile_image = self.object_storage.download_object(
-            customer.profile_image
+            f"customer/{customer.profile_image}"
         )
         return Result(customer, 200)
 
     # noinspection PyMethodMayBeStatic
     def customer_profile_images(self):
 
-        profile_images = self.object_storage.list_objects()
+        profile_images = self.object_storage.list_objects(directory_name="customer")
         return Result(profile_images, 200)
 
     # noinspection PyMethodMayBeStatic
@@ -674,7 +675,9 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException(
                 context=f"{OBJECT} with id {obj_id} does not exist"
             )
-        profile_images = self.object_storage.get_object(customer.profile_image)
+        profile_images = self.object_storage.get_object(
+            f"customer/{customer.profile_image}"
+        )
         return Result(profile_images, 200)
 
     # below methods handles event subscription for the service
