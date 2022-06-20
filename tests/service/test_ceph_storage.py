@@ -13,29 +13,30 @@ class TestCephStorage(MockSideEffects):
     _ceph_storage = ObjectStorage()
 
     @pytest.mark.service
-    def test_create_object(self):
-        result = self._ceph_storage.create_object("object")
+    def test_save_object(self):
+        result = self._ceph_storage.save_object("object")
         self.assertIsInstance(result, dict)
         self.assertIn("url", result)
         self.assertIn("fields", result)
-        result = self._ceph_storage.create_object("null")
-        self.assertIsInstance(result, dict)
-        self.assertEqual(result, {})
+        result = self._ceph_storage.save_object("null")
+        self.assertIsNone(result)
 
     @pytest.mark.service
     def test_download_object(self):
         result = self._ceph_storage.download_object("object")
         self.assertIsInstance(result, str)
         result = self._ceph_storage.download_object("null")
-        self.assertEqual(result, "null")
+        self.assertIsNone(result)
 
     @pytest.mark.service
     @mock.patch("app.services.ceph_storage.ObjectStorage.s3_client.list_objects")
     def test_get_object(self, mock_list_object):
         mock_list_object.side_effect = self.boto3_list_objects
-        result = self._ceph_storage.get_object("obj_key")
+        result = self._ceph_storage.get_object("customer/obj_key")
         self.assertIsInstance(result, dict)
         self.assertIn("Key", result)
+        result = self._ceph_storage.get_object("customer/null")
+        self.assertEqual(result, {})
 
     @pytest.mark.service
     @mock.patch("app.services.ceph_storage.ObjectStorage.s3_client.list_objects")
@@ -49,10 +50,10 @@ class TestCephStorage(MockSideEffects):
     @mock.patch("app.services.ceph_storage.ObjectStorage.s3_client.delete_object")
     def test_delete_object(self, mock_delete_object):
         mock_delete_object.return_value = None
-        result = self._ceph_storage.delete_object("obj_key")
+        result = self._ceph_storage.delete_object("customer/obj_key")
         self.assertIsNone(result)
-        result = self._ceph_storage.delete_object("null")
-        self.assertIsNotNone(result)
+        result = self._ceph_storage.delete_object("customer/null")
+        self.assertIsNone(result)
 
     @pytest.mark.service
     def test_validate_object_key(self):
