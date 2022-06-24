@@ -94,7 +94,7 @@ class ObjectStorage(StorageServiceInterface):
     # noinspection PyMethodMayBeStatic
     def validate_object_key(self, key):
         key = key.split("/")[-1]
-        if key not in [None, "null"]:
+        if key not in ["None", "null"]:
             return key
         return None
 
