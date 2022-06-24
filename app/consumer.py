@@ -24,6 +24,8 @@ KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 KAFKA_CONSUMER_GROUP_ID = os.getenv(
     "KAFKA_CONSUMER_GROUP_ID", default="CUSTOMER_CONSUMER_GROUP"
 )
+KAFKA_SERVER_AUTH_USERNAME = os.getenv("KAFKA_SERVER_AUTH_USERNAME")
+KAFKA_SERVER_AUTH_PASSWORD = os.getenv("KAFKA_SERVER_AUTH_PASSWORD")
 subscriptions = KAFKA_SUBSCRIPTIONS.split("|")
 bootstrap_servers = KAFKA_BOOTSTRAP_SERVERS.split("|")
 
@@ -34,6 +36,10 @@ if __name__ == "__main__":
             bootstrap_servers=bootstrap_servers,
             auto_offset_reset="earliest",
             group_id=KAFKA_CONSUMER_GROUP_ID,
+            security_protocol="SASL_PLAINTEXT",
+            sasl_mechanism="SCRAM-SHA-256",
+            sasl_plain_username=KAFKA_SERVER_AUTH_USERNAME,
+            sasl_plain_password=KAFKA_SERVER_AUTH_PASSWORD,
         )
     except KafkaError as exc:
         logger.error(f"Failed to consume message on Kafka broker with error {exc}")
