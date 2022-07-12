@@ -61,6 +61,21 @@ class CustomerTestData:
     def update_customer(self):
         return {"email": "customer@update.com", "profile_image": "jpg"}
 
+    @property
+    def first_time_deposit(self):
+        return {
+            "customer_id": str(uuid.uuid4()),
+            "product_name": "6kg",
+        }
+
+    @property
+    def new_customer_order(self):
+        return {
+            "id": str(uuid.uuid4()),
+            "order_by_id": str(uuid.uuid4()),
+            "order_status": "confirmed",
+        }
+
 
 class KeycloakTestData:
     @property

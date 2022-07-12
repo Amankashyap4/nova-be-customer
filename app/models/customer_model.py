@@ -11,6 +11,11 @@ from app.enums import IDEnum, StatusEnum
 
 @dataclass
 class CustomerModel(db.Model):
+    """
+    This class defines properties of customer.
+    customer: users who are done with registration process
+    """
+
     id: str
     phone_number: str
     full_name: str

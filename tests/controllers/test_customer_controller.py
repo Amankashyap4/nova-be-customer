@@ -533,3 +533,19 @@ class TestCustomerController(BaseTestCase):
         self.assertIsInstance(result, Result)
         self.assertEqual(result.status_code, 200)
         self.assertIsInstance(result.value, dict)
+        with self.assertRaises(AppException.NotFoundException) as not_found:
+            self.customer_controller.customer_profile_image(uuid.uuid4())
+        self.assertTrue(not_found.exception)
+        self.assert404(not_found.exception)
+
+    def test_first_time_deposit(self):
+        data = self.customer_test_data.first_time_deposit.copy()
+        data["customer_id"] = self.customer_model.id
+        result = self.customer_controller.first_time_deposit(data)
+        self.assertIsNone(result)
+
+    def test_new_customer_deposit(self):
+        data = self.customer_test_data.new_customer_order.copy()
+        data["order_by_id"] = self.customer_model.id
+        result = self.customer_controller.new_customer_order(data)
+        self.assertIsNone(result)
