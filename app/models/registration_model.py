@@ -9,6 +9,11 @@ from app import db
 
 @dataclass
 class RegistrationModel(db.Model):
+    """
+    This class defines attributes of potential customers
+    potential_customer: users who are not done with the registration process
+    """
+
     id: str
     phone_number: str
     otp_token: str

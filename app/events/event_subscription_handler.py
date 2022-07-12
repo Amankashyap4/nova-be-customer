@@ -19,6 +19,7 @@ class EventSubscriptionHandler(EventHandlerInterface):
         self.meta = event_data.get("meta")
         self.event_action = self.meta.get("event_action")
 
+        # validate event data against a pre-define data structure
         valid_event_data = self.validate_event(self.details)
         if valid_event_data:
             getattr(self, self.event_action, self.unhandled_event)()
@@ -47,7 +48,7 @@ class EventSubscriptionHandler(EventHandlerInterface):
     def first_time_deposit(self):
         """
 
-        This event update's the attribute <level> on the customer to the size of
+        This event update's the attribute <level> on a customer to the size of
         cylinder deposited during first purchase. Event is published to the kafka
         topic <FIRST_TIME_DEPOSIT> by the Inventory Service to be consumed by this
         service.
@@ -61,7 +62,8 @@ class EventSubscriptionHandler(EventHandlerInterface):
 
         This event sends sms notification to customer when new order is created.
          Event is published to the kafka topic <NEW_CUSTOMER_ORDER> by the Order Service
-         to be consumed by this service.
+         to be consumed by this service. Event is only published if Order Service cannot
+         retrieve customer info
         :return: None
 
         """

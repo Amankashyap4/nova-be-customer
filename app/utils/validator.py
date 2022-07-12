@@ -48,16 +48,14 @@ def arg_validator(schema, param):
     return validate_args
 
 
-def split_name(obj_data):
-
-    if obj_data.get("full_name"):
-        fullname = obj_data.pop("full_name").split(" ")
-        obj_data["first_name"] = fullname[0]
-        obj_data["last_name"] = " ".join(fullname[1:])
-    return obj_data
-
-
 def keycloak_fields(username, obj_data):
+    """
+    This function converts object fields to fields used by keycloak
+    :param username: username of object
+    :param obj_data: object fields you want to convert
+    :return: object data with fields converted to keycloak format
+    """
+
     obj_fields = {"username": username}
 
     for field in obj_data:
@@ -67,3 +65,17 @@ def keycloak_fields(username, obj_data):
                 auth_service_field[index] = auth_service_field[index].capitalize()
         obj_fields["".join(auth_service_field)] = obj_data.get(field)
     return obj_fields
+
+
+def extract_valid_data(obj_data: dict, obj_validator):
+    """
+    This function extract data from an object given a validator
+    :param obj_data: object data you want to validate
+    :param obj_validator: pre-define data structure for data validation
+    :return: valid data structure
+    """
+
+    valid_data = dict()
+    for field in obj_validator:
+        valid_data[field] = obj_data.get(field)
+    return valid_data

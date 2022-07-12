@@ -8,6 +8,11 @@ from app.services import RedisService
 
 
 class CustomerRepository(SQLBaseRepository):
+    """
+    This class handles the database operations and record caching of customers data.
+    customers: users who are done with the registration process.
+    """
+
     model = CustomerModel
 
     def __init__(self, redis_service: RedisService, customer_schema: CustomerSchema):
@@ -87,21 +92,49 @@ class CustomerRepository(SQLBaseRepository):
             return cache_data
 
     def serialize_object(self, obj_id, obj_data: dict):
+        """
+        This method handles the conversion of a CustomerModel object to type String to be
+         saved in cache.
+        :param obj_id: id of object you want to save in cache
+        :param obj_data: the object you want to typecast
+        :return: CustomerModel object
+        """
+
         serialize_data = self.customer_schema.dumps(obj_data)
         self.redis_service.set(f"customer_{obj_id}", serialize_data)
         return obj_data
 
     def serialize_list_of_object(self, obj_list):
+        """
+        This method handles the conversion of list of CustomerModel objects to type
+        String to be saved in cache.
+        :param obj_list: list of customer objects
+        :return: None
+        """
         serialize_all_data = self.customer_schema.dumps(obj_list, many=True)
         self.redis_service.set("all_customers", serialize_all_data)
 
     def deserialize_object(self, obj_data: str):
+        """
+        This method handles the conversion of a customer record of type String saved in
+        cache to CustomerModel object.
+        :param obj_data: the object you want to typecast
+        :return: CustomerModel object
+        """
+
         deserialize_data = self.customer_schema.loads(json.dumps(obj_data))
         return self.model(**deserialize_data)
 
-    def deserialize_list_of_object(self, object_data: str):
+    def deserialize_list_of_object(self, obj_data: str):
+        """
+        This method handles the conversion of list of customer records of type String
+        saved in cache to list of CustomerModel objects.
+        :param obj_data: the object you want to typecast
+        :return: list of CustomerModel objects
+        """
+
         deserialize_object_data = self.customer_schema.loads(
-            json.dumps(object_data), many=True
+            json.dumps(obj_data), many=True
         )
         for count, value in enumerate(deserialize_object_data):
             deserialize_object_data[count] = self.model(**value)

@@ -13,6 +13,12 @@ from config import Config
 
 @dataclass
 class ObjectStorage(StorageServiceInterface):
+    """
+    This class is an intermediary between this service and the object storage service
+    i.e ceph storage server.
+    It makes api calls to the ceph server on behalf of the application.
+    """
+
     boto3_config = boto_config(retries={"max_attempts": 3})
     s3_client = boto3.client(
         "s3",
