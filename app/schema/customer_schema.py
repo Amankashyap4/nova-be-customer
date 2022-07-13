@@ -18,6 +18,7 @@ class CustomerSchema(Schema):
     status = EnumField(StatusEnum, allow_none=True)
     profile_image = fields.String(allow_none=True)
     auth_service_id = fields.UUID(allow_none=True)
+    retailer_id = fields.UUID(allow_none=True)
     level = fields.String(allow_none=True)
     pre_signed_post = fields.Dict(allow_none=True)
     created = fields.DateTime()
@@ -36,6 +37,7 @@ class CustomerSchema(Schema):
             "id_number",
             "profile_image",
             "auth_service_id",
+            "retailer_id",
             "status",
             "level",
             "pre_signed_post",
@@ -118,3 +120,17 @@ class CustomerRequestArgSchema(CustomerSchema):
 
     class Meta:
         fields = ["phone_number", "customer_id", "user_id"]
+
+
+class RetailerSignUpCustomerSchema(CustomerSchema):
+    """
+    This schema validates request data when a customer is onboarded by a retailer
+    """
+
+    phone_number = fields.Str(
+        required=True, validate=validate.Regexp(regex_type().get("phone_number"))
+    )
+    retailer_id = fields.UUID(required=True)
+
+    class Meta:
+        fields = ["phone_number", "retailer_id"]

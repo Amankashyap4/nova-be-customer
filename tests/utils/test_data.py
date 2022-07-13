@@ -40,6 +40,13 @@ class CustomerTestData:
         return {"phone_number": "0200000000"}
 
     @property
+    def retailer_register_customer(self):
+        return {
+            "phone_number": "0200000000",
+            "retailer_id": uuid.uuid4(),
+        }
+
+    @property
     def add_information(self):
         return {
             "birth_date": "2020-09-08",
