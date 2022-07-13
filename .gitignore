@@ -58,6 +58,7 @@ cover/
 
 # Django stuff:
 *.log
+*.log*
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -162,3 +163,6 @@ docker-compose-dev.yml
 .scannerwork
 sonar-project.properties
 sonar.sh
+
+# locust test files
+locust_test_file.py
