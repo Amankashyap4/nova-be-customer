@@ -21,5 +21,6 @@ from .customer_schema import (
     CustomerSchema,
     CustomerSignUpSchema,
     CustomerUpdateSchema,
+    RetailerSignUpCustomerSchema,
     UpdatePhoneSchema,
 )

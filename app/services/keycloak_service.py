@@ -115,18 +115,20 @@ class AuthService(AuthServiceInterface):
     def create_user(self, request_data: dict):
         assert request_data, "Missing request data to be saved"
         assert isinstance(request_data, dict)
+
         data = {
             "email": request_data.get("email", request_data.get("username")),
             "username": request_data.get("username"),
-            "firstName": request_data.get("first_name", "null"),
-            "lastName": request_data.get("last_name", "null"),
+            "firstName": request_data.get("first_name", "None"),
+            "lastName": request_data.get("last_name", "None"),
             "attributes": {
-                "phoneNumber": request_data.get("phone_number", "null"),
-                "idType": request_data.get("id_type", "null"),
-                "idNumber": request_data.get("id_number", "null"),
-                "idExpiryDate": request_data.get("id_expiry_date", "null"),
-                "profileImage": request_data.get("profile_image", "null"),
-                "status": request_data.get("status", "null"),
+                "phoneNumber": request_data.get("phone_number", "None"),
+                "idType": request_data.get("id_type", "None"),
+                "idNumber": request_data.get("id_number", "None"),
+                "idExpiryDate": request_data.get("id_expiry_date", "None"),
+                "profileImage": request_data.get("profile_image", "None"),
+                "retailer_id": request_data.get("retailer_id", "None"),
+                "status": request_data.get("status", "None"),
             },
             "credentials": [
                 {

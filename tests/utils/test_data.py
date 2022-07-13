@@ -40,6 +40,13 @@ class CustomerTestData:
         return {"phone_number": "0200000000"}
 
     @property
+    def retailer_register_customer(self):
+        return {
+            "phone_number": "0200000000",
+            "retailer_id": uuid.uuid4(),
+        }
+
+    @property
     def add_information(self):
         return {
             "birth_date": "2020-09-08",
@@ -60,6 +67,21 @@ class CustomerTestData:
     @property
     def update_customer(self):
         return {"email": "customer@update.com", "profile_image": "jpg"}
+
+    @property
+    def first_time_deposit(self):
+        return {
+            "customer_id": str(uuid.uuid4()),
+            "product_name": "6kg",
+        }
+
+    @property
+    def new_customer_order(self):
+        return {
+            "id": str(uuid.uuid4()),
+            "order_by_id": str(uuid.uuid4()),
+            "order_status": "confirmed",
+        }
 
 
 class KeycloakTestData:
