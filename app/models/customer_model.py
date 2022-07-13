@@ -11,6 +11,11 @@ from app.enums import IDEnum, StatusEnum
 
 @dataclass
 class CustomerModel(db.Model):
+    """
+    This class defines properties of customer.
+    customer: users who are done with registration process
+    """
+
     id: str
     phone_number: str
     full_name: str
@@ -22,6 +27,7 @@ class CustomerModel(db.Model):
     pin: str
     status: str
     auth_service_id: str
+    retailer_id: str
     level: str
     profile_image: str
     created: datetime.datetime
@@ -40,6 +46,7 @@ class CustomerModel(db.Model):
     id_number = db.Column(db.String(20))
     hash_pin = db.Column("pin", db.String())
     auth_service_id = db.Column(db.GUID())
+    retailer_id = db.Column(db.GUID(), nullable=True)
     status = db.Column(
         db.Enum(StatusEnum, name="status"), default=StatusEnum.inactive, nullable=False
     )

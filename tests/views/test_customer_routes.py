@@ -20,15 +20,24 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIsInstance(response.json[0], dict)
 
     @pytest.mark.views
-    @mock.patch("app.services.keycloak_service.AuthService.create_user")
-    def test_create_customer_account(self, mock_create_user):
-        mock_create_user.return_value = self.auth_service.create_user(
-            self.customer_test_data.create_customer
-        )
+    def test_create_customer_account(self):
         with self.client:
             response = self.client.post(
                 url_for("customer.create_customer_account"),
                 json=self.customer_test_data.register_customer,
+            )
+            response_data = response.json
+            self.assertStatus(response, 201)
+            self.assertIsInstance(response_data, dict)
+            self.assertEqual(len(response_data), 1)
+            self.assertIn("id", response_data)
+
+    @pytest.mark.views
+    def test_retailer_register_customer(self):
+        with self.client:
+            response = self.client.post(
+                url_for("customer.retailer_register_customer"),
+                json=self.customer_test_data.retailer_register_customer,
             )
             response_data = response.json
             self.assertStatus(response, 201)

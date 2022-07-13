@@ -44,6 +44,3 @@ class MockStorageService(ObjectStorage):
             }
         ]
         return obj_list
-
-    def delete_object(self, obj_name):
-        return None

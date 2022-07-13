@@ -68,8 +68,7 @@ def register_extensions(flask_app):
     elif flask_app.config["DB_ENGINE"] == "POSTGRES":
         db.init_app(flask_app)
         migrate.init_app(flask_app, db)
-        # with flask_app.app_context():
-        #     db.create_all()
+
     factory.init_app(flask_app, db)
     ma.init_app(flask_app)
     cors.init_app(flask_app, resources={r"/api/*": {"origins": "*"}}, allow_headers="*")

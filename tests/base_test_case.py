@@ -6,6 +6,7 @@ from flask_testing import TestCase
 
 from app import APP_ROOT, create_app, db
 from app.controllers import CustomerController
+from app.events import EventSubscriptionHandler
 from app.models import CustomerModel
 from app.repositories import CustomerRepository, RegistrationRepository
 from app.schema import CustomerSchema
@@ -14,6 +15,7 @@ from tests.utils.mock_auth_service import MockAuthService
 from tests.utils.mock_ceph_storage_service import MockStorageService
 
 from .utils.test_data import CustomerTestData, KeycloakTestData
+from .utils.test_event_subscription_data import EventSubscriptionTestData
 
 
 class BaseTestCase(TestCase):
@@ -40,8 +42,12 @@ class BaseTestCase(TestCase):
             auth_service=self.auth_service,
             object_storage=self.object_storage,
         )
+        self.event_subscription_handler = EventSubscriptionHandler(
+            customer_controller=self.customer_controller
+        )
         self.customer_test_data = CustomerTestData()
         self.keycloak_test_data = KeycloakTestData()
+        self.event_subscription_test_data = EventSubscriptionTestData()
 
     def setup_patches(self):
         self.redis_patcher = patch(

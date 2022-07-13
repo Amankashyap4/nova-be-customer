@@ -26,6 +26,7 @@ class EventNotificationHandler(NotificationHandler):
             self.data = data
 
     def send(self):
+        # validate the event data against a data structure
         if self.validate_event(self.data):
             publish_to_kafka(
                 topic=self.publish.upper(), value=self.generate_event_data()

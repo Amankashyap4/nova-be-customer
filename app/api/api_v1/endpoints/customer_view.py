@@ -21,6 +21,7 @@ from app.schema import (
     RequestResetPinSchema,
     ResendTokenSchema,
     ResetPhoneSchema,
+    RetailerSignUpCustomerSchema,
     TokenLoginSchema,
     UpdatePhoneSchema,
 )
@@ -1363,6 +1364,63 @@ def find_by_phone_number(phone_number):
           - Customer
     """
     result = customer_controller.find_by_phone_number(phone_number)
+    return handle_result(result, schema=CustomerSchema)
+
+
+@customer.route("/accounts/register/retailer", methods=["POST"])
+@validator(schema=RetailerSignUpCustomerSchema)
+def retailer_register_customer():
+    """
+    ---
+    post:
+      description: retailer register's new customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: RetailerSignUpCustomerSchema
+      responses:
+        '201':
+          description: returns a customer id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: uuid
+                    example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        '409':
+          description: conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ResourceExists
+                  errorMessage:
+                    type: str
+                    example: Customer with phone number ... exists
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: NoBrokersAvailable
+      tags:
+          - Customer Registration
+    """
+    data = request.json
+    result = customer_controller.register(data)
     return handle_result(result, schema=CustomerSchema)
 
 

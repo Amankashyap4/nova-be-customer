@@ -24,6 +24,7 @@ utc = pytz.UTC
 OBJECT = "customer"
 ASSERT_OBJECT_DATA = "missing object data"
 ASSERT_OBJECT_ID = "missing object id"
+ASSERT_OBJECT_IS_DICT = "object data not a dict"
 
 
 class CustomerController(Notifier):
@@ -48,31 +49,33 @@ class CustomerController(Notifier):
         return Result(result, 200)
 
     def register(self, obj_data):
-        assert obj_data, ASSERT_OBJECT_DATA
-        assert "phone_number" in obj_data, "phone number missing"
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         phone_number = obj_data.get("phone_number")
         query_data = {"phone_number": phone_number}
+
         try:
             self.customer_repository.find(query_data)
         except AppException.NotFoundException:
             try:
                 registered_customer = self.registration_repository.find(query_data)
             except AppException.NotFoundException:
-                register_customer = self.registration_repository.create(query_data)
+                register_customer = self.registration_repository.create(obj_data)
             else:
                 self.registration_repository.delete(registered_customer.id)
-                register_customer = self.registration_repository.create(query_data)
+                register_customer = self.registration_repository.create(obj_data)
         else:
             raise AppException.ResourceExists(
                 context=f"{OBJECT} with phone number {phone_number} exists"
             )
         otp = 666666
         otp_expiration = datetime.now() + timedelta(minutes=5)
+
         self.registration_repository.update_by_id(
             register_customer.id,
             {"otp_token": otp, "otp_token_expiration": otp_expiration},
         )
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[register_customer.phone_number],
@@ -80,10 +83,11 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
+
         return Result({"id": register_customer.id}, 201)
 
     def confirm_token(self, obj_data):
-        assert obj_data, ASSERT_OBJECT_DATA
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         customer_id = obj_data.get("id")
         otp = obj_data.get("token")
@@ -115,7 +119,7 @@ class CustomerController(Notifier):
         return Result(token_data, 200)
 
     def add_information(self, obj_data):
-        assert obj_data, ASSERT_OBJECT_DATA
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         obj_id = obj_data.pop("id")
         password_token = obj_data.pop("confirmation_token", None)
@@ -133,6 +137,7 @@ class CustomerController(Notifier):
         obj_data["auth_token"] = secrets.token_urlsafe(16)
         obj_data["auth_token_expiration"] = datetime.now() + timedelta(minutes=10)
         obj_data["phone_number"] = registered_customer.phone_number
+        obj_data["retailer_id"] = registered_customer.retailer_id
 
         customer = self.customer_repository.create(obj_data)
 
@@ -151,6 +156,7 @@ class CustomerController(Notifier):
             "id_expiry_date": obj_data.get("id_expiry_date"),
             "id_number": obj_data.get("id_number"),
             "status": customer.status.value,
+            "retailer_id": str(customer.retailer_id),
             "group": "nova-customer-gp",
         }
         # Create user in auth service
@@ -170,11 +176,19 @@ class CustomerController(Notifier):
                 schema=CustomerSchema,
             )
         )
+        if customer.retailer_id:
+            self.notify(
+                SMSNotificationHandler(
+                    recipients=[customer.phone_number],
+                    details={"first_name": user_data.get("first_name")},
+                    meta={"type": "sms_notification", "subtype": "mobile_app_link"},
+                )
+            )
 
         return Result(token_data, 200)
 
     def resend_token(self, obj_data):
-        assert obj_data, ASSERT_OBJECT_DATA
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         obj_id = obj_data.get("id")
         customer = None
@@ -199,6 +213,7 @@ class CustomerController(Notifier):
                 obj_id,
                 {"otp_token": otp, "otp_token_expiration": otp_expiration},
             )
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[user.phone_number],
@@ -206,13 +221,14 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
+
         return Result({"id": obj_id}, 200)
 
-    def login(self, obj_credential):
-        assert obj_credential, ASSERT_OBJECT_DATA
+    def login(self, obj_data):
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
-        phone_number = obj_credential.get("phone_number")
-        pin = obj_credential.get("pin")
+        phone_number = obj_data.get("phone_number")
+        pin = obj_data.get("pin")
         try:
             customer = self.customer_repository.find({"phone_number": phone_number})
         except AppException.NotFoundException:
@@ -231,14 +247,16 @@ class CustomerController(Notifier):
                 self.auth_service.update_user(user_data)
             customer.access_token = access_token.get("access_token")
             customer.refresh_token = access_token.get("refresh_token")
+
             return Result(customer, 200)
+
         raise AppException.NotFoundException(
             context=f"account {phone_number} has been {customer.status.value}",
         )
 
     def update(self, obj_id, obj_data):
         assert obj_id, ASSERT_OBJECT_ID
-        assert obj_data, ASSERT_OBJECT_DATA
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         profile_ext = obj_data.get("profile_image")
         if profile_ext not in [None, "null"]:
@@ -266,7 +284,7 @@ class CustomerController(Notifier):
         return Result(customer, 200)
 
     def add_pin(self, obj_data):
-        assert obj_data, ASSERT_OBJECT_DATA
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         pin = obj_data.get("pin")
         password_token = obj_data.get("password_token")
@@ -280,6 +298,7 @@ class CustomerController(Notifier):
         )
         token = self.auth_service.get_token({"username": customer.id, "password": pin})
         token["id"] = customer.id
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
@@ -289,10 +308,10 @@ class CustomerController(Notifier):
         )
         return Result(token, 200)
 
-    def forgot_password(self, obj_phone):
-        assert obj_phone, ASSERT_OBJECT_DATA
+    def forgot_password(self, obj_data):
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
-        phone_number = obj_phone.get("phone_number")
+        phone_number = obj_data.get("phone_number")
         try:
             customer = self.customer_repository.find({"phone_number": phone_number})
         except AppException.NotFoundException:
@@ -305,6 +324,7 @@ class CustomerController(Notifier):
             customer.id,
             {"otp_token": otp, "otp_token_expiration": otp_expiration},
         )
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
@@ -312,10 +332,11 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
+
         return Result({"id": customer.id}, 200)
 
     def reset_password(self, obj_data):
-        assert obj_data, ASSERT_OBJECT_DATA
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         customer_id = obj_data.get("id")
         new_pin = obj_data.get("new_pin")
@@ -343,7 +364,7 @@ class CustomerController(Notifier):
         return Result({"detail": "Pin reset done successfully"}, 200)
 
     def change_password(self, obj_data):
-        assert obj_data, ASSERT_OBJECT_DATA
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         customer_id = obj_data.get("customer_id")
         new_pin = obj_data.get("new_pin")
@@ -363,6 +384,7 @@ class CustomerController(Notifier):
                 "new_password": new_pin,
             }
         )
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
@@ -370,12 +392,13 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "change_password"},
             )
         )
+
         return Result({"detail": "Content reset done successfully"}, 200)
 
-    def pin_process(self, data):
-        assert data, ASSERT_OBJECT_DATA
+    def pin_process(self, obj_data):
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
-        phone_number = data.get("phone_number")
+        phone_number = obj_data.get("phone_number")
         try:
             customer = self.customer_repository.find({"phone_number": phone_number})
         except AppException.NotFoundException:
@@ -392,6 +415,7 @@ class CustomerController(Notifier):
             customer.id,
             {"otp_token": otp_token, "otp_token_expiration": otp_token_expiration},
         )
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
@@ -399,14 +423,15 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
+
         return Result({"id": customer.id}, 200)
 
-    def reset_pin_process(self, data):
-        assert data, ASSERT_OBJECT_DATA
+    def reset_pin_process(self, obj_data):
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         customer_data = {}
-        customer_id = data.get("id")
-        otp_pin = data.get("token")
+        customer_id = obj_data.get("id")
+        otp_pin = obj_data.get("token")
         try:
             customer = self.customer_repository.find_by_id(customer_id)
         except AppException.NotFoundException:
@@ -431,14 +456,15 @@ class CustomerController(Notifier):
         customer_data["full_name"] = customer.full_name
         customer_data["id"] = customer.id
         customer_data["password_token"] = password_token
+
         return Result(customer_data, 200)
 
-    def process_reset_pin(self, data):
-        assert data, ASSERT_OBJECT_DATA
+    def process_reset_pin(self, obj_data):
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
-        customer_id = data.get("customer_id")
-        password_token = data.get("password_token")
-        new_pin = data.get("pin")
+        customer_id = obj_data.get("customer_id")
+        password_token = obj_data.get("password_token")
+        new_pin = obj_data.get("pin")
         try:
             customer = self.customer_repository.find_by_id(customer_id)
         except AppException.NotFoundException:
@@ -451,6 +477,7 @@ class CustomerController(Notifier):
         self.auth_service.reset_password(
             {"username": customer_id, "new_password": new_pin}
         )
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
@@ -458,12 +485,13 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "reset_pin"},
             )
         )
+
         return Result(customer, 200)
 
-    def reset_phone_request(self, data):
-        assert data, ASSERT_OBJECT_DATA
+    def reset_phone_request(self, obj_data):
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
-        phone_number = data.get("phone_number")
+        phone_number = obj_data.get("phone_number")
         try:
             customer = self.customer_repository.find({"phone_number": phone_number})
         except AppException.NotFoundException:
@@ -476,6 +504,7 @@ class CustomerController(Notifier):
             customer.id,
             {"otp_token": otp, "otp_token_expiration": otp_expiration},
         )
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
@@ -483,14 +512,15 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
+
         return Result({"id": customer.id}, 200)
 
-    def reset_phone(self, data):
-        assert data, ASSERT_OBJECT_DATA
+    def reset_phone(self, obj_data):
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
-        phone_number = data.get("new_phone_number")
-        auth_token = data.get("token")
-        customer_id = data.get("customer_id")
+        phone_number = obj_data.get("new_phone_number")
+        auth_token = obj_data.get("token")
+        customer_id = obj_data.get("customer_id")
         try:
             self.customer_repository.find({"phone_number": phone_number})
         except AppException.NotFoundException:
@@ -517,6 +547,7 @@ class CustomerController(Notifier):
             },
         )
         data = {"id": customer.id, "phone_number": phone_number}
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[phone_number],
@@ -524,12 +555,15 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "otp"},
             )
         )
+
         return Result(data, 200)
 
-    def request_phone_reset(self, data):
-        customer_id = data.get("customer_id")
-        phone_number = data.get("phone_number")
-        otp = data.get("token")
+    def request_phone_reset(self, obj_data):
+        assert obj_data, ASSERT_OBJECT_IS_DICT
+
+        customer_id = obj_data.get("customer_id")
+        phone_number = obj_data.get("phone_number")
+        otp = obj_data.get("token")
         try:
             customer = self.customer_repository.find_by_id(customer_id)
         except AppException.NotFoundException:
@@ -551,6 +585,7 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "change_phone"},
             )
         )
+
         self.notify(
             EventNotificationHandler(
                 publish=ServiceEventPublishing.update_customer.name,
@@ -576,12 +611,12 @@ class CustomerController(Notifier):
         )
         return Result(customer, 200)
 
-    def password_otp_confirmation(self, data):
-        assert data, ASSERT_OBJECT_DATA
+    def password_otp_confirmation(self, obj_data):
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         customer_data = {}
-        customer_id = data.get("id")
-        otp = data.get("token")
+        customer_id = obj_data.get("id")
+        otp = obj_data.get("token")
         try:
             customer = self.customer_repository.find(
                 {"id": customer_id, "otp_token": otp}
@@ -604,6 +639,7 @@ class CustomerController(Notifier):
         )
         customer_data["id"] = customer.id
         customer_data["token"] = str(auth_token)
+
         return Result(customer_data, 200)
 
     def delete(self, obj_id):
@@ -625,11 +661,11 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "delete_account"},
             )
         )
+
         return Result({}, 204)
 
     def refresh_token(self, obj_data):
-        assert obj_data, ASSERT_OBJECT_DATA
-        assert "id" in obj_data, ASSERT_OBJECT_ID
+        assert obj_data, ASSERT_OBJECT_IS_DICT
 
         customer_id = obj_data.get("id")
         refresh_token = obj_data.get("refresh_token")
@@ -684,7 +720,7 @@ class CustomerController(Notifier):
     def first_time_deposit(self, obj_data):
         data = extract_valid_data(
             obj_data=obj_data,
-            validator=ServiceEventSubscription.first_time_deposit.value,
+            obj_validator=ServiceEventSubscription.first_time_deposit.value,
         )
         try:
             self.customer_repository.update_by_id(
@@ -699,7 +735,7 @@ class CustomerController(Notifier):
     def new_customer_order(self, obj_data):
         data = extract_valid_data(
             obj_data=obj_data,
-            validator=ServiceEventSubscription.new_customer_order.value,
+            obj_validator=ServiceEventSubscription.new_customer_order.value,
         )
         try:
             result = self.customer_repository.get_by_id(data.get("order_by_id"))
