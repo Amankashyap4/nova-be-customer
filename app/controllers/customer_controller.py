@@ -18,7 +18,7 @@ from app.notifications import SMSNotificationHandler
 from app.repositories import CustomerRepository, RegistrationRepository
 from app.schema import CustomerSchema
 from app.services import AuthService, ObjectStorage
-from app.utils import extract_valid_data, keycloak_fields
+from app.utils import extract_valid_data, keycloak_fields, split_full_name
 
 utc = pytz.UTC
 OBJECT = "customer"
@@ -141,10 +141,9 @@ class CustomerController(Notifier):
 
         customer = self.customer_repository.create(obj_data)
 
-        if obj_data.get("full_name"):
-            fullname = obj_data.pop("full_name").split(" ")
-            obj_data["first_name"] = fullname[0]
-            obj_data["last_name"] = " ".join(fullname[1:])
+        customer_name = split_full_name(obj_data.get("full_name"))
+        obj_data["first_name"] = customer_name.get("first_name")
+        obj_data["last_name"] = customer_name.get("last_name")
 
         user_data = {
             "username": str(customer.id),
@@ -180,7 +179,7 @@ class CustomerController(Notifier):
             self.notify(
                 SMSNotificationHandler(
                     recipients=[customer.phone_number],
-                    details={"first_name": user_data.get("first_name")},
+                    details={"first_name": user_data.get("first_name", "Dear")},
                     meta={"type": "sms_notification", "subtype": "mobile_app_link"},
                 )
             )
@@ -299,10 +298,12 @@ class CustomerController(Notifier):
         token = self.auth_service.get_token({"username": customer.id, "password": pin})
         token["id"] = customer.id
 
+        customer_name = split_full_name(customer.full_name)
+
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
-                details={},
+                details={"first_name": customer_name.get("first_name", "Dear")},
                 meta={"type": "sms_notification", "subtype": "add_pin"},
             )
         )
@@ -385,10 +386,11 @@ class CustomerController(Notifier):
             }
         )
 
+        customer_name = split_full_name(customer.full_name)
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
-                details={},
+                details={"first_name": customer_name.get("first_name", "Dear")},
                 meta={"type": "sms_notification", "subtype": "change_password"},
             )
         )
@@ -477,11 +479,11 @@ class CustomerController(Notifier):
         self.auth_service.reset_password(
             {"username": customer_id, "new_password": new_pin}
         )
-
+        customer_name = split_full_name(customer.full_name)
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
-                details={},
+                details={"first_name": customer_name.get("first_name", "Dear")},
                 meta={"type": "sms_notification", "subtype": "reset_pin"},
             )
         )
@@ -577,11 +579,11 @@ class CustomerController(Notifier):
         )
         user_data = keycloak_fields(customer_id, {"phone_number": phone_number})
         self.auth_service.update_user(user_data)
-
+        customer_name = split_full_name(customer.full_name)
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
-                details={},
+                details={"first_name": customer_name.get("first_name", "Dear")},
                 meta={"type": "sms_notification", "subtype": "change_phone"},
             )
         )
@@ -653,11 +655,11 @@ class CustomerController(Notifier):
             )
         self.customer_repository.delete(customer.id)
         self.auth_service.delete_user(obj_id)
-
+        customer_name = split_full_name(customer.full_name)
         self.notify(
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
-                details={},
+                details={"first_name": customer_name.get("first_name", "Dear")},
                 meta={"type": "sms_notification", "subtype": "delete_account"},
             )
         )
