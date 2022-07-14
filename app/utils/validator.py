@@ -79,3 +79,15 @@ def extract_valid_data(obj_data: dict, obj_validator):
     for field in obj_validator:
         valid_data[field] = obj_data.get(field)
     return valid_data
+
+
+def split_full_name(full_name: str):
+    object_name = dict()
+    if full_name:
+        split_name = full_name.split(" ")
+        for index, value in enumerate(split_name):
+            if index == 0:
+                object_name["first_name"] = value
+            elif index == len(split_name) - 1:
+                object_name["last_name"] = value
+    return object_name
