@@ -9,14 +9,9 @@ from flask import current_app
 from app.core import Result
 from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
-from app.events import (
-    EventNotificationHandler,
-    ServiceEventPublishing,
-    ServiceEventSubscription,
-)
+from app.events import ServiceEventSubscription
 from app.notifications import SMSNotificationHandler
 from app.repositories import CustomerRepository, RegistrationRepository
-from app.schema import CustomerSchema
 from app.services import AuthService, ObjectStorage
 from app.utils import extract_valid_data, keycloak_fields, split_full_name
 
@@ -168,13 +163,6 @@ class CustomerController(Notifier):
         )
         token_data = {"password_token": customer.auth_token, "id": customer.id}
 
-        self.notify(
-            EventNotificationHandler(
-                publish=ServiceEventPublishing.new_customer.name,
-                data=customer,
-                schema=CustomerSchema,
-            )
-        )
         if customer.retailer_id:
             self.notify(
                 SMSNotificationHandler(
@@ -588,13 +576,6 @@ class CustomerController(Notifier):
             )
         )
 
-        self.notify(
-            EventNotificationHandler(
-                publish=ServiceEventPublishing.update_customer.name,
-                data=customer,
-                schema=CustomerSchema,
-            )
-        )
         return Result({"detail": "Phone reset done successfully"}, 200)
 
     def get_customer(self, obj_id):
@@ -726,7 +707,7 @@ class CustomerController(Notifier):
         )
         try:
             self.customer_repository.update_by_id(
-                data.get("customer_id"), {"level": data.get("product_name")}
+                data.get("customer_id"), {"level": data.get("cylinder_size")}
             )
         except AppException.NotFoundException:
             method_name = inspect.currentframe().f_back.f_code.co_name

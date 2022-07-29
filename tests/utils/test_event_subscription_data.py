@@ -11,7 +11,7 @@ class EventSubscriptionTestData:
             "service_name": SERVICE_NAME,
             "details": {
                 "customer_id": "656f8140-3604-4b54-9149-d0473ac4ec23",
-                "product_name": "6kg",
+                "cylinder_size": "6kg",
             },
             "meta": {
                 "event_action": "first_time_deposit",
