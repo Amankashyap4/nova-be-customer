@@ -12,7 +12,7 @@ class TestEventSubscriptionHandler(BaseTestCase):
         result = self.event_subscription_handler.event_handler(data)
         self.assertIsNone(result)
         self.assertIsNotNone(self.customer_model.level)
-        self.assertEqual(self.customer_model.level, data["details"]["product_name"])
+        self.assertEqual(self.customer_model.level, data["details"]["cylinder_size"])
 
     @pytest.mark.event
     def test_new_customer_order(self):
