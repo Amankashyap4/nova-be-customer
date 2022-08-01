@@ -9,6 +9,7 @@ from flask import current_app
 from app.core import Result
 from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
+from app.enums import StatusEnum
 from app.events import ServiceEventSubscription
 from app.notifications import SMSNotificationHandler
 from app.repositories import CustomerRepository, RegistrationRepository
@@ -707,7 +708,8 @@ class CustomerController(Notifier):
         )
         try:
             self.customer_repository.update_by_id(
-                data.get("customer_id"), {"level": data.get("cylinder_size")}
+                data.get("customer_id"),
+                {"level": data.get("type_id"), "status": StatusEnum.active.value},
             )
         except AppException.NotFoundException:
             method_name = inspect.currentframe().f_back.f_code.co_name
