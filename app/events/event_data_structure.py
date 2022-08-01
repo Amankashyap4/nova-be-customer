@@ -12,7 +12,7 @@ class ServiceEventSubscription(enum.Enum):
     """
 
     # nova-be-inventory
-    first_time_deposit = {"customer_id": "", "cylinder_size": ""}
+    first_time_deposit = {"customer_id": "", "cylinder_size": "", "type_id": ""}
     # nova-be-order
     new_customer_order = {"id": "", "order_by_id": "", "order_status": ""}
 
