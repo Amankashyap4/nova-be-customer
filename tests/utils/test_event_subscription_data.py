@@ -12,6 +12,7 @@ class EventSubscriptionTestData:
             "details": {
                 "customer_id": "656f8140-3604-4b54-9149-d0473ac4ec23",
                 "cylinder_size": "6kg",
+                "type_id": "S06",
             },
             "meta": {
                 "event_action": "first_time_deposit",

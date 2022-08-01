@@ -1,6 +1,7 @@
 import pytest
 from flask import current_app
 
+from app.enums import StatusEnum
 from tests.base_test_case import BaseTestCase
 
 
@@ -12,7 +13,8 @@ class TestEventSubscriptionHandler(BaseTestCase):
         result = self.event_subscription_handler.event_handler(data)
         self.assertIsNone(result)
         self.assertIsNotNone(self.customer_model.level)
-        self.assertEqual(self.customer_model.level, data["details"]["cylinder_size"])
+        self.assertEqual(self.customer_model.level, data["details"]["type_id"])
+        self.assertEqual(self.customer_model.status, StatusEnum.active)
 
     @pytest.mark.event
     def test_new_customer_order(self):
