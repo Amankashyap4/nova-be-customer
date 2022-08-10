@@ -30,6 +30,7 @@ class CustomerModel(db.Model):
     retailer_id: str
     level: str
     profile_image: str
+    eula_consent: bool
     created: datetime.datetime
     modified: datetime.datetime
 
@@ -56,6 +57,7 @@ class CustomerModel(db.Model):
     profile_image = db.Column(db.String())
     otp_token = db.Column(db.String(), nullable=True)
     otp_token_expiration = db.Column(db.DateTime(timezone=True))
+    eula_consent = db.Column(db.Boolean(), nullable=True, default=False)
     created = db.Column(
         db.DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -65,6 +67,7 @@ class CustomerModel(db.Model):
         server_default=func.now(),
         onupdate=func.now(),
     )
+    history = db.relationship("CustomerHistoryModel", backref="current", lazy="dynamic")
 
     @property
     def pin(self):

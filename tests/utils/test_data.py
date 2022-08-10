@@ -23,6 +23,17 @@ class CustomerTestData:
         }
 
     @property
+    def existing_customer_history(self):
+        return {
+            "phone_number": "0500000000",
+            "email": "test@example.com",
+            "customer_id": uuid.uuid4(),
+            "action": "phone_update",
+            "valid_from": datetime.datetime.utcnow().date(),
+            "valid_to": datetime.datetime.utcnow().date(),
+        }
+
+    @property
     def create_customer(self):
         return {
             "phone_number": "+233590000000",
