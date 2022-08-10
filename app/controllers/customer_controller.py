@@ -11,7 +11,7 @@ from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
 from app.enums import StatusEnum
 from app.events import ServiceEventSubscription
-from app.notifications import SMSNotificationHandler
+from app.notifications import EmailNotificationHandler, SMSNotificationHandler
 from app.repositories import CustomerRepository, RegistrationRepository
 from app.services import AuthService, ObjectStorage
 from app.utils import extract_valid_data, keycloak_fields, split_full_name
@@ -164,14 +164,13 @@ class CustomerController(Notifier):
         )
         token_data = {"password_token": customer.auth_token, "id": customer.id}
 
-        if customer.retailer_id:
-            self.notify(
-                SMSNotificationHandler(
-                    recipients=[customer.phone_number],
-                    details={"first_name": user_data.get("first_name", "Dear")},
-                    meta={"type": "sms_notification", "subtype": "mobile_app_link"},
-                )
+        self.notify(
+            SMSNotificationHandler(
+                recipients=[customer.phone_number],
+                details={"first_name": user_data.get("first_name", "Dear")},
+                meta={"type": "sms_notification", "subtype": "new_account"},
             )
+        )
 
         return Result(token_data, 200)
 
@@ -293,9 +292,10 @@ class CustomerController(Notifier):
             SMSNotificationHandler(
                 recipients=[customer.phone_number],
                 details={"first_name": customer_name.get("first_name", "Dear")},
-                meta={"type": "sms_notification", "subtype": "add_pin"},
+                meta={"type": "sms_notification", "subtype": "new_pin"},
             )
         )
+
         return Result(token, 200)
 
     def forgot_password(self, obj_data):
@@ -351,6 +351,24 @@ class CustomerController(Notifier):
             {"auth_token": None, "auth_token_expiration": None, "pin": new_pin},
         )
 
+        customer_name = split_full_name(customer.full_name)
+
+        self.notify(
+            SMSNotificationHandler(
+                recipients=[customer.phone_number],
+                details={"first_name": customer_name.get("first_name", "Dear")},
+                meta={"type": "sms_notification", "subtype": "reset_pin"},
+            )
+        )
+        if customer.email:
+            self.notify(
+                EmailNotificationHandler(
+                    recipients=[customer.email],
+                    details={"first_name": customer_name.get("first_name", "Dear")},
+                    meta={"type": "email_notification", "subtype": "reset_pin"},
+                )
+            )
+
         return Result({"detail": "Pin reset done successfully"}, 200)
 
     def change_password(self, obj_data):
@@ -383,10 +401,18 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "change_password"},
             )
         )
+        if customer.email:
+            self.notify(
+                EmailNotificationHandler(
+                    recipients=[customer.email],
+                    details={"first_name": customer_name.get("first_name", "Dear")},
+                    meta={"type": "email_notification", "subtype": "change_password"},
+                )
+            )
 
         return Result({"detail": "Content reset done successfully"}, 200)
 
-    def pin_process(self, obj_data):
+    def new_pin_request(self, obj_data):
         assert obj_data, ASSERT_OBJECT_IS_DICT
 
         phone_number = obj_data.get("phone_number")
@@ -417,7 +443,7 @@ class CustomerController(Notifier):
 
         return Result({"id": customer.id}, 200)
 
-    def reset_pin_process(self, obj_data):
+    def verify_new_pin(self, obj_data):
         assert obj_data, ASSERT_OBJECT_IS_DICT
 
         customer_data = {}
@@ -450,7 +476,7 @@ class CustomerController(Notifier):
 
         return Result(customer_data, 200)
 
-    def process_reset_pin(self, obj_data):
+    def set_new_pin(self, obj_data):
         assert obj_data, ASSERT_OBJECT_IS_DICT
 
         customer_id = obj_data.get("customer_id")
@@ -476,10 +502,18 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "reset_pin"},
             )
         )
+        if customer.email:
+            self.notify(
+                EmailNotificationHandler(
+                    recipients=[customer.email],
+                    details={"first_name": customer_name.get("first_name", "Dear")},
+                    meta={"type": "email_notification", "subtype": "reset_pin"},
+                )
+            )
 
         return Result(customer, 200)
 
-    def reset_phone_request(self, obj_data):
+    def change_phone_request(self, obj_data):
         assert obj_data, ASSERT_OBJECT_IS_DICT
 
         phone_number = obj_data.get("phone_number")
@@ -506,7 +540,7 @@ class CustomerController(Notifier):
 
         return Result({"id": customer.id}, 200)
 
-    def reset_phone(self, obj_data):
+    def verify_phone_change(self, obj_data):
         assert obj_data, ASSERT_OBJECT_IS_DICT
 
         phone_number = obj_data.get("new_phone_number")
@@ -549,7 +583,7 @@ class CustomerController(Notifier):
 
         return Result(data, 200)
 
-    def request_phone_reset(self, obj_data):
+    def change_phone(self, obj_data):
         assert obj_data, ASSERT_OBJECT_IS_DICT
 
         customer_id = obj_data.get("customer_id")
@@ -576,6 +610,14 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "change_phone"},
             )
         )
+        if customer.email:
+            self.notify(
+                EmailNotificationHandler(
+                    recipients=[customer.email],
+                    details={"first_name": customer_name.get("first_name", "Dear")},
+                    meta={"type": "email_notification", "subtype": "change_phone"},
+                )
+            )
 
         return Result({"detail": "Phone reset done successfully"}, 200)
 
@@ -630,13 +672,16 @@ class CustomerController(Notifier):
         assert obj_id, ASSERT_OBJECT_ID
 
         try:
-            customer = self.customer_repository.find_by_id(obj_id)
+            customer = self.customer_repository.update_by_id(
+                obj_id, {"status": StatusEnum.disabled.value}
+            )
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
                 context=f"customer with id {obj_id} does not exists",
             )
-        self.customer_repository.delete(customer.id)
-        self.auth_service.delete_user(obj_id)
+        self.auth_service.update_user(
+            {"username": obj_id, "Status": customer.status.value}
+        )
         customer_name = split_full_name(customer.full_name)
         self.notify(
             SMSNotificationHandler(
@@ -645,8 +690,16 @@ class CustomerController(Notifier):
                 meta={"type": "sms_notification", "subtype": "delete_account"},
             )
         )
+        if customer.email:
+            self.notify(
+                EmailNotificationHandler(
+                    recipients=[customer.email],
+                    details={"first_name": customer_name.get("first_name", "Dear")},
+                    meta={"type": "email_notification", "subtype": "delete_account"},
+                )
+            )
 
-        return Result({}, 204)
+        return Result(None, 204)
 
     def refresh_token(self, obj_data):
         assert obj_data, ASSERT_OBJECT_IS_DICT

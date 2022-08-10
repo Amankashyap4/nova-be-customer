@@ -7,7 +7,7 @@ from flask_testing import TestCase
 from app import APP_ROOT, create_app, db
 from app.controllers import CustomerController
 from app.events import EventSubscriptionHandler
-from app.models import CustomerModel
+from app.models import CustomerHistoryModel, CustomerModel
 from app.repositories import CustomerRepository, RegistrationRepository
 from app.schema import CustomerSchema
 from config import Config
@@ -74,6 +74,12 @@ class BaseTestCase(TestCase):
         )
         self.addCleanup(kafka_sms_patcher.stop)
         kafka_sms_patcher.start()
+        kafka_email_patcher = patch(
+            "app.notifications.email_notification_handler.publish_to_kafka",
+            self.dummy_kafka_method,
+        )
+        self.addCleanup(kafka_email_patcher.stop)
+        kafka_email_patcher.start()
         kafka_event_patcher = patch(
             "app.events.event_notification_handler.publish_to_kafka",
             self.dummy_kafka_method,
@@ -87,7 +93,11 @@ class BaseTestCase(TestCase):
         """
         db.create_all()
         self.customer_model = CustomerModel(**self.customer_test_data.existing_customer)
+        self.customer_history_model = CustomerHistoryModel(
+            **self.customer_test_data.existing_customer_history
+        )
         db.session.add(self.customer_model)
+        db.session.add(self.customer_history_model)
         db.session.commit()
 
     def tearDown(self):
