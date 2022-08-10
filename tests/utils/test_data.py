@@ -29,6 +29,7 @@ class CustomerTestData:
             "email": "test@example.com",
             "customer_id": uuid.uuid4(),
             "action": "phone_update",
+            "status": "active",
             "valid_from": datetime.datetime.utcnow().date(),
             "valid_to": datetime.datetime.utcnow().date(),
         }
