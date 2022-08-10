@@ -248,7 +248,7 @@ class TestCustomerRoutes(BaseTestCase):
         self.assertTrue(self.customer_model.verify_pin("0000"))
 
     @pytest.mark.views
-    def test_pin_process(self):
+    def test_new_pin_request(self):
         register = self.customer_controller.register(
             self.customer_test_data.register_customer
         )
@@ -263,7 +263,7 @@ class TestCustomerRoutes(BaseTestCase):
         self.customer_controller.add_information(data)
         with self.client:
             response = self.client.post(
-                url_for("customer.pin_process"),
+                url_for("customer.new_pin_request"),
                 json=self.customer_test_data.register_customer,
             )
             response_data = response.json
@@ -275,7 +275,7 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIsNotNone(register.otp_token_expiration)
 
     @pytest.mark.views
-    def test_request_reset_pin(self):
+    def test_verify_new_pin(self):
         register = self.customer_controller.register(
             self.customer_test_data.register_customer
         )
@@ -288,12 +288,12 @@ class TestCustomerRoutes(BaseTestCase):
         data["id"] = register.value.get("id")
         data["confirmation_token"] = token.value.get("confirmation_token")
         self.customer_controller.add_information(data)
-        pin_process = self.customer_controller.pin_process(
+        pin_process = self.customer_controller.new_pin_request(
             self.customer_test_data.register_customer
         )
         with self.client:
             response = self.client.post(
-                url_for("customer.request_reset_pin"),
+                url_for("customer.verify_new_pin"),
                 json={"id": pin_process.value.get("id"), "token": "6666"},
             )
             response_data = response.json
@@ -304,7 +304,7 @@ class TestCustomerRoutes(BaseTestCase):
 
     @pytest.mark.views
     @mock.patch("app.services.keycloak_service.AuthService.reset_password")
-    def test_reset_pin(self, mock_reset_password):
+    def test_set_new_pin(self, mock_reset_password):
         mock_reset_password.return_value = self.auth_service.reset_password(
             self.customer_model.id
         )
@@ -320,15 +320,15 @@ class TestCustomerRoutes(BaseTestCase):
         data["id"] = register.value.get("id")
         data["confirmation_token"] = token.value.get("confirmation_token")
         self.customer_controller.add_information(data)
-        pin_process = self.customer_controller.pin_process(
+        pin_process = self.customer_controller.new_pin_request(
             self.customer_test_data.register_customer
         )
-        reset = self.customer_controller.reset_pin_process(
+        reset = self.customer_controller.verify_new_pin(
             {"id": pin_process.value.get("id"), "token": "6666"}
         )
         with self.client:
             response = self.client.post(
-                url_for("customer.reset_pin", customer_id=pin_process.value.get("id")),
+                url_for("customer.set_new_pin", customer_id=pin_process.value.get("id")),
                 json={
                     "password_token": reset.value.get("password_token"),
                     "pin": "0000",
@@ -340,10 +340,10 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIn("id", response_data)
 
     @pytest.mark.views
-    def test_reset_phone_request(self):
+    def test_change_phone_request(self):
         with self.client:
             response = self.client.post(
-                url_for("customer.reset_phone_request"),
+                url_for("customer.change_phone_request"),
                 json={"phone_number": self.customer_model.phone_number},
             )
             response_data = response.json
@@ -354,16 +354,18 @@ class TestCustomerRoutes(BaseTestCase):
             self.assertIsNotNone(self.customer_model.otp_token_expiration)
 
     @pytest.mark.views
-    def test_reset_phone(self):
+    def test_verify_phone_change(self):
         with self.client:
-            self.customer_controller.reset_phone_request(
+            self.customer_controller.change_phone_request(
                 {"phone_number": self.customer_model.phone_number}
             )
             token = self.customer_controller.password_otp_confirmation(
                 {"id": self.customer_model.id, "token": "666666"}
             )
             response = self.client.post(
-                url_for("customer.reset_phone", customer_id=self.customer_model.id),
+                url_for(
+                    "customer.verify_phone_change", customer_id=self.customer_model.id
+                ),
                 json={
                     "new_phone_number": self.customer_test_data.register_customer.get(
                         "phone_number"
@@ -379,18 +381,18 @@ class TestCustomerRoutes(BaseTestCase):
 
     @pytest.mark.views
     @mock.patch("app.services.keycloak_service.AuthService.update_user")
-    def test_update_phone(self, mock_update_user):
+    def test_change_phone(self, mock_update_user):
         mock_update_user.return_value = self.auth_service.update_user(
             self.customer_test_data.update_customer
         )
         with self.client:
-            self.customer_controller.reset_phone_request(
+            self.customer_controller.change_phone_request(
                 {"phone_number": self.customer_model.phone_number}
             )
             token = self.customer_controller.password_otp_confirmation(
                 {"id": self.customer_model.id, "token": "666666"}
             )
-            self.customer_controller.reset_phone(
+            self.customer_controller.verify_phone_change(
                 {
                     "new_phone_number": self.customer_test_data.register_customer.get(
                         "phone_number"
@@ -400,7 +402,7 @@ class TestCustomerRoutes(BaseTestCase):
                 }
             )
             response = self.client.post(
-                url_for("customer.update_phone", customer_id=self.customer_model.id),
+                url_for("customer.change_phone", customer_id=self.customer_model.id),
                 json={
                     "phone_number": self.customer_test_data.register_customer.get(
                         "phone_number"
@@ -421,7 +423,7 @@ class TestCustomerRoutes(BaseTestCase):
             )
 
     @pytest.mark.views
-    @mock.patch("app.services.keycloak_service.AuthService.delete_user")
+    @mock.patch("app.services.keycloak_service.AuthService.update_user")
     def test_delete(self, mock_delete_user):
         mock_delete_user.return_value = self.auth_service.delete_user(
             self.customer_model.id
