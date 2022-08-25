@@ -51,7 +51,7 @@ class CustomerController(Notifier):
         query_data = {"phone_number": phone_number}
 
         try:
-            self.customer_repository.find(query_data)
+            customer = self.customer_repository.find(query_data)
         except AppException.NotFoundException:
             try:
                 registered_customer = self.registration_repository.find(query_data)
@@ -61,9 +61,15 @@ class CustomerController(Notifier):
                 self.registration_repository.delete(registered_customer.id)
                 register_customer = self.registration_repository.create(obj_data)
         else:
-            raise AppException.ResourceExists(
-                context=f"{OBJECT} with phone number {phone_number} exists"
-            )
+            if not customer.pin:
+                context = {
+                    "error": f"{OBJECT} with phone number {phone_number} exists",
+                    "id": customer.id,
+                }
+            else:
+                context = f"{OBJECT} with phone number {phone_number} exists"
+            raise AppException.ResourceExists(context=context)
+
         otp = 666666
         otp_expiration = datetime.now() + timedelta(minutes=5)
 
