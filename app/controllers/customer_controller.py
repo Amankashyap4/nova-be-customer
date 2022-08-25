@@ -64,7 +64,7 @@ class CustomerController(Notifier):
             if not customer.pin:
                 context = {
                     "error": f"{OBJECT} with phone number {phone_number} exists",
-                    "id": customer.id,
+                    "password_token": customer.auth_token,
                 }
             else:
                 context = f"{OBJECT} with phone number {phone_number} exists"
