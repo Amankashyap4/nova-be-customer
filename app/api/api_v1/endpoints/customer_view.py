@@ -1424,6 +1424,60 @@ def retailer_register_customer():
     return handle_result(result, schema=CustomerSchema)
 
 
+@customer.route("/accounts/change_password_request/", methods=["POST"])
+@auth_required()
+def change_password_request():
+    """
+    ---
+    post:
+      description: request otp for changing password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: ResendTokenSchema
+      responses:
+        '200':
+          description: returns a customer information
+          content:
+            application/json:
+              schema: CustomerSchema
+        '401':
+          description: unauthorised
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: Unauthorized
+                  errorMessage:
+                    type: str
+                    example: Missing authentication token
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+      tags:
+          - Authentication
+    """
+    data = request.json
+    result = customer_controller.change_password_request(data)
+    return handle_result(result, schema=CustomerSchema)
+
+
 @customer.route("/accounts/profile-images/", methods=["GET"])
 def saved_images():
     result = customer_controller.customer_profile_images()
