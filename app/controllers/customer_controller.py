@@ -9,6 +9,7 @@ from flask import current_app
 from app.core import Result
 from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
+from app.core.repository import SQLBaseRepository
 from app.enums import StatusEnum
 from app.events import ServiceEventSubscription
 from app.notifications import EmailNotificationHandler, SMSNotificationHandler
@@ -54,11 +55,8 @@ class CustomerController(Notifier):
             customer = self.customer_repository.find(query_data)
         except AppException.NotFoundException:
             try:
-                registered_customer = self.registration_repository.find(query_data)
+                register_customer = self.registration_repository.find(query_data)
             except AppException.NotFoundException:
-                register_customer = self.registration_repository.create(obj_data)
-            else:
-                self.registration_repository.delete(registered_customer.id)
                 register_customer = self.registration_repository.create(obj_data)
         else:
             if not customer.pin:
@@ -70,20 +68,10 @@ class CustomerController(Notifier):
                 context = f"{OBJECT} with phone number {phone_number} exists"
             raise AppException.ResourceExists(context=context)
 
-        otp = 666666
-        otp_expiration = datetime.now() + timedelta(minutes=5)
-
-        self.registration_repository.update_by_id(
-            register_customer.id,
-            {"otp_token": otp, "otp_token_expiration": otp_expiration},
-        )
-
-        self.notify(
-            SMSNotificationHandler(
-                recipients=[register_customer.phone_number],
-                details={"verification_code": otp},
-                meta={"type": "sms_notification", "subtype": "otp"},
-            )
+        self.send_otp(
+            otp_length=6,
+            customer_obj=register_customer,
+            repository_object=self.registration_repository,
         )
 
         return Result({"id": register_customer.id}, 201)
@@ -184,36 +172,25 @@ class CustomerController(Notifier):
         assert obj_data, ASSERT_OBJECT_IS_DICT
 
         obj_id = obj_data.get("id")
-        customer = None
         try:
             customer = self.customer_repository.find_by_id(obj_id)
         except AppException.NotFoundException:
             try:
-                self.registration_repository.find_by_id(obj_id)
+                customer = self.registration_repository.find_by_id(obj_id)
             except AppException.NotFoundException:
-                raise AppException.BadRequest(
-                    context=f"unregistered {OBJECT}",
+                raise AppException.BadRequest(context=f"unregistered {OBJECT}")
+            else:
+                self.send_otp(
+                    otp_length=6,
+                    customer_obj=customer,
+                    repository_object=self.registration_repository,
                 )
-        otp = 666666
-        otp_expiration = datetime.now() + timedelta(minutes=5)
-        if customer:
-            user = self.customer_repository.update_by_id(
-                obj_id,
-                {"otp_token": otp, "otp_token_expiration": otp_expiration},
-            )
         else:
-            user = self.registration_repository.update_by_id(
-                obj_id,
-                {"otp_token": otp, "otp_token_expiration": otp_expiration},
+            self.send_otp(
+                otp_length=6,
+                customer_obj=customer,
+                repository_object=self.customer_repository,
             )
-
-        self.notify(
-            SMSNotificationHandler(
-                recipients=[user.phone_number],
-                details={"verification_code": otp},
-                meta={"type": "sms_notification", "subtype": "otp"},
-            )
-        )
 
         return Result({"id": obj_id}, 200)
 
@@ -312,21 +289,13 @@ class CustomerController(Notifier):
             customer = self.customer_repository.find({"phone_number": phone_number})
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
-                context=f"{OBJECT} with phone number {phone_number} does not exists"
+                context=f"{OBJECT} with phone number {phone_number} does not exist"
             )
-        otp = 666666
-        otp_expiration = datetime.now() + timedelta(minutes=5)
-        self.customer_repository.update_by_id(
-            customer.id,
-            {"otp_token": otp, "otp_token_expiration": otp_expiration},
-        )
 
-        self.notify(
-            SMSNotificationHandler(
-                recipients=[customer.phone_number],
-                details={"verification_code": otp},
-                meta={"type": "sms_notification", "subtype": "otp"},
-            )
+        self.send_otp(
+            otp_length=6,
+            customer_obj=customer,
+            repository_object=self.customer_repository,
         )
 
         return Result({"id": customer.id}, 200)
@@ -376,6 +345,26 @@ class CustomerController(Notifier):
             )
 
         return Result({"detail": "Pin reset done successfully"}, 200)
+
+    def change_password_request(self, obj_data):
+        assert obj_data, ASSERT_OBJECT_DATA
+        assert obj_data, ASSERT_OBJECT_IS_DICT
+
+        customer_id = obj_data.get("id")
+        try:
+            customer = self.customer_repository.find_by_id(customer_id)
+        except AppException.NotFoundException:
+            raise AppException.NotFoundException(
+                context=f"{OBJECT} with id {customer_id} does not exists"
+            )
+
+        self.send_otp(
+            customer_obj=customer,
+            otp_length=6,
+            repository_object=self.customer_repository,
+        )
+
+        return Result({"id": customer.id}, 200)
 
     def change_password(self, obj_data):
         assert obj_data, ASSERT_OBJECT_IS_DICT
@@ -432,19 +421,10 @@ class CustomerController(Notifier):
             raise AppException.BadRequest(
                 context=f"pin already set for account {phone_number}"
             )
-        otp_token = 6666
-        otp_token_expiration = datetime.now() + timedelta(minutes=5)
-        self.customer_repository.update_by_id(
-            customer.id,
-            {"otp_token": otp_token, "otp_token_expiration": otp_token_expiration},
-        )
-
-        self.notify(
-            SMSNotificationHandler(
-                recipients=[customer.phone_number],
-                details={"verification_code": otp_token},
-                meta={"type": "sms_notification", "subtype": "otp"},
-            )
+        self.send_otp(
+            otp_length=4,
+            customer_obj=customer,
+            repository_object=self.customer_repository,
         )
 
         return Result({"id": customer.id}, 200)
@@ -529,19 +509,10 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException(
                 context=f"{OBJECT} with phone number {phone_number} does not exists"
             )
-        otp = 666666
-        otp_expiration = datetime.now() + timedelta(minutes=5)
-        self.customer_repository.update_by_id(
-            customer.id,
-            {"otp_token": otp, "otp_token_expiration": otp_expiration},
-        )
-
-        self.notify(
-            SMSNotificationHandler(
-                recipients=[customer.phone_number],
-                details={"verification_code": otp},
-                meta={"type": "sms_notification", "subtype": "otp"},
-            )
+        self.send_otp(
+            otp_length=6,
+            customer_obj=customer,
+            repository_object=self.customer_repository,
         )
 
         return Result({"id": customer.id}, 200)
@@ -568,26 +539,13 @@ class CustomerController(Notifier):
         if customer.auth_token != auth_token:
             raise AppException.BadRequest(context="Invalid token")
 
-        otp_token = 666666
-        otp_token_expiration = datetime.now() + timedelta(minutes=5)
-        self.customer_repository.update_by_id(
-            customer.id,
-            {
-                "otp_token": otp_token,
-                "otp_token_expiration": otp_token_expiration,
-            },
-        )
-        data = {"id": customer.id, "phone_number": phone_number}
-
-        self.notify(
-            SMSNotificationHandler(
-                recipients=[phone_number],
-                details={"verification_code": otp_token},
-                meta={"type": "sms_notification", "subtype": "otp"},
-            )
+        self.send_otp(
+            otp_length=6,
+            customer_obj=customer,
+            repository_object=self.customer_repository,
         )
 
-        return Result(data, 200)
+        return Result({"id": customer.id, "phone_number": phone_number}, 200)
 
     def change_phone(self, obj_data):
         assert obj_data, ASSERT_OBJECT_IS_DICT
@@ -737,6 +695,32 @@ class CustomerController(Notifier):
             f"customer/{customer.profile_image}"
         )
         return Result(customer, 200)
+
+    # noinspection PyMethodMayBeStatic
+    def send_otp(
+        self, otp_length: int, customer_obj, repository_object: SQLBaseRepository
+    ):
+
+        # otp = "".join(random.choices(digits, k=otp_length))
+        if otp_length == 4:
+            otp = 6666
+        else:
+            otp = 666666
+        otp_expiration = datetime.now() + timedelta(minutes=5)
+        repository_object.update_by_id(
+            customer_obj.id,
+            {"otp_token": otp, "otp_token_expiration": otp_expiration},
+        )
+
+        self.notify(
+            SMSNotificationHandler(
+                recipients=[customer_obj.phone_number],
+                details={"verification_code": otp},
+                meta={"type": "sms_notification", "subtype": "otp"},
+            )
+        )
+
+        return None
 
     # noinspection PyMethodMayBeStatic
     def customer_profile_images(self):
