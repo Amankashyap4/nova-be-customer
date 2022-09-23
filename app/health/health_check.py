@@ -1,6 +1,10 @@
+import os
+
 import boto3
 import requests
 from botocore.client import Config as boto_config
+from kafka import KafkaConsumer
+from kafka.errors import KafkaError
 
 from app.core.extensions import db
 from app.services.redis_service import redis_conn
@@ -50,4 +54,26 @@ def ceph_available():
         return False, "ceph server is not ok"
 
 
-HEALTH_CHECKS = [redis_available, postgres_available, ceph_available, keycloak_available]
+def kafka_available():
+    try:
+        KafkaConsumer(
+            bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS").split("|"),
+            auto_offset_reset="earliest",
+            group_id="CUSTOMER_CONSUMER_GROUP,",
+            security_protocol="SASL_PLAINTEXT",
+            sasl_mechanism="SCRAM-SHA-256",
+            sasl_plain_username=os.getenv("KAFKA_SERVER_AUTH_USERNAME"),
+            sasl_plain_password=os.getenv("KAFKA_SERVER_AUTH_PASSWORD"),
+        )
+    except KafkaError as exc:
+        return False, str(exc)
+    return True, "kafka is ok"
+
+
+HEALTH_CHECKS = [
+    redis_available,
+    postgres_available,
+    ceph_available,
+    keycloak_available,
+    kafka_available,
+]
