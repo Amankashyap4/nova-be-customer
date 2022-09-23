@@ -18,7 +18,8 @@ sys.path.insert(
 # load dotenv in the base root
 from app.api_spec import spec
 from app.core.exceptions.app_exceptions import AppExceptionCase, app_exception_handler
-from app.core.extensions import cors, db, ma, migrate
+from app.core.extensions import cors, db, healthcheck, ma, migrate
+from app.health import HEALTH_CHECKS
 from app.utils.log_config import log_config
 
 APP_ROOT = os.path.join(os.path.dirname(__file__), "..")  # refers to application_top
@@ -55,6 +56,7 @@ def create_app(config="config.DevelopmentConfig"):
         register_extensions(app)
         register_blueprints(app)
         register_swagger_definitions(app)
+        register_health_check(app)
         return app
 
 
@@ -112,3 +114,13 @@ def register_swagger_definitions(app):
         Swagger API definition.
         """
         return jsonify(spec.to_dict())
+
+
+def register_health_check(app: Flask):
+    for check in HEALTH_CHECKS:
+        if callable(check):
+            healthcheck.add_check(check)
+    app.add_url_rule(
+        "/customer/health", "healthcheck", view_func=lambda: healthcheck.run()
+    )
+    return None

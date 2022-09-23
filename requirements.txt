@@ -64,6 +64,7 @@ pinject==0.14.1
 platformdirs==2.5.1; python_full_version >= "3.6.2" and python_version >= "3.7"
 psutil==5.9.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7"
 psycopg2-binary==2.9.3; python_version >= "3.6"
+py-healthcheck==1.10.1
 py==1.11.0; python_version >= "3.7" and python_full_version < "3.0.0" and implementation_name == "pypy" or implementation_name == "pypy" and python_version >= "3.7" and python_full_version >= "3.5.0"
 pycparser==2.21; python_version >= "3.6" and python_full_version < "3.0.0" and platform_python_implementation == "CPython" and sys_platform == "win32" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_version > "3.5") or platform_python_implementation == "CPython" and sys_platform == "win32" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_version > "3.5") and python_version >= "3.6" and python_full_version >= "3.4.0"
 pyjwt==2.3.0; python_version >= "3.6"
