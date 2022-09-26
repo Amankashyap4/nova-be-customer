@@ -240,6 +240,21 @@ class TestCustomerController(BaseTestCase):
         self.assert400(not_found_exc.exception)
 
     @pytest.mark.controller
+    def test_change_password_request(self):
+        self.assertIsNone(self.customer_model.otp_token)
+        self.customer_controller.change_password_request(
+            obj_data={"id": self.customer_model.id}
+        )
+        self.assertIsNotNone(self.customer_model.otp_token)
+        self.assertEqual(self.customer_model.otp_token, "666666")
+        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+            self.customer_controller.change_password_request(
+                obj_data={"id": uuid.uuid4()}
+            )
+        self.assertTrue(not_found_exc.exception)
+        self.assert404(not_found_exc.exception)
+
+    @pytest.mark.controller
     def test_change_password(self):
         result = CustomerModel.query.filter_by(
             phone_number=self.customer_model.phone_number
