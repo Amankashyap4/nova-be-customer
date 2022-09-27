@@ -1424,7 +1424,7 @@ def retailer_register_customer():
     return handle_result(result, schema=CustomerSchema)
 
 
-@customer.route("/accounts/change_password_request/", methods=["POST"])
+@customer.route("/accounts/change-password-request/", methods=["POST"])
 @auth_required()
 def change_password_request():
     """
