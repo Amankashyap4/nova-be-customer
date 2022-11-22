@@ -159,6 +159,8 @@ docker-compose.yml
 .scannerwork
 .dbdata
 docker-compose-dev.yml
+tests
 sonar-project.properties
 htmlcov
 sonar.sh
+__pycache__
