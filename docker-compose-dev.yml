@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   backend:
-    image: nova-be-customer:1.0.0
+    build: .
     environment:
       DB_ENGINE: ${DB_ENGINE}
       DB_USER: ${DB_USER}
@@ -36,8 +36,6 @@ services:
       - "8000:5000"
     networks:
       - nova_service
-    volumes:
-      - .:/app
     depends_on:
       db:
         condition: service_healthy

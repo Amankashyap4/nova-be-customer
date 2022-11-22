@@ -33,7 +33,10 @@ trigger_function = """
         ELSE
             action := 'phone_update';
         END IF;
-        INSERT INTO customers_history (id, customer_id, phone_number, email, action, valid_from, valid_to) VALUES(gen_random_uuid(), OLD.id, OLD.phone_number, OLD.email, action, OLD.modified, now()); # noqa
+        INSERT INTO customers_history
+        (id, customer_id, phone_number, email, action, valid_from, valid_to)
+        VALUES(gen_random_uuid(), OLD.id, OLD.phone_number, OLD.email, action,
+        OLD.modified, now());
         RETURN NEW;
     END;
 $customer_history$ LANGUAGE plpgsql;
