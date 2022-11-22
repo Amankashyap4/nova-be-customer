@@ -16,17 +16,24 @@ branch_labels = None
 depends_on = None
 
 create_trigger = """
-    CREATE OR REPLACE TRIGGER customer_history_ AFTER INSERT OR UPDATE OF phone_number, email ON customers # noqa
+    CREATE OR REPLACE TRIGGER customer_history_ AFTER INSERT OR UPDATE OF phone_number,
+    email ON customers
     FOR EACH ROW EXECUTE PROCEDURE customer_history();
 """
 trigger_function = """
  CREATE OR REPLACE FUNCTION customer_history() RETURNS TRIGGER AS $customer_history$
     BEGIN
         IF (TG_OP = 'INSERT') THEN
-            INSERT INTO customers_history (id, customer_id, phone_number, email, action, status, valid_from) VALUES(gen_random_uuid(), NEW.id, NEW.phone_number, NEW.email, 'insert', 'active', NEW.created); # noqa
+            INSERT INTO customers_history (id, customer_id, phone_number, email, action,
+            status, valid_from) VALUES(gen_random_uuid(), NEW.id, NEW.phone_number,
+            NEW.email, 'insert', 'active', NEW.created);
         ELSIF (TG_OP = 'UPDATE') THEN
-            UPDATE customers_history SET valid_to = NEW.modified, status ='inactive' where id IN (SELECT id FROM customers_history WHERE customer_id = NEW.id ORDER BY created DESC LIMIT 1); # noqa
-            INSERT INTO customers_history (id, customer_id, phone_number, email, action, status, valid_from) VALUES(gen_random_uuid(), NEW.id, NEW.phone_number, NEW.email, 'update', 'active', NEW.modified); noqa
+            UPDATE customers_history SET valid_to = NEW.modified, status ='inactive'
+             where id IN (SELECT id FROM customers_history WHERE customer_id = NEW.id
+             ORDER BY created DESC LIMIT 1);
+            INSERT INTO customers_history (id, customer_id, phone_number, email, action,
+            status, valid_from) VALUES(gen_random_uuid(), NEW.id, NEW.phone_number,
+            NEW.email, 'update', 'active', NEW.modified);
         END IF;
         RETURN NEW;
     END;
@@ -65,8 +72,8 @@ def upgrade():
         nullable=True,
     )
     op.execute("ALTER TABLE customers_history ALTER COLUMN valid_to DROP DEFAULT")
-    op.execute(trigger_function)
-    op.execute(create_trigger)
+    # op.execute(trigger_function)
+    # op.execute(create_trigger)
     # ### end Alembic commands ###
 
 
@@ -87,6 +94,6 @@ def downgrade():
     )
     op.drop_column("customers_history", "created")
     op.drop_column("customers_history", "status")
-    op.execute(drop_function)
-    op.execute("TRUNCATE customers CASCADE;")
+    # op.execute(drop_function)
+    # op.execute("TRUNCATE customers CASCADE;")
     # ### end Alembic commands ###
