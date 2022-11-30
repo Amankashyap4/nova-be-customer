@@ -50,10 +50,10 @@ def get_customers():
     """
     ---
     get:
-      description: register new customer phone number
+      description: retrieve all customers in the system
       responses:
         '200':
-          description: returns a customer id
+          description: returns details of all customers
           content:
             application/json:
               schema:
@@ -73,7 +73,7 @@ def create_customer_account():
     """
     ---
     post:
-      description: register new customer phone number
+      description: customer registering with phone number
       requestBody:
         required: true
         content:
@@ -81,7 +81,7 @@ def create_customer_account():
             schema: CustomerSignUpSchema
       responses:
         '201':
-          description: returns a customer id
+          description: returns id of customer account
           content:
             application/json:
               schema:
@@ -131,7 +131,7 @@ def confirm_token():
     """
     ---
     post:
-      description: confirm a new customer token
+      description: confirm otp code sent to customer
       requestBody:
         required: true
         content:
@@ -139,7 +139,7 @@ def confirm_token():
             schema: ConfirmTokenSchema
       responses:
         '200':
-          description: returns a customer
+          description: return customer account id
           content:
             application/json:
               schema: ConfirmedTokenSchema
@@ -183,7 +183,7 @@ def resend_token():
     """
     ---
     post:
-      description: creates a new token
+      description: resend otp code to customer
       requestBody:
         required: true
         content:
@@ -213,11 +213,10 @@ def resend_token():
 def add_information():
     """
     ---
-    swagger: '2.0'
     post:
       tags:
           - Customer Registration
-      description: add new customer information
+      description: add customer information to system
       requestBody:
         required: true
         content:
@@ -225,7 +224,7 @@ def add_information():
                 schema: CustomerInfoSchema
       responses:
         '200':
-          description: returns a customer
+          description: returns confirmation details
           content:
             application/json:
               schema: ConfirmInfo
@@ -279,7 +278,7 @@ def add_pin():
     """
     ---
     post:
-      description: create new customer
+      description: set pin for new customer account
       requestBody:
         required: true
         content:
@@ -287,7 +286,7 @@ def add_pin():
                 schema: AddPinSchema
       responses:
         '200':
-          description: returns a customer
+          description: returns access token data
           content:
             application/json:
               schema: TokenSchema
@@ -358,7 +357,7 @@ def login():
                 schema: LoginSchema
       responses:
         '200':
-          description: call successful
+          description: returns access token data
           content:
             application/json:
               schema: TokenLoginSchema
@@ -423,14 +422,14 @@ def update_customer(customer_id):
     """
     ---
     patch:
-      description: updates a customer with id specified in path
+      description: update customer with id specified in path
       parameters:
         - in: path
           name: customer_id
           required: true
           schema:
             type: string
-          description: The customer ID
+          description: customer id
       requestBody:
         required: true
         content:
@@ -499,7 +498,7 @@ def find_customer(customer_id):
     """
     ---
     get:
-      description: returns a customer with id specified in path
+      description: retrieve customer with id specified in path
       parameters:
         - in: path
           name: customer_id
@@ -511,7 +510,7 @@ def find_customer(customer_id):
         - bearerAuth: []
       responses:
         '200':
-          description: returns a customer information
+          description: returns customer information
           content:
             application/json:
               schema: CustomerSchema
@@ -554,7 +553,7 @@ def forgot_password():
     """
     ---
     post:
-      description: requests a reset of a customer's password
+      description: send request to reset your password
       requestBody:
         required: true
         content:
@@ -562,7 +561,7 @@ def forgot_password():
                 schema: PinResetRequestSchema
       responses:
         '200':
-          description: returns a uuid (customer's id)
+          description: returns id of customer
           content:
             application/json:
               schema:
@@ -611,7 +610,7 @@ def password_otp_confirmation():
     """
     ---
     post:
-      description: confirms reset of a customer's password
+      description: confirms password reset request or phone change request otp code
       requestBody:
         required: true
         content:
@@ -619,7 +618,7 @@ def password_otp_confirmation():
                 schema: PasswordOtpSchema
       responses:
         '200':
-          description: returns id, token
+          description: returns confirmation data
           content:
             application/json:
               schema: PasswordOtpSchema
@@ -663,14 +662,14 @@ def reset_password():
     """
     ---
     post:
-      description: confirms reset of a customer's password
+      description: reset customer password
       requestBody:
         required: true
         content:
             application/json:
                 schema: PinResetSchema
       responses:
-        '205':
+        '200':
           description: message
           content:
             application/json:
@@ -747,14 +746,14 @@ def change_password(customer_id):
     """
     ---
     post:
-      description: changes a customer's password
+      description: changes customer password
       parameters:
         - in: path
           name: customer_id
           required: true
           schema:
             type: string
-          description: The customer ID
+          description: customer id
       requestBody:
         required: true
         content:
@@ -763,7 +762,7 @@ def change_password(customer_id):
       security:
         - bearerAuth: []
       responses:
-        '205':
+        '200':
           description: message
           content:
             application/json:
@@ -836,7 +835,7 @@ def new_pin_request():
     """
     ---
     post:
-      description: change request to a customer's password
+      description: send request to set pin on customer account registered by retailer
       requestBody:
         required: true
         content:
@@ -844,7 +843,7 @@ def new_pin_request():
                 schema: PinResetRequestSchema
       responses:
         '200':
-          description: returns a uuid (customer's id)
+          description: returns id of customer account
           content:
             application/json:
               schema:
@@ -893,7 +892,7 @@ def verify_new_pin():
     """
     ---
     post:
-      description: request to pin reset
+      description: confirm otp code to set pin on customer account registered by retailer
       requestBody:
         required: true
         content:
@@ -901,7 +900,7 @@ def verify_new_pin():
                 schema: RequestResetPinSchema
       responses:
         '200':
-          description: returns full_name, id, password_token
+          description: confirmation data
           content:
             application/json:
               schema: ResetPinProcess
@@ -946,14 +945,14 @@ def set_new_pin(customer_id):
     """
     ---
     post:
-      description: pin reset
+      description: set password on an account account registered by retailer
       parameters:
         - in: path
           name: customer_id
           required: true
           schema:
             type: string
-          description: The customer ID
+          description: customer id
       requestBody:
         required: true
         content:
@@ -961,7 +960,7 @@ def set_new_pin(customer_id):
                 schema: AddPinSchema
       responses:
         '200':
-          description: message
+          description: access token data
           content:
             application/json:
               schema: TokenSchema
@@ -1019,7 +1018,7 @@ def change_phone_request():
     """
     ---
     post:
-      description: requests a reset of a customer's phone number
+      description: send otp code to customer
       requestBody:
         required: true
         content:
@@ -1027,7 +1026,7 @@ def change_phone_request():
                 schema: PinResetRequestSchema
       responses:
         '200':
-          description: returns a uuid (customer's id)
+          description: returns id of customer
           content:
             application/json:
               schema:
@@ -1078,14 +1077,14 @@ def verify_phone_change(customer_id):
     """
     ---
     post:
-      description: register customer new phone number
+      description: verify the otp sent to customer for phone change request
       parameters:
         - in: path
           name: customer_id
           required: true
           schema:
             type: string
-          description: The customer ID
+          description: customer id
       requestBody:
         required: true
         content:
@@ -1158,21 +1157,21 @@ def change_phone(customer_id):
     """
     ---
     post:
-      description: update customer's new phone number
+      description: change a customer phone number
       parameters:
         - in: path
           name: customer_id
           required: true
           schema:
             type: string
-          description: The customer ID
+          description: customer id
       requestBody:
         required: true
         content:
           application/json:
             schema: UpdatePhoneSchema
       responses:
-        '204':
+        '200':
           description: message
           content:
             application/json:
@@ -1217,59 +1216,6 @@ def change_phone(customer_id):
     return handle_result(result)
 
 
-@customer.route("/accounts/<string:customer_id>", methods=["DELETE"])
-@auth_required()
-@arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
-def delete_customer(customer_id):
-    """
-    ---
-    delete:
-      description: deletes a customer with id specified in path
-      parameters:
-        - in: path
-          name: customer_id
-          required: true
-          schema:
-            type: string
-          description: The customer ID
-      security:
-        - bearerAuth: []
-      responses:
-        '204':
-          description: returns nil
-        '401':
-          description: unauthorised
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  app_exception:
-                    type: str
-                    example: Unauthorized
-                  errorMessage:
-                    type: str
-                    example: Missing authentication token
-        '404':
-          description: not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  app_exception:
-                    type: str
-                    example: NotFoundException
-                  errorMessage:
-                    type: str
-                    example: user does not exist
-      tags:
-          - Customer
-    """
-    result = customer_controller.delete(customer_id)
-    return handle_result(result)
-
-
 @customer.route("/accounts/refresh-token", methods=["POST"])
 @validator(schema=RefreshTokenSchema)
 def refresh_token():
@@ -1284,7 +1230,7 @@ def refresh_token():
                 schema: RefreshTokenSchema
       responses:
         '200':
-          description: call successful
+          description: returns access token data
           content:
             application/json:
               schema: RefreshTokenSchema
@@ -1373,7 +1319,7 @@ def retailer_register_customer():
     """
     ---
     post:
-      description: retailer register's new customer
+      description: customer registration done by retailer
       requestBody:
         required: true
         content:
@@ -1381,7 +1327,7 @@ def retailer_register_customer():
             schema: RetailerSignUpCustomerSchema
       responses:
         '201':
-          description: returns a customer id
+          description: returns customer id
           content:
             application/json:
               schema:
@@ -1430,7 +1376,7 @@ def change_password_request():
     """
     ---
     post:
-      description: request otp for changing password
+      description: send otp to change account password
       security:
         - bearerAuth: []
       requestBody:
@@ -1440,7 +1386,7 @@ def change_password_request():
             schema: ResendTokenSchema
       responses:
         '200':
-          description: returns a customer information
+          description: returns customer id
           content:
             application/json:
               schema: CustomerSchema
