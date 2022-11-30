@@ -632,39 +632,6 @@ class CustomerController(Notifier):
 
         return Result(customer_data, 200)
 
-    def delete(self, obj_id):
-        assert obj_id, ASSERT_OBJECT_ID
-
-        try:
-            customer = self.customer_repository.update_by_id(
-                obj_id, {"status": StatusEnum.disabled.value}
-            )
-        except AppException.NotFoundException:
-            raise AppException.NotFoundException(
-                context=f"customer with id {obj_id} does not exists",
-            )
-        self.auth_service.update_user(
-            {"username": obj_id, "Status": customer.status.value}
-        )
-        customer_name = split_full_name(customer.full_name)
-        self.notify(
-            SMSNotificationHandler(
-                recipients=[customer.phone_number],
-                details={"first_name": customer_name.get("first_name", "Dear")},
-                meta={"type": "sms_notification", "subtype": "delete_account"},
-            )
-        )
-        if customer.email:
-            self.notify(
-                EmailNotificationHandler(
-                    recipients=[customer.email],
-                    details={"first_name": customer_name.get("first_name", "Dear")},
-                    meta={"type": "email_notification", "subtype": "delete_account"},
-                )
-            )
-
-        return Result(None, 204)
-
     def refresh_token(self, obj_data):
         assert obj_data, ASSERT_OBJECT_IS_DICT
 

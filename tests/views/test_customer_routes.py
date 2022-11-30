@@ -423,19 +423,6 @@ class TestCustomerRoutes(BaseTestCase):
             )
 
     @pytest.mark.views
-    @mock.patch("app.services.keycloak_service.AuthService.update_user")
-    def test_delete(self, mock_delete_user):
-        mock_delete_user.return_value = self.auth_service.delete_user(
-            self.customer_model.id
-        )
-        with self.client:
-            response = self.client.delete(
-                url_for("customer.delete_customer", customer_id=self.customer_model.id),
-                headers=self.headers,
-            )
-            self.assertEqual(response.status_code, 204)
-
-    @pytest.mark.views
     def test_find_by_phone_number(self):
         with self.client:
             response = self.client.get(
