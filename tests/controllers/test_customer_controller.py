@@ -500,17 +500,6 @@ class TestCustomerController(BaseTestCase):
         self.assert404(not_found.exception)
 
     @pytest.mark.controller
-    def test_delete_customer(self):
-        result = self.customer_controller.delete(self.customer_model.id)
-        self.assertIsInstance(result, Result)
-        self.assertEqual(result.status_code, 204)
-        self.assertIsNone(result.value)
-        with self.assertRaises(AppException.NotFoundException) as not_found:
-            self.customer_controller.delete(obj_id=uuid.uuid4())
-        self.assertTrue(not_found.exception)
-        self.assert404(not_found.exception)
-
-    @pytest.mark.controller
     def test_find_by_phone_number(self):
         result = self.customer_controller.find_by_phone_number(
             self.customer_model.phone_number
