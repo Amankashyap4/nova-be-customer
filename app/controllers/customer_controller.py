@@ -595,7 +595,7 @@ class CustomerController(Notifier):
                 context=f"{OBJECT} with id {obj_id} does not exists"
             )
 
-        # generate ceph server url for retrieving profile image
+        # reminder: generate ceph server url for retrieving profile image
         customer.profile_image = self.object_storage.download_object(
             f"customer/{customer.profile_image}"
         )
@@ -710,40 +710,29 @@ class CustomerController(Notifier):
         )
         return Result(profile_images, 200)
 
-    # below methods handles event subscription for the service
-    def first_time_deposit(self, obj_data):
+    # reminder: below methods handles event subscription for the service
+    def cust_deposit(self, obj_data):
         data = extract_valid_data(
             obj_data=obj_data,
-            obj_validator=ServiceEventSubscription.first_time_deposit.value,
+            obj_validator=ServiceEventSubscription.cust_deposit.value,
         )
         try:
-            self.customer_repository.update_by_id(
-                data.get("customer_id"),
-                {"level": data.get("type_id"), "status": StatusEnum.active.value},
+            self.update(
+                obj_id=data.get("customer_id"),
+                obj_data={
+                    "level": data.get("type_id"),
+                    "status": StatusEnum.active.value,
+                },
             )
-        except AppException.NotFoundException:
-            method_name = inspect.currentframe().f_back.f_code.co_name
+        except (
+            AppException.NotFoundException,
+            AppException.KeyCloakAdminException,
+            AppException.InternalServerError,
+        ) as exc:
             current_app.logger.critical(
-                f"event <{method_name}> with data {obj_data} encountered an error: customer with id {data.get('customer_id')} does not exist"  # noqa
-            )
-
-    def new_customer_order(self, obj_data):
-        data = extract_valid_data(
-            obj_data=obj_data,
-            obj_validator=ServiceEventSubscription.new_customer_order.value,
-        )
-        try:
-            result = self.customer_repository.get_by_id(data.get("order_by_id"))
-        except AppException.NotFoundException:
-            method_name = inspect.currentframe().f_back.f_code.co_name
-            current_app.logger.critical(
-                f"event <{method_name}> with data {obj_data} encountered an error: customer with id {data.get('order_by_id')} does not exist"  # noqa
-            )
-        else:
-            self.notify(
-                SMSNotificationHandler(
-                    recipients=result.phone_number,
-                    details={"order_status": ""},
-                    meta={"type": "sms_notification", "subtype": "otp"},
-                )
+                {
+                    "event": f"<{inspect.currentframe().f_back.f_code.co_name}>",
+                    "data": obj_data,
+                    "error": f"{exc}",
+                }
             )
