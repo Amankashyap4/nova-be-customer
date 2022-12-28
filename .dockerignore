@@ -164,3 +164,4 @@ sonar-project.properties
 htmlcov
 sonar.sh
 __pycache__
+kafka_config
