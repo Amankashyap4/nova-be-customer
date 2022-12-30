@@ -3,7 +3,7 @@ import re
 from marshmallow import Schema, fields, pre_load, validate
 from marshmallow_enum import EnumField
 
-from app.enums import IDEnum, StatusEnum, regex_type
+from app.enums import AccountStatusEnum, IDEnum, RegularExpression
 
 
 class CustomerSchema(Schema):
@@ -15,11 +15,12 @@ class CustomerSchema(Schema):
     id_expiry_date = fields.Date(allow_none=True)
     id_type = EnumField(IDEnum, allow_none=True)
     id_number = fields.String(allow_none=True)
-    status = EnumField(StatusEnum, allow_none=True)
+    status = EnumField(AccountStatusEnum, allow_none=True)
     profile_image = fields.String(allow_none=True)
     auth_service_id = fields.UUID(allow_none=True)
     retailer_id = fields.UUID(allow_none=True)
     level = fields.String(allow_none=True)
+    last_login = fields.DateTime()
     pre_signed_post = fields.Dict(allow_none=True)
     created = fields.DateTime()
     modified = fields.DateTime()
@@ -40,6 +41,7 @@ class CustomerSchema(Schema):
             "retailer_id",
             "status",
             "level",
+            "last_login",
             "pre_signed_post",
             "created",
             "modified",
@@ -47,7 +49,7 @@ class CustomerSchema(Schema):
 
     @pre_load
     def international_format(self, field, **kwargs):
-        split_regex = regex_type().get("phone_number").split("|")
+        split_regex = RegularExpression.phone_number.value.split("|")
         format_type = "|".join(split_regex[:2]), "|".join(split_regex[2:])
         phone_number = field.get("phone_number")
         if phone_number and re.fullmatch(format_type[0], phone_number):
@@ -60,14 +62,7 @@ class CustomerSchema(Schema):
 class CustomerUpdateSchema(CustomerSchema):
     email = fields.Email()
     profile_image = fields.String(
-        validate=validate.OneOf(
-            [
-                "jpeg",
-                "jpg",
-                "png",
-                "null",
-            ]
-        )
+        validate=validate.OneOf(["jpeg", "jpg", "png", "null"])
     )
 
     class Meta:
@@ -76,7 +71,7 @@ class CustomerUpdateSchema(CustomerSchema):
 
 class CustomerSignUpSchema(CustomerSchema):
     phone_number = fields.Str(
-        required=True, validate=validate.Regexp(regex_type().get("phone_number"))
+        required=True, validate=validate.Regexp(RegularExpression.phone_number.value)
     )
 
     class Meta:
@@ -106,14 +101,14 @@ class CustomerInfoSchema(CustomerSchema):
 
 class UpdatePhoneSchema(Schema):
     phone_number = fields.String(
-        required=True, validate=validate.Regexp(regex_type().get("phone_number"))
+        required=True, validate=validate.Regexp(RegularExpression.phone_number.value)
     )
     token = fields.Str(required=True)
 
 
 class CustomerRequestArgSchema(CustomerSchema):
     phone_number = fields.String(
-        validate=validate.Regexp(regex_type().get("phone_number"))
+        validate=validate.Regexp(RegularExpression.phone_number.value)
     )
     customer_id = fields.UUID()
     user_id = fields.UUID()
@@ -128,7 +123,7 @@ class RetailerSignUpCustomerSchema(CustomerSchema):
     """
 
     phone_number = fields.Str(
-        required=True, validate=validate.Regexp(regex_type().get("phone_number"))
+        required=True, validate=validate.Regexp(RegularExpression.phone_number.value)
     )
     retailer_id = fields.UUID(required=True)
 

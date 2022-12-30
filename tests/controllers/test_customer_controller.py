@@ -131,13 +131,13 @@ class TestCustomerController(BaseTestCase):
             self.customer_controller.login(credentials)
         self.assertTrue(not_found_exc.exception)
         self.assert404(not_found_exc.exception)
-        with self.assertRaises(AppException.NotFoundException) as not_found_exc:
+        with self.assertRaises(AppException.OperationError) as operation_error:
             self.customer_controller.update(
                 self.customer_model.id, {"status": "disabled"}
             )
             self.customer_controller.login(self.customer_test_data.customer_credential)
-        self.assertTrue(not_found_exc.exception)
-        self.assert404(not_found_exc.exception)
+        self.assertTrue(operation_error.exception)
+        self.assert400(operation_error.exception)
 
     @pytest.mark.controller
     def test_update_customer(self):

@@ -6,7 +6,7 @@ from sqlalchemy.sql import func
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
-from app.enums import IDEnum, StatusEnum
+from app.enums import AccountStatusEnum, IDEnum
 
 
 @dataclass
@@ -49,7 +49,9 @@ class CustomerModel(db.Model):
     auth_service_id = db.Column(db.GUID())
     retailer_id = db.Column(db.GUID(), nullable=True)
     status = db.Column(
-        db.Enum(StatusEnum, name="status"), default=StatusEnum.inactive, nullable=False
+        db.Enum(AccountStatusEnum, name="status"),
+        default=AccountStatusEnum.inactive,
+        nullable=False,
     )
     level = db.Column(db.String())
     auth_token = db.Column(db.String())
@@ -58,6 +60,7 @@ class CustomerModel(db.Model):
     otp_token = db.Column(db.String(), nullable=True)
     otp_token_expiration = db.Column(db.DateTime(timezone=True))
     eula_consent = db.Column(db.Boolean(), nullable=True, default=False)
+    last_login = db.Column(db.DateTime(timezone=True), nullable=True)
     created = db.Column(
         db.DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -185,6 +185,21 @@ class AuthService(AuthServiceInterface):
         updated_user = self.get_keycloak_user(request_data.get("username"))
         return updated_user.get("username")
 
+    # noinspection PyMethodMayBeStatic
+    def auth_service_field(self, account_id, obj_data):
+        assert account_id, "missing id of account"
+        assert obj_data, "missing obj_data of account"
+
+        user_data = {"username": account_id}
+        for field in obj_data:
+            auth_service_field = field.split("_")
+            for index in range(len(auth_service_field)):
+                if index > 0:
+                    auth_service_field[index] = auth_service_field[index].capitalize()
+            user_data["".join(auth_service_field)] = obj_data.get(field)
+
+        return user_data
+
     def delete_user(self, user_id: str):
         assert user_id, "Missing id of user to be deleted"
         assert isinstance(user_id, str)
