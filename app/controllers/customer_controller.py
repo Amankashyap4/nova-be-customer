@@ -4,16 +4,20 @@ import secrets
 from datetime import datetime, timedelta
 
 import pytz
-from flask import current_app
+from flask import current_app, request
 
 from app.core import Result
 from app.core.exceptions import AppException
 from app.core.notifications.notifier import Notifier
 from app.core.repository import SQLBaseRepository
-from app.enums import StatusEnum
+from app.enums import AccountStatusEnum
 from app.events import ServiceEventSubscription
 from app.notifications import EmailNotificationHandler, SMSNotificationHandler
-from app.repositories import CustomerRepository, RegistrationRepository
+from app.repositories import (
+    CustomerRepository,
+    LoginAttemptRepository,
+    RegistrationRepository,
+)
 from app.services import AuthService, ObjectStorage
 from app.utils import extract_valid_data, keycloak_fields, split_full_name
 
@@ -29,11 +33,13 @@ class CustomerController(Notifier):
         self,
         customer_repository: CustomerRepository,
         registration_repository: RegistrationRepository,
+        login_attempt_repository: LoginAttemptRepository,
         auth_service: AuthService,
         object_storage: ObjectStorage,
     ):
         self.customer_repository = customer_repository
         self.registration_repository = registration_repository
+        self.login_attempt_repository = login_attempt_repository
         self.auth_service = auth_service
         self.object_storage = object_storage
 
@@ -202,27 +208,44 @@ class CustomerController(Notifier):
         try:
             customer = self.customer_repository.find({"phone_number": phone_number})
         except AppException.NotFoundException:
-            raise AppException.NotFoundException(
-                context=f"{OBJECT} with phone number {phone_number} does not exists"
+            # reminder: log login attempt
+            self.login_attempt(phone_number=phone_number, ip_address=request.remote_addr)
+            raise AppException.NotFoundException(context="account does not exist")
+        # reminder: check if account has been locked out
+        self.verify_account_lockout(account=customer)
+        # reminder: unlock account if locked out
+        self.unlock_account(account=customer)
+        # reminder: verify account status
+        if customer.status in [AccountStatusEnum.disabled, AccountStatusEnum.blocked]:
+            raise AppException.OperationError(
+                context=f"account has been {customer.status.value}"
             )
-        if customer.status.value not in ["blocked", "disabled"]:
-            access_token = self.auth_service.get_token(
-                {"username": customer.id, "password": pin}
-            )
-            if customer.status.value == "inactive":
-                self.customer_repository.update_by_id(
-                    str(customer.id), {"status": "first_time"}
-                )
-                user_data = keycloak_fields(str(customer.id), {"status": "first_time"})
-                self.auth_service.update_user(user_data)
-            customer.access_token = access_token.get("access_token")
-            customer.refresh_token = access_token.get("refresh_token")
-
-            return Result(customer, 200)
-
-        raise AppException.NotFoundException(
-            context=f"account {phone_number} has been {customer.status.value}",
+        # reminder: check if pin is correct
+        if not customer.verify_pin(pin):
+            # reminder: log login attempt
+            self.login_attempt(phone_number=phone_number, ip_address=request.remote_addr)
+        # reminder: get token from auth service i.e keycloak
+        access_token = self.auth_service.get_token(
+            {"username": customer.id, "password": pin}
         )
+        user_data = {"last_login": str(datetime.now())}
+        if customer.status == AccountStatusEnum.inactive:
+            user_data["status"] = AccountStatusEnum.first_time.value
+        self.customer_repository.update_by_id(obj_id=customer.id, obj_in=user_data)
+        # reminder: reset login attempt of account
+        self.reset_login_attempt(phone_number=phone_number)
+        # reminder: modify data keys to match auth server fields i.e keycloak
+        user_data = self.auth_service.auth_service_field(
+            account_id=str(customer.id),
+            obj_data=user_data,
+        )
+        # reminder: update account details in auth server i.e keycloak
+        self.auth_service.update_user(user_data)
+
+        customer.access_token = access_token.get("access_token")
+        customer.refresh_token = access_token.get("refresh_token")
+
+        return Result(customer, 200)
 
     def update(self, obj_id, obj_data):
         assert obj_id, ASSERT_OBJECT_ID
@@ -595,7 +618,7 @@ class CustomerController(Notifier):
                 context=f"{OBJECT} with id {obj_id} does not exists"
             )
 
-        # generate ceph server url for retrieving profile image
+        # reminder: generate ceph server url for retrieving profile image
         customer.profile_image = self.object_storage.download_object(
             f"customer/{customer.profile_image}"
         )
@@ -689,6 +712,106 @@ class CustomerController(Notifier):
 
         return None
 
+    def login_attempt(self, phone_number: str, ip_address: str):
+        attempt_details = {
+            "phone_number": phone_number,
+            "request_ip_address": ip_address,
+            "failed_login_attempts": 1,
+            "failed_login_time": datetime.now(),
+            "expires_in": datetime.now() + timedelta(minutes=1),
+        }
+        try:
+            # reminder: check if an attempt exist
+            record = self.login_attempt_repository.find(
+                {"phone_number": phone_number, "status": AccountStatusEnum.active}
+            )
+        except AppException.NotFoundException:
+            # reminder: create new attempt record
+            self.login_attempt_repository.create(attempt_details)
+        else:
+            # reminder: check if attempt record has expired
+            if utc.localize(datetime.now()) > record.expires_in:
+                self.login_attempt_repository.update_by_id(
+                    obj_id=record.id, obj_in={"status": AccountStatusEnum.inactive}
+                )
+                self.login_attempt_repository.create(attempt_details)
+            else:
+                # reminder: increment record counter
+                self.login_attempt_repository.update_by_id(
+                    obj_id=record.id,
+                    obj_in={
+                        "failed_login_attempts": sum((record.failed_login_attempts, 1)),
+                        "failed_login_time": datetime.now(),
+                    },
+                )
+                if record.failed_login_attempts > 4:
+                    self.lock_account_out(record=record, phone_number=phone_number)
+        return None
+
+    def reset_login_attempt(self, phone_number: str):
+        assert phone_number, ASSERT_OBJECT_DATA.format("phone_number")
+
+        try:
+            record = self.login_attempt_repository.find(
+                {"phone_number": phone_number, "status": AccountStatusEnum.active}
+            )
+        except AppException.NotFoundException:
+            return None
+        else:
+            self.login_attempt_repository.update_by_id(
+                obj_id=record.id, obj_in={"status": AccountStatusEnum.inactive}
+            )
+
+        return None
+
+    def lock_account_out(self, record, phone_number):
+        try:
+            self.customer_repository.find({"phone_number": phone_number})
+        except AppException.NotFoundException:
+            return None
+        else:
+            self.login_attempt_repository.update_by_id(
+                obj_id=record.id,
+                obj_in={"lockout_expiration": datetime.now() + timedelta(minutes=5)},
+            )
+        return None
+
+    def unlock_account(self, account):
+        try:
+            record = self.login_attempt_repository.find(
+                {
+                    "phone_number": account.phone_number,
+                    "status": AccountStatusEnum.active,
+                }
+            )
+        except AppException.NotFoundException:
+            return None
+        else:
+            account_lockout = record.lockout_expiration
+            if account_lockout and utc.localize(datetime.now()) > account_lockout:
+                self.login_attempt_repository.update_by_id(
+                    obj_id=record.id, obj_in={"status": AccountStatusEnum.inactive}
+                )
+        return None
+
+    def verify_account_lockout(self, account):
+        try:
+            record = self.login_attempt_repository.find(
+                {
+                    "phone_number": account.phone_number,
+                    "status": AccountStatusEnum.active,
+                }
+            )
+        except AppException.NotFoundException:
+            return None
+        else:
+            account_lockout = record.lockout_expiration
+            if account_lockout and utc.localize(datetime.now()) <= account_lockout:
+                raise AppException.NotFoundException(
+                    context="login attempts exceeded. account locked out"
+                )
+        return None
+
     # noinspection PyMethodMayBeStatic
     def customer_profile_images(self):
 
@@ -710,40 +833,29 @@ class CustomerController(Notifier):
         )
         return Result(profile_images, 200)
 
-    # below methods handles event subscription for the service
-    def first_time_deposit(self, obj_data):
+    # reminder: below methods handles event subscription for the service
+    def cust_deposit(self, obj_data):
         data = extract_valid_data(
             obj_data=obj_data,
-            obj_validator=ServiceEventSubscription.first_time_deposit.value,
+            obj_validator=ServiceEventSubscription.cust_deposit.value,
         )
         try:
-            self.customer_repository.update_by_id(
-                data.get("customer_id"),
-                {"level": data.get("type_id"), "status": StatusEnum.active.value},
+            self.update(
+                obj_id=data.get("customer_id"),
+                obj_data={
+                    "level": data.get("type_id"),
+                    "status": AccountStatusEnum.active.value,
+                },
             )
-        except AppException.NotFoundException:
-            method_name = inspect.currentframe().f_back.f_code.co_name
+        except (
+            AppException.NotFoundException,
+            AppException.KeyCloakAdminException,
+            AppException.InternalServerError,
+        ) as exc:
             current_app.logger.critical(
-                f"event <{method_name}> with data {obj_data} encountered an error: customer with id {data.get('customer_id')} does not exist"  # noqa
-            )
-
-    def new_customer_order(self, obj_data):
-        data = extract_valid_data(
-            obj_data=obj_data,
-            obj_validator=ServiceEventSubscription.new_customer_order.value,
-        )
-        try:
-            result = self.customer_repository.get_by_id(data.get("order_by_id"))
-        except AppException.NotFoundException:
-            method_name = inspect.currentframe().f_back.f_code.co_name
-            current_app.logger.critical(
-                f"event <{method_name}> with data {obj_data} encountered an error: customer with id {data.get('order_by_id')} does not exist"  # noqa
-            )
-        else:
-            self.notify(
-                SMSNotificationHandler(
-                    recipients=result.phone_number,
-                    details={"order_status": ""},
-                    meta={"type": "sms_notification", "subtype": "otp"},
-                )
+                {
+                    "event": f"<{inspect.currentframe().f_back.f_code.co_name}>",
+                    "data": obj_data,
+                    "error": f"{exc}",
+                }
             )

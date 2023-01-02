@@ -1,7 +1,7 @@
 from marshmallow import Schema, fields, validate
 from marshmallow_enum import EnumField
 
-from app.enums import IDEnum, regex_type
+from app.enums import IDEnum, RegularExpression
 
 
 class ConfirmTokenSchema(Schema):
@@ -10,7 +10,9 @@ class ConfirmTokenSchema(Schema):
 
 
 class RequestResetPinSchema(Schema):
-    token = fields.Str(required=True, validate=validate.Regexp(regex_type().get("pin")))
+    token = fields.Str(
+        required=True, validate=validate.Regexp(RegularExpression.pin.value)
+    )
     id = fields.UUID(required=True)
 
 
@@ -20,7 +22,9 @@ class ConfirmedTokenSchema(Schema):
 
 
 class AddPinSchema(Schema):
-    pin = fields.Str(required=True, validate=validate.Regexp(regex_type().get("pin")))
+    pin = fields.Str(
+        required=True, validate=validate.Regexp(RegularExpression.pin.value)
+    )
     password_token = fields.Str(required=True)
 
 
@@ -30,22 +34,22 @@ class ResendTokenSchema(Schema):
 
 class PinChangeSchema(Schema):
     old_pin = fields.String(
-        required=True, validate=validate.Regexp(regex_type().get("pin"))
+        required=True, validate=validate.Regexp(RegularExpression.pin.value)
     )
     new_pin = fields.String(
-        required=True, validate=validate.Regexp(regex_type().get("pin"))
+        required=True, validate=validate.Regexp(RegularExpression.pin.value)
     )
 
 
 class PinResetRequestSchema(Schema):
     phone_number = fields.Str(
-        required=True, validate=validate.Regexp(regex_type().get("phone_number"))
+        required=True, validate=validate.Regexp(RegularExpression.phone_number.value)
     )
 
 
 class PinRequestSchema(Schema):
     phone_number = fields.Str(
-        required=True, validate=validate.Regexp(regex_type().get("phone_number"))
+        required=True, validate=validate.Regexp(RegularExpression.phone_number.value)
     )
 
 
@@ -56,23 +60,25 @@ class ResetPhoneSchema(Schema):
 
 class PinResetSchema(Schema):
     token = fields.String(
-        required=True, validate=validate.Regexp(regex_type().get("token"))
+        required=True, validate=validate.Regexp(RegularExpression.token.value)
     )
     new_pin = fields.String(
-        required=True, validate=validate.Regexp(regex_type().get("pin"))
+        required=True, validate=validate.Regexp(RegularExpression.pin.value)
     )
     id = fields.UUID(required=True)
 
 
 class PasswordOtpSchema(Schema):
     token = fields.String(
-        required=True, validate=validate.Regexp(regex_type().get("token"))
+        required=True, validate=validate.Regexp(RegularExpression.token.value)
     )
     id = fields.UUID(required=True)
 
 
 class LoginSchema(Schema):
-    phone_number = fields.Str(validate=validate.Regexp(regex_type().get("phone_number")))
+    phone_number = fields.Str(
+        validate=validate.Regexp(RegularExpression.phone_number.value)
+    )
     pin = fields.Str(validate=validate.Length(min=4, max=4))
 
 

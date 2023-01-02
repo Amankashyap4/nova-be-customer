@@ -55,7 +55,11 @@ if __name__ == "__main__":
         # Application context should be registered before importing from app
         from app.controllers import CustomerController
         from app.events import EventSubscriptionHandler
-        from app.repositories import CustomerRepository, RegistrationRepository
+        from app.repositories import (
+            CustomerRepository,
+            LoginAttemptRepository,
+            RegistrationRepository,
+        )
         from app.schema import CustomerSchema
         from app.services import AuthService, ObjectStorage, RedisService
 
@@ -70,6 +74,7 @@ if __name__ == "__main__":
                     CustomerRepository,
                     RedisService,
                     RegistrationRepository,
+                    LoginAttemptRepository,
                     AuthService,
                     CustomerSchema,
                     ObjectStorage,

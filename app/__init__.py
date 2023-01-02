@@ -2,7 +2,7 @@ import os
 import sys
 from logging.config import dictConfig
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, redirect
 from flask.logging import default_handler
 from flask_mongoengine import MongoEngine
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -96,6 +96,11 @@ def register_blueprints(app):
     """Register Flask blueprints."""
     app.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix=SWAGGER_URL)
     api.init_app(app)
+
+    @app.route("/")
+    def index():
+        return redirect(SWAGGER_URL)
+
     return None
 
 

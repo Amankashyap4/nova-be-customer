@@ -3,7 +3,11 @@ from flask import Blueprint, request
 
 from app.controllers import CustomerController
 from app.core.service_result import handle_result
-from app.repositories import CustomerRepository, RegistrationRepository
+from app.repositories import (
+    CustomerRepository,
+    LoginAttemptRepository,
+    RegistrationRepository,
+)
 from app.schema import (
     AddPinSchema,
     ConfirmTokenSchema,
@@ -36,13 +40,14 @@ obj_graph = pinject.new_object_graph(
         CustomerController,
         CustomerRepository,
         RegistrationRepository,
+        LoginAttemptRepository,
         AuthService,
         RedisService,
         ObjectStorage,
         CustomerSchema,
     ],
 )
-customer_controller = obj_graph.provide(CustomerController)
+customer_controller: CustomerController = obj_graph.provide(CustomerController)
 
 
 @customer.route("/", methods=["GET"])

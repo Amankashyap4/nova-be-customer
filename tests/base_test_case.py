@@ -7,8 +7,12 @@ from flask_testing import TestCase
 from app import APP_ROOT, create_app, db
 from app.controllers import CustomerController
 from app.events import EventSubscriptionHandler
-from app.models import CustomerHistoryModel, CustomerModel
-from app.repositories import CustomerRepository, RegistrationRepository
+from app.models import CustomerHistoryModel, CustomerModel, LoginAttemptModel
+from app.repositories import (
+    CustomerRepository,
+    LoginAttemptRepository,
+    RegistrationRepository,
+)
 from app.schema import CustomerSchema
 from config import Config
 from tests.utils.mock_auth_service import MockAuthService
@@ -16,6 +20,7 @@ from tests.utils.mock_ceph_storage_service import MockStorageService
 
 from .utils.test_data import CustomerTestData, KeycloakTestData
 from .utils.test_event_subscription_data import EventSubscriptionTestData
+from .utils.test_login_attempt_data import LoginAttemptTestData
 
 
 class BaseTestCase(TestCase):
@@ -33,12 +38,14 @@ class BaseTestCase(TestCase):
         self.customer_repository = CustomerRepository(
             redis_service=redis_service, customer_schema=self.customer_schema
         )
+        self.login_attempt_repository = LoginAttemptRepository()
         self.registration_repository = RegistrationRepository()
         self.auth_service = MockAuthService()
         self.object_storage = MockStorageService()
         self.customer_controller = CustomerController(
             customer_repository=self.customer_repository,
             registration_repository=self.registration_repository,
+            login_attempt_repository=self.login_attempt_repository,
             auth_service=self.auth_service,
             object_storage=self.object_storage,
         )
@@ -47,6 +54,7 @@ class BaseTestCase(TestCase):
         )
         self.customer_test_data = CustomerTestData()
         self.keycloak_test_data = KeycloakTestData()
+        self.login_attempt_test_data = LoginAttemptTestData()
         self.event_subscription_test_data = EventSubscriptionTestData()
 
     def setup_patches(self):
@@ -96,8 +104,12 @@ class BaseTestCase(TestCase):
         self.customer_history_model = CustomerHistoryModel(
             **self.customer_test_data.existing_customer_history
         )
+        self.login_attempt_model = LoginAttemptModel(
+            **self.login_attempt_test_data.existing_attempt
+        )
         db.session.add(self.customer_model)
         db.session.add(self.customer_history_model)
+        db.session.add(self.login_attempt_model)
         db.session.commit()
 
     def tearDown(self):

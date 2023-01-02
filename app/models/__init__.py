@@ -1,3 +1,4 @@
 from .customer_history_model import CustomerHistoryModel
 from .customer_model import CustomerModel
+from .login_attempt_model import LoginAttemptModel
 from .registration_model import RegistrationModel

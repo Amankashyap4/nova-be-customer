@@ -19,7 +19,7 @@ class EventSubscriptionHandler(EventHandlerInterface):
         self.meta = event_data.get("meta")
         self.event_action = self.meta.get("event_action")
 
-        # validate event data against a pre-define data structure
+        # reminder: validate event data against a pre-define data structure
         valid_event_data = self.validate_event(self.details)
         if valid_event_data:
             getattr(self, self.event_action, self.unhandled_event)()
@@ -34,9 +34,6 @@ class EventSubscriptionHandler(EventHandlerInterface):
             for field in validator:
                 if field not in data:
                     return None
-                if isinstance(validator.get(field), list):
-                    if data.get(field) not in validator.get(field):
-                        return None
             return data
         return None
 
@@ -45,7 +42,7 @@ class EventSubscriptionHandler(EventHandlerInterface):
             f"event {self.event_action} with data {self.data} is unhandled"
         )
 
-    def first_time_deposit(self):
+    def cust_deposit(self):
         """
 
         This event update's the attribute <level> on a customer to the size of
@@ -55,16 +52,4 @@ class EventSubscriptionHandler(EventHandlerInterface):
         :return: None
 
         """
-        self.customer_controller.first_time_deposit(self.details)
-
-    def new_customer_order(self):
-        """
-
-        This event sends sms notification to customer when new order is created.
-         Event is published to the kafka topic <NEW_CUSTOMER_ORDER> by the Order Service
-         to be consumed by this service. Event is only published if Order Service cannot
-         retrieve customer info
-        :return: None
-
-        """
-        self.customer_controller.new_customer_order(self.details)
+        self.customer_controller.cust_deposit(self.details)

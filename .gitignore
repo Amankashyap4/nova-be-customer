@@ -163,6 +163,6 @@ docker-compose-dev.yml
 .scannerwork
 sonar-project.properties
 sonar.sh
-
+kafka_config
 # locust test files
 locust_test_file.py
