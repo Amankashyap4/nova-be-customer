@@ -3,6 +3,7 @@ from flask import Blueprint, request
 
 from app.controllers import CustomerController
 from app.core.service_result import handle_result
+from app.models.safety_model import SafetyModel
 from app.repositories import (
     CustomerRepository,
     LoginAttemptRepository,
@@ -29,8 +30,12 @@ from app.schema import (
     TokenLoginSchema,
     UpdatePhoneSchema,
 )
+
+from app.schema.safety_schema import SafetySchema
+
 from app.services import AuthService, ObjectStorage, RedisService
 from app.utils import arg_validator, auth_required, validator
+from app import db
 
 customer = Blueprint("customer", __name__)
 
@@ -1440,3 +1445,81 @@ def saved_images():
 def saved_image(customer_id):
     result = customer_controller.customer_profile_image(customer_id)
     return handle_result(result)
+
+
+@customer.route("/safety", methods=["GET"])
+def get_safety():
+    """
+       ---
+       get:
+         description: retrieve all safety_tips in the system
+         responses:
+           '200':
+             description: returns details of all safety_tips
+             content:
+               application/json:
+                 schema:
+                   type: array
+                   items: SafetySchema
+         tags:
+             - Safety
+       """
+    all_safety_tips = SafetyModel.query.all()
+    result = SafetySchema(many=True).dumps(all_safety_tips)
+    return result
+
+
+@customer.route("/safety", methods=["POST"])
+@validator(schema=SafetySchema)
+def create_safety_tips():
+    """
+     ---
+     post:
+       description: Safety Tips
+       requestBody:
+         required: true
+         content:
+           application/json:
+             schema: SafetySchema
+       responses:
+         '201':
+           description: returns safety tip created
+
+         '409':
+           description: conflict
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   app_exception:
+                     type: str
+                     example: ResourceExists
+                   errorMessage:
+                     type: str
+                     example: Safety Tip ... exists
+         '500':
+           description: internal server error
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   app_exception:
+                     type: str
+                     example: InternalServerError
+                   errorMessage:
+                     type: str
+                     example: NoBrokersAvailable
+       tags:
+           - Safety
+     """
+
+    title = request.json['title']
+    description = request.json['description']
+    image = request.json['image']
+
+    new_safety_tip = SafetyModel(title=title, description=description, image=image)
+    db.session.add(new_safety_tip)
+    db.session.commit()
+    return "data added"
