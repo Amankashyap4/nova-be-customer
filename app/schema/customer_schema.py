@@ -20,7 +20,7 @@ class CustomerSchema(Schema):
     auth_service_id = fields.UUID(allow_none=True)
     retailer_id = fields.UUID(allow_none=True)
     level = fields.String(allow_none=True)
-    last_login = fields.DateTime()
+    last_login = fields.DateTime(allow_none=True)
     pre_signed_post = fields.Dict(allow_none=True)
     created = fields.DateTime()
     modified = fields.DateTime()
