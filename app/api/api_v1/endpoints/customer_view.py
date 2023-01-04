@@ -1518,7 +1518,6 @@ def create_safety_tips():
     title = request.json['title']
     description = request.json['description']
     image = request.json['image']
-
     new_safety_tip = SafetyModel(title=title, description=description, image=image)
     db.session.add(new_safety_tip)
     db.session.commit()

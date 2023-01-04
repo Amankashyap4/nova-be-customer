@@ -2,6 +2,7 @@ from app import db
 import uuid
 
 class SafetyModel(db.Model):
+
     id: str
     title: str
     description: str
