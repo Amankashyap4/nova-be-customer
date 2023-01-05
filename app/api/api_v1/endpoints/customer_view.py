@@ -8,6 +8,7 @@ from app.repositories import (
     LoginAttemptRepository,
     RegistrationRepository,
 )
+from app.repositories.promotion_repository import PromotionRepository
 from app.schema import (
     AddPinSchema,
     ConfirmTokenSchema,
@@ -31,6 +32,9 @@ from app.schema import (
 )
 from app.services import AuthService, ObjectStorage, RedisService
 from app.utils import arg_validator, auth_required, validator
+from app import db
+from app.models.promotion_model import PromotionModel
+from app.schema.promotion_schema import PromotionSchema
 
 customer = Blueprint("customer", __name__)
 
@@ -1440,3 +1444,174 @@ def saved_images():
 def saved_image(customer_id):
     result = customer_controller.customer_profile_image(customer_id)
     return handle_result(result)
+
+
+@customer.route("/promotion", methods=["GET"])
+def get_promotion():
+    """
+       ---
+       get:
+         description: retrieve all promotions in the system
+         responses:
+           '200':
+             description: returns details of all promotions
+             content:
+               application/json:
+                 schema:
+                   type: array
+                   items: PromotionSchema
+         tags:
+             - Promotion
+       """
+    result = PromotionRepository.index()
+    return handle_result(result, schema=PromotionSchema, many=True)
+
+
+@customer.route("/promotion", methods=["POST"])
+@validator(schema=PromotionSchema)
+def create_promotion():
+    """
+     ---
+     post:
+       description: Add promotion
+       requestBody:
+         required: true
+         content:
+           application/json:
+             schema: PromotionSchema
+       responses:
+         '201':
+           description: returns data created
+         '409':
+           description: conflict
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   app_exception:
+                     type: str
+                     example: ResourceExists
+                   errorMessage:
+                     type: str
+                     example: Safety Tip ... exists
+         '500':
+           description: internal server error
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   app_exception:
+                     type: str
+                     example: InternalServerError
+                   errorMessage:
+                     type: strDate
+                     example: NoBrokersAvailable
+       tags:
+           - Promotion
+     """
+    data = request.json
+    result = PromotionRepository.create(data)
+    return handle_result(result, schema=PromotionSchema)
+
+
+@customer.route("/promotion/<string:promotion_id>", methods=["PATCH"])
+def update_promotion(promotion_id):
+    """
+    ---
+    patch:
+      description: update a order of customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: PromotionSchema
+      parameters:
+        - in: path
+          name: promotion_id
+          required: true
+          schema:
+            type: string
+            description: the promotion's id
+      responses:
+        '201':
+          description: returns details updated promotion
+          content:
+            application/json:
+              schema: PromotionSchema
+        '400':
+          description: returns a bad request exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                    oneOf:
+                      - type: object
+                        properties:
+                          service_type:
+                            type: array
+                            items:
+                              type: str
+                              example: Invalid enum member refil
+                example:
+                  app_exception: ValidationException
+                  errorMessage:
+                    service_type: ["Invalid enum member refil"]
+      tags:
+          - Promotion
+    """
+    data = request.json
+    result = PromotionRepository.update_by_id(promotion_id,data)
+    return result
+
+
+@customer.route("/promotion/<string:promotion_id>", methods=["DELETE"])
+def delete_promotion(promotion_id):
+    """
+      ---
+      delete:
+        description: delete promotion with id specified in path
+        parameters:
+          - in: path
+            name: promotion_id
+            required: true
+            schema:
+              type: string
+            description: the promotion id
+        responses:
+          '204':
+            description: returns Deleted
+          '400':
+            description: returns a bad request exception
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    app_exception:
+                      type: str
+                      example: ValidationException
+                    errorMessage:
+                      oneOf:
+                        - type: object
+                          properties:
+                            order_id:
+                              type: array
+                              items:
+                                type: str
+                                example: Not a valid UUID
+                  example:
+                    app_exception: ValidationException
+                    errorMessage:
+                      order_id: ["Not a valid UUID"]
+        tags:
+            - Promotion
+      """
+    result = PromotionRepository.delete(promotion_id)
+    return result
