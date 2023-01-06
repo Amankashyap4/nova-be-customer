@@ -1447,6 +1447,7 @@ def saved_image(customer_id):
     result = customer_controller.customer_profile_image(customer_id)
     return handle_result(result)
 
+
 @customer.route("/safety", methods=["GET"])
 def get_safety():
     """
@@ -1519,3 +1520,4 @@ def create_safety():
     data = request.json
     result = safety_controller.register(data)
     return handle_result(result, schema=SafetySchema)
+

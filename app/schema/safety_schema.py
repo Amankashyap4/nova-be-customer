@@ -7,6 +7,6 @@ class SafetySchema(Schema):
     image = fields.String(allow_none=True)
 
 
-class PromotionRequestArgSchema(Schema):
+class SafetyRequestArgSchema(Schema):
     safety_id = fields.UUID()
 
