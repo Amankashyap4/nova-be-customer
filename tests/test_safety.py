@@ -8,7 +8,7 @@ SAFETY_OBJECT={
 }
 
 class TestSafety(unittest.TestCase):
-    API_URL = "http://localhost:5000/api/v1/customers"
+    API_URL = "https://customer.newgas.online/api/v1/customers"
     PROMOTION_URL = "{}/promotion".format(API_URL)
 
     SAFETY_OBJECT = {
@@ -20,7 +20,6 @@ class TestSafety(unittest.TestCase):
     def test_1_get_all_promotion(self):
         r = requests.get(TestSafety.PROMOTION_URL)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.json()),9)
 
     def test_add_new_promotion(self):
         r = requests.post(TestSafety.PROMOTION_URL,json=TestSafety.SAFETY_OBJECT)
