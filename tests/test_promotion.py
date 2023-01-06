@@ -15,7 +15,7 @@ class TestPromotionModel(BaseTestCase):
 
 
 
-class TestSafetyRepository(BaseTestCase):
+class TestPromotionRepository(BaseTestCase):
     @pytest.mark.repository
     def test_index(self):
         result = PromotionRepository.index()
