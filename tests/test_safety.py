@@ -1,4 +1,4 @@
-import pyt
+import pytest
 from app.models.safety_model import SafetyModel
 from tests.base_test_case import BaseTestCase
 
