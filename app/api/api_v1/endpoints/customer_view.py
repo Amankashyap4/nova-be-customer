@@ -1476,7 +1476,7 @@ def create_promotion():
     """
     ---
     post:
-      description: customer registering with phone number
+      description: safety
       requestBody:
         required: true
         content:
@@ -1500,7 +1500,7 @@ def create_promotion():
                     example: ResourceExists
                   errorMessage:
                     type: str
-                    example: Customer with phone number ... exists
+                    example: Safety ... exists
         '500':
           description: internal server error
           content:
