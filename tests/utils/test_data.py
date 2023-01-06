@@ -99,3 +99,24 @@ class KeycloakTestData:
             "password": "p@$$w0rd",
             "group": "nova-customer-gp",
         }
+
+
+class SafetyTestData:
+    @property
+    def create_safety(self):
+        return {
+            "title": "testing",
+            "description": "testing",
+            "image": "testing",
+        }
+
+    @property
+    def existing_safety(self):
+        return {
+            "id": uuid.uuid4(),
+            "title": "tittle1",
+            "description": "description1",
+            "image": "image1",
+        }
+
+

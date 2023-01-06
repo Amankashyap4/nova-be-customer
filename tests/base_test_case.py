@@ -6,21 +6,32 @@ from flask_testing import TestCase
 
 from app import APP_ROOT, create_app, db
 from app.controllers import CustomerController
+
+from app.controllers.safety_controller import SafetyController
 from app.events import EventSubscriptionHandler
 from app.models import CustomerHistoryModel, CustomerModel, LoginAttemptModel
+
+from app.models.safety_model import SafetyModel
 from app.repositories import (
     CustomerRepository,
     LoginAttemptRepository,
     RegistrationRepository,
 )
+from app.repositories.safety_repository import SafetyRepository
+
+from app.repositories.safety_repository import SafetyRepository
 from app.schema import CustomerSchema
+from app.schema.safety_schema import SafetySchema
+
+from app.schema.safety_schema import SafetySchema
 from config import Config
 from tests.utils.mock_auth_service import MockAuthService
 from tests.utils.mock_ceph_storage_service import MockStorageService
 
-from .utils.test_data import CustomerTestData, KeycloakTestData
+from .utils.test_data import CustomerTestData, KeycloakTestData, SafetyTestData
 from .utils.test_event_subscription_data import EventSubscriptionTestData
 from .utils.test_login_attempt_data import LoginAttemptTestData
+
 
 
 class BaseTestCase(TestCase):
@@ -35,8 +46,12 @@ class BaseTestCase(TestCase):
 
     def instantiate_classes(self, redis_service):
         self.customer_schema = CustomerSchema()
+        self.safety_schema = SafetySchema()
         self.customer_repository = CustomerRepository(
             redis_service=redis_service, customer_schema=self.customer_schema
+        )
+        self.safety_repository = SafetyRepository(
+            safety_schema=self.safety_schema
         )
         self.login_attempt_repository = LoginAttemptRepository()
         self.registration_repository = RegistrationRepository()
@@ -49,10 +64,14 @@ class BaseTestCase(TestCase):
             auth_service=self.auth_service,
             object_storage=self.object_storage,
         )
+        self.safety_controller = SafetyController(
+            safety_repository=self.safety_repository,
+        )
         self.event_subscription_handler = EventSubscriptionHandler(
             customer_controller=self.customer_controller
         )
         self.customer_test_data = CustomerTestData()
+        self.safety_test_data = SafetyTestData()
         self.keycloak_test_data = KeycloakTestData()
         self.login_attempt_test_data = LoginAttemptTestData()
         self.event_subscription_test_data = EventSubscriptionTestData()
@@ -107,7 +126,11 @@ class BaseTestCase(TestCase):
         self.login_attempt_model = LoginAttemptModel(
             **self.login_attempt_test_data.existing_attempt
         )
+        self.safety_model = SafetyModel(
+            **self.safety_test_data.create_safety
+        )
         db.session.add(self.customer_model)
+        db.session.add(self.safety_model)
         db.session.add(self.customer_history_model)
         db.session.add(self.login_attempt_model)
         db.session.commit()
