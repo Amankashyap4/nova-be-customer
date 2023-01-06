@@ -1,7 +1,6 @@
 from app.core.repository import SQLBaseRepository
 from app.models.promotion_model import PromotionModel
 from app.schema.promotion_schema import PromotionSchema
-from app.core.exceptions import AppException, HTTPException
 
 ASSERT_OBJ = "missing object data {}"
 ASSERT_DICT_OBJ = "object {} is not a dict"
