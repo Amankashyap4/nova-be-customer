@@ -6,21 +6,26 @@ from flask_testing import TestCase
 
 from app import APP_ROOT, create_app, db
 from app.controllers import CustomerController
+from app.controllers.promotion_controller import PromotionController
 from app.events import EventSubscriptionHandler
 from app.models import CustomerHistoryModel, CustomerModel, LoginAttemptModel
+from app.models.promotion_model import PromotionModel
 from app.repositories import (
     CustomerRepository,
     LoginAttemptRepository,
     RegistrationRepository,
 )
+from app.repositories.promotion_repository import PromotionRepository
 from app.schema import CustomerSchema
+from app.schema.promotion_schema import PromotionSchema
 from config import Config
 from tests.utils.mock_auth_service import MockAuthService
 from tests.utils.mock_ceph_storage_service import MockStorageService
 
-from .utils.test_data import CustomerTestData, KeycloakTestData
+from .utils.test_data import CustomerTestData, KeycloakTestData, PromotionTestData
 from .utils.test_event_subscription_data import EventSubscriptionTestData
 from .utils.test_login_attempt_data import LoginAttemptTestData
+
 
 
 class BaseTestCase(TestCase):
@@ -35,8 +40,12 @@ class BaseTestCase(TestCase):
 
     def instantiate_classes(self, redis_service):
         self.customer_schema = CustomerSchema()
+        self.promotion_schema = PromotionSchema()
         self.customer_repository = CustomerRepository(
             redis_service=redis_service, customer_schema=self.customer_schema
+        )
+        self.promotion_repository = PromotionRepository(
+            promotion_schema=self.promotion_schema
         )
         self.login_attempt_repository = LoginAttemptRepository()
         self.registration_repository = RegistrationRepository()
@@ -49,10 +58,14 @@ class BaseTestCase(TestCase):
             auth_service=self.auth_service,
             object_storage=self.object_storage,
         )
+        self.promotion_controller = PromotionController(
+            promotion_repository=self.promotion_repository,
+        )
         self.event_subscription_handler = EventSubscriptionHandler(
             customer_controller=self.customer_controller
         )
         self.customer_test_data = CustomerTestData()
+        self.promotion_test_data = PromotionTestData()
         self.keycloak_test_data = KeycloakTestData()
         self.login_attempt_test_data = LoginAttemptTestData()
         self.event_subscription_test_data = EventSubscriptionTestData()
@@ -107,7 +120,11 @@ class BaseTestCase(TestCase):
         self.login_attempt_model = LoginAttemptModel(
             **self.login_attempt_test_data.existing_attempt
         )
+        self.promotion_model = PromotionModel(
+            **self.promotion_test_data.existing_promotion
+        )
         db.session.add(self.customer_model)
+        db.session.add(self.promotion_model)
         db.session.add(self.customer_history_model)
         db.session.add(self.login_attempt_model)
         db.session.commit()

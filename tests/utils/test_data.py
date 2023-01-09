@@ -99,3 +99,28 @@ class KeycloakTestData:
             "password": "p@$$w0rd",
             "group": "nova-customer-gp",
         }
+
+
+class PromotionTestData:
+    @property
+    def create_promotion(self):
+        return {
+            "tittle": "testing",
+            "description": "testing",
+            "image": "testing",
+        }
+
+    @property
+    def existing_promotion(self):
+        return {
+            "id": uuid.uuid4(),
+            "tittle": "tittle1",
+            "description": "description1",
+            "image": "image1",
+        }
+
+    @property
+    def update_promotion(self):
+        return {"promotion": [{"id": uuid.uuid4(), "image": "image"}]}
+
+

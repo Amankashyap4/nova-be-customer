@@ -2,6 +2,7 @@ import pinject
 from flask import Blueprint, request
 
 from app.controllers import CustomerController
+from app.controllers.promotion_controller import PromotionController
 from app.core.service_result import handle_result
 from app.repositories import (
     CustomerRepository,
@@ -30,11 +31,9 @@ from app.schema import (
     TokenLoginSchema,
     UpdatePhoneSchema,
 )
+from app.schema.promotion_schema import PromotionSchema, PromotionRequestArgSchema
 from app.services import AuthService, ObjectStorage, RedisService
 from app.utils import arg_validator, auth_required, validator
-from app import db
-from app.models.promotion_model import PromotionModel
-from app.schema.promotion_schema import PromotionSchema
 
 customer = Blueprint("customer", __name__)
 
@@ -49,10 +48,13 @@ obj_graph = pinject.new_object_graph(
         RedisService,
         ObjectStorage,
         CustomerSchema,
+        PromotionController,
+        PromotionRepository,
+        PromotionSchema
     ],
 )
 customer_controller: CustomerController = obj_graph.provide(CustomerController)
-
+promotion_controller: PromotionController = obj_graph.provide(PromotionController)
 
 @customer.route("/", methods=["GET"])
 def get_customers():
@@ -1449,21 +1451,22 @@ def saved_image(customer_id):
 @customer.route("/promotion", methods=["GET"])
 def get_promotion():
     """
-       ---
-       get:
-         description: retrieve all promotions in the system
-         responses:
-           '200':
-             description: returns details of all promotions
-             content:
-               application/json:
-                 schema:
-                   type: array
-                   items: PromotionSchema
-         tags:
-             - Promotion
-       """
-    result = PromotionRepository.index()
+    ---
+    get:
+      description: retrieve all promotion in the system
+      responses:
+        '200':
+          description: returns details of all promotion
+          content:
+            application/json:
+              schema:
+                type: array
+                items: PromotionSchema
+      tags:
+          - Promotion
+    """
+
+    result = promotion_controller.index()
     return handle_result(result, schema=PromotionSchema, many=True)
 
 
@@ -1471,57 +1474,61 @@ def get_promotion():
 @validator(schema=PromotionSchema)
 def create_promotion():
     """
-     ---
-     post:
-       description: Add promotion
-       requestBody:
-         required: true
-         content:
-           application/json:
-             schema: PromotionSchema
-       responses:
-         '201':
-           description: returns data created
-         '409':
-           description: conflict
-           content:
-             application/json:
-               schema:
-                 type: object
-                 properties:
-                   app_exception:
-                     type: str
-                     example: ResourceExists
-                   errorMessage:
-                     type: str
-                     example: Safety Tip ... exists
-         '500':
-           description: internal server error
-           content:
-             application/json:
-               schema:
-                 type: object
-                 properties:
-                   app_exception:
-                     type: str
-                     example: InternalServerError
-                   errorMessage:
-                     type: strDate
-                     example: NoBrokersAvailable
-       tags:
-           - Promotion
-     """
+    ---
+    post:
+      description: create promotion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: PromotionSchema
+      responses:
+        '201':
+          description: returns details of added promotion
+          content:
+            application/json:
+              schema: PromotionSchema
+        '409':
+          description: conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ResourceExists
+                  errorMessage:
+                    type: str
+                    example: promotion ... exists
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: NoBrokersAvailable
+      tags:
+          - Promotion
+    """
     data = request.json
-    result = PromotionRepository.create(data)
+    result = promotion_controller.register(data)
     return handle_result(result, schema=PromotionSchema)
 
 
 @customer.route("/promotion/<string:promotion_id>", methods=["PATCH"])
+@arg_validator(schema=PromotionRequestArgSchema, param="promotion_id")
 def update_promotion(promotion_id):
     """
     ---
     patch:
-      description: update a order of customer
+      description: update promotion
       requestBody:
         required: true
         content:
@@ -1567,11 +1574,12 @@ def update_promotion(promotion_id):
           - Promotion
     """
     data = request.json
-    result = PromotionRepository.update_by_id(promotion_id,data)
-    return result
+    result = promotion_controller.update_promotion(promotion_id, data)
+    return handle_result(result, schema=PromotionSchema)
 
 
 @customer.route("/promotion/<string:promotion_id>", methods=["DELETE"])
+@arg_validator(schema=PromotionRequestArgSchema, param="promotion_id")
 def delete_promotion(promotion_id):
     """
       ---
@@ -1613,5 +1621,5 @@ def delete_promotion(promotion_id):
         tags:
             - Promotion
       """
-    result = PromotionRepository.delete(promotion_id)
-    return result
+    result = promotion_controller.delete(promotion_id)
+    return handle_result(result, schema=PromotionSchema)

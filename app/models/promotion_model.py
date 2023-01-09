@@ -1,7 +1,9 @@
 from app import db
 import uuid
+from dataclasses import dataclass
 
 
+@dataclass
 class PromotionModel(db.Model):
     id: str
     tittle: str

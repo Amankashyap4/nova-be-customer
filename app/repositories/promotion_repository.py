@@ -1,43 +1,22 @@
+from app.core.repository import SQLBaseRepository
 from app.models.promotion_model import PromotionModel
-from app.core import Result
-from app import db
+from app.schema.promotion_schema import PromotionSchema
 
-class PromotionRepository:
+ASSERT_OBJ = "missing object data {}"
+ASSERT_DICT_OBJ = "object {} is not a dict"
 
-    @staticmethod
-    def index():
-        data = PromotionModel.query.all()
-        return Result(data, 200)
 
-    @staticmethod
-    def create(obj_in):
-        obj_data = dict(obj_in)
-        db_obj = PromotionModel(**obj_data)
-        db.session.add(db_obj)
-        db.session.commit()
-        return Result(db_obj, 200)
+class PromotionRepository(SQLBaseRepository):
 
-    @staticmethod
-    def update_by_id(obj_id, obj_in):
-        try:
-            old_data = PromotionModel.query.get(obj_id)
-            old_data.tittle = obj_in["tittle"]
-            old_data.image = obj_in["image"]
-            old_data.description = obj_in["description"]
-            db.session.commit()
+    model = PromotionModel
 
-        except Exception as error:
-            return "promotion_id does not exist", 400
+    def __init__(self, promotion_schema: PromotionSchema):
+        self.promotion_schema = promotion_schema
+        super().__init__()
 
-        return "Data Updated"
+    def create(self, obj_data: dict):
+        assert obj_data, ASSERT_OBJ.format("obj_data")
+        assert isinstance(obj_data, dict), ASSERT_DICT_OBJ.format("obj_data")
 
-    @staticmethod
-    def delete(promotion_id):
-        try:
-            PromotionModel.query.filter_by(id=promotion_id).delete()
-            db.session.commit()
-
-        except Exception as error:
-            return "promotion_id does not exist", 400
-
-        return "Deleted"
+        db_server_obj: PromotionModel = super().create(obj_data)
+        return db_server_obj
