@@ -3,12 +3,14 @@ from flask import Blueprint, request
 
 from app.controllers import CustomerController
 from app.controllers.promotion_controller import PromotionController
+from app.controllers.safety_controller import SafetyController
 from app.core.service_result import handle_result
 from app.repositories import (
     CustomerRepository,
     LoginAttemptRepository,
     RegistrationRepository,
 )
+from app.repositories.safety_repository import SafetyRepository
 from app.repositories.promotion_repository import PromotionRepository
 from app.schema import (
     AddPinSchema,
@@ -32,6 +34,7 @@ from app.schema import (
     UpdatePhoneSchema,
 )
 from app.schema.promotion_schema import PromotionSchema, PromotionRequestArgSchema
+from app.schema.safety_schema import SafetySchema
 from app.services import AuthService, ObjectStorage, RedisService
 from app.utils import arg_validator, auth_required, validator
 
@@ -48,12 +51,16 @@ obj_graph = pinject.new_object_graph(
         RedisService,
         ObjectStorage,
         CustomerSchema,
+        SafetyController,
+        SafetyRepository,
+        SafetySchema,
         PromotionController,
         PromotionRepository,
         PromotionSchema
     ],
 )
 customer_controller: CustomerController = obj_graph.provide(CustomerController)
+safety_controller: SafetyController = obj_graph.provide(SafetyController)
 promotion_controller: PromotionController = obj_graph.provide(PromotionController)
 
 @customer.route("/", methods=["GET"])
@@ -1446,6 +1453,80 @@ def saved_images():
 def saved_image(customer_id):
     result = customer_controller.customer_profile_image(customer_id)
     return handle_result(result)
+
+
+@customer.route("/safety", methods=["GET"])
+def get_safety():
+    """
+    ---
+    get:
+      description: retrieve all safety in the system
+      responses:
+        '200':
+          description: returns details of all safety
+          content:
+            application/json:
+              schema:
+                type: array
+                items: SafetySchema
+      tags:
+          - Safety
+    """
+
+    result = safety_controller.index()
+    return handle_result(result, schema=SafetySchema, many=True)
+
+
+@customer.route("/safety", methods=["POST"])
+@validator(schema=SafetySchema)
+def create_safety():
+    """
+    ---
+    post:
+      description: safety
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: SafetySchema
+      responses:
+        '201':
+          description: returns details of added Safety
+          content:
+            application/json:
+              schema: SafetySchema
+        '409':
+          description: conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ResourceExists
+                  errorMessage:
+                    type: str
+                    example: Customer with id ... exists
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: NoBrokersAvailable
+      tags:
+          - Safety
+    """
+    data = request.json
+    result = safety_controller.register(data)
+    return handle_result(result, schema=SafetySchema)
 
 
 @customer.route("/promotion", methods=["GET"])
