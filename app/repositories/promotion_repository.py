@@ -1,8 +1,6 @@
-from app.core.repository import SQLBaseRepository
 from app.models.promotion_model import PromotionModel
 from app.core import Result
 from app import db
-from app.core.exceptions import AppException, HTTPException
 
 class PromotionRepository:
 
