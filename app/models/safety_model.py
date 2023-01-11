@@ -1,6 +1,7 @@
-from app import db
 import uuid
 from dataclasses import dataclass
+
+from app import db
 
 
 @dataclass
