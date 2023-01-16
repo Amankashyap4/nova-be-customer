@@ -1,11 +1,6 @@
-import uuid
-from datetime import datetime, timedelta
-from time import sleep
-
 import pytest
 
 from app.core import Result
-from app.core.exceptions import AppException
 from app.models.promotion_model import PromotionModel
 from tests.base_test_case import BaseTestCase
 
@@ -19,19 +14,18 @@ class TestPromotionController(BaseTestCase):
         self.assertIsInstance(result.value, list)
         self.assertIsInstance(result.value[0], PromotionModel)
 
-
     @pytest.mark.controller
     def test_register_promotion(self):
-        result = self.promotion_controller.register(self.promotion_test_data.create_promotion)
+        result = self.promotion_controller.register(
+            self.promotion_test_data.create_promotion
+        )
         self.assertIsInstance(result, Result)
         self.assertEqual(result.status_code, 201)
         self.assertTrue(result.value, PromotionModel)
 
     @pytest.mark.controller
     def test_delete_promotion(self):
-        result = self.promotion_controller.delete(
-            self.promotion_model.id
-        )
+        result = self.promotion_controller.delete(self.promotion_model.id)
         self.assertStatus(result, 204)
         self.assertIsInstance(result, Result)
         self.assertIsNone(result.value)

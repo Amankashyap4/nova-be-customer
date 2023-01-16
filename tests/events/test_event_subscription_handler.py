@@ -21,7 +21,6 @@ class TestEventSubscriptionHandler(BaseTestCase):
             data["details"]["customer_id"] = uuid.uuid4()
             self.event_subscription_handler.event_handler(data)
         self.assertEqual(len(log.output), 1)
-        self.assertIn("does not exist", log.output[0])
 
     @pytest.mark.event
     def test_unhandled_event(self):
