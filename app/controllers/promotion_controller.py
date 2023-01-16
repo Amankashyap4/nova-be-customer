@@ -35,7 +35,9 @@ class PromotionController:
         try:
             result = self.promotion_repository.find({"id": obj_id})
         except AppException.NotFoundException:
-            raise AppException.NotFoundException(context="promotion id does not exist ")
+            raise AppException.NotFoundException(
+                error_message="promotion id does not exist"
+            )
         self.promotion_repository.update_by_id(obj_id=result.id, obj_in=obj_data)
         return Result(result, 201)
 
@@ -45,7 +47,9 @@ class PromotionController:
         try:
             result = self.promotion_repository.find({"id": obj_id})
         except AppException.NotFoundException:
-            raise AppException.NotFoundException(context="promotion id does not exist ")
+            raise AppException.NotFoundException(
+                error_message="promotion id does not exist"
+            )
 
         self.promotion_repository.delete_by_id(obj_id=result.id)
 
