@@ -2,6 +2,7 @@ import pinject
 from flask import Blueprint, request
 
 from app.controllers import CustomerController
+from app.controllers.contact_us_controller import ContactUsController
 from app.controllers.promotion_controller import PromotionController
 from app.controllers.safety_controller import SafetyController
 from app.core.service_result import handle_result
@@ -10,8 +11,9 @@ from app.repositories import (
     LoginAttemptRepository,
     RegistrationRepository,
 )
-from app.repositories.safety_repository import SafetyRepository
+from app.repositories.contact_us_repository import ContactUsRepository
 from app.repositories.promotion_repository import PromotionRepository
+from app.repositories.safety_repository import SafetyRepository
 from app.schema import (
     AddPinSchema,
     ConfirmTokenSchema,
@@ -33,7 +35,12 @@ from app.schema import (
     TokenLoginSchema,
     UpdatePhoneSchema,
 )
-from app.schema.promotion_schema import PromotionSchema, PromotionRequestArgSchema
+from app.schema.contact_us_schema import (
+    ContactUsGetSchema,
+    ContactUsRequestArgSchema,
+    ContactUsSchema,
+)
+from app.schema.promotion_schema import PromotionRequestArgSchema, PromotionSchema
 from app.schema.safety_schema import SafetySchema
 from app.services import AuthService, ObjectStorage, RedisService
 from app.utils import arg_validator, auth_required, validator
@@ -56,12 +63,17 @@ obj_graph = pinject.new_object_graph(
         SafetySchema,
         PromotionController,
         PromotionRepository,
-        PromotionSchema
+        PromotionSchema,
+        ContactUsController,
+        ContactUsRepository,
+        ContactUsSchema,
     ],
 )
 customer_controller: CustomerController = obj_graph.provide(CustomerController)
 safety_controller: SafetyController = obj_graph.provide(SafetyController)
 promotion_controller: PromotionController = obj_graph.provide(PromotionController)
+contact_us_controller: ContactUsController = obj_graph.provide(ContactUsController)
+
 
 @customer.route("/", methods=["GET"])
 def get_customers():
@@ -1663,44 +1675,220 @@ def update_promotion(promotion_id):
 @arg_validator(schema=PromotionRequestArgSchema, param="promotion_id")
 def delete_promotion(promotion_id):
     """
-      ---
-      delete:
-        description: delete promotion with id specified in path
-        parameters:
-          - in: path
-            name: promotion_id
-            required: true
-            schema:
-              type: string
-            description: the promotion id
-        responses:
-          '204':
-            description: returns Deleted
-          '400':
-            description: returns a bad request exception
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    app_exception:
-                      type: str
-                      example: ValidationException
-                    errorMessage:
-                      oneOf:
-                        - type: object
-                          properties:
-                            order_id:
-                              type: array
-                              items:
-                                type: str
-                                example: Not a valid UUID
-                  example:
-                    app_exception: ValidationException
-                    errorMessage:
-                      order_id: ["Not a valid UUID"]
-        tags:
-            - Promotion
-      """
+    ---
+    delete:
+      description: delete promotion with id specified in path
+      parameters:
+        - in: path
+          name: promotion_id
+          required: true
+          schema:
+            type: string
+          description: the promotion id
+      responses:
+        '204':
+          description: returns Deleted
+        '400':
+          description: returns a bad request exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                    oneOf:
+                      - type: object
+                        properties:
+                          order_id:
+                            type: array
+                            items:
+                              type: str
+                              example: Not a valid UUID
+                example:
+                  app_exception: ValidationException
+                  errorMessage:
+                    order_id: ["Not a valid UUID"]
+      tags:
+          - Promotion
+    """
     result = promotion_controller.delete(promotion_id)
     return handle_result(result, schema=PromotionSchema)
+
+
+@customer.route("/contact-us", methods=["GET"])
+def get_contact_us():
+    """
+    ---
+    get:
+      description: retrieve all contact_us in the system
+      responses:
+        '200':
+          description: returns details of all contact_us
+          content:
+            application/json:
+              schema:
+                type: array
+                items: ContactUsSchema
+      tags:
+          - ContactUs
+    """
+    result = contact_us_controller.index()
+    return handle_result(result, schema=ContactUsGetSchema, many=True)
+
+
+@customer.route("/contact-us", methods=["POST"])
+@validator(schema=ContactUsSchema)
+def create_contact_us():
+    """
+    ---
+    post:
+      description: contact-us
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: ContactUsSchema
+      responses:
+        '201':
+          description: returns details of added contact-us
+          content:
+            application/json:
+              schema: ContactUsSchema
+        '409':
+          description: conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ResourceExists
+                  errorMessage:
+                    type: str
+                    example: Contact us  ... exists
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: NoBrokersAvailable
+      tags:
+          - ContactUs
+    """
+    data = request.json
+    result = contact_us_controller.register(data)
+    return handle_result(result, schema=ContactUsGetSchema)
+
+
+@customer.route("/contact-us/<string:contact_id>", methods=["PATCH"])
+@arg_validator(schema=ContactUsRequestArgSchema, param="contact_id")
+def update_contact_us(contact_id):
+    """
+    ---
+    patch:
+      description: update contact us
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: ContactUsSchema
+      parameters:
+        - in: path
+          name: contact_id
+          required: true
+          schema:
+            type: string
+            description: the contact id
+      responses:
+        '201':
+          description: returns details updated contact-us
+          content:
+            application/json:
+              schema: ContactUsSchema
+        '400':
+          description: returns a bad request exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                    oneOf:
+                      - type: object
+                        properties:
+                          service_type:
+                            type: array
+                            items:
+                              type: str
+                              example: Invalid enum member refil
+                example:
+                  app_exception: ValidationException
+                  errorMessage:
+                    service_type: ["Invalid enum member refil"]
+      tags:
+          - ContactUs
+    """
+    data = request.json
+    result = contact_us_controller.update_contact_us(contact_id, data)
+    return handle_result(result, schema=ContactUsGetSchema)
+
+
+@customer.route("/contact-us/<string:contact_id>", methods=["DELETE"])
+@arg_validator(schema=ContactUsRequestArgSchema, param="contact_id")
+def delete_contact_us(contact_id):
+    """
+     ---
+    delete:
+      description: delete contact with id specified in path
+      parameters:
+        - in: path
+          name: contact_id
+          required: true
+          schema:
+            type: string
+          description: the contact id
+      responses:
+        '204':
+          description: returns Deleted
+        '400':
+          description: returns a bad request exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                    oneOf:
+                      - type: object
+                        properties:
+                          order_id:
+                            type: array
+                            items:
+                              type: str
+                              example: Not a valid UUID
+                example:
+                  app_exception: ValidationException
+                  errorMessage:
+                    order_id: ["Not a valid UUID"]
+      tags:
+          - ContactUs
+    """
+    result = contact_us_controller.delete(contact_id)
+    return handle_result(result, schema=ContactUsGetSchema)
