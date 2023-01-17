@@ -14,7 +14,10 @@ class TestCustomerRoutes(BaseTestCase):
     @pytest.mark.views
     def test_get_customers(self):
         with self.client:
-            response = self.client.get(url_for("customer.get_customers"))
+            response = self.client.get(
+                url_for("customer.get_customers"),
+                query_string={"page": 1, "per_page": 1},
+            )
             self.assert200(response)
             self.assertIsInstance(response.json, list)
             self.assertIsInstance(response.json[0], dict)

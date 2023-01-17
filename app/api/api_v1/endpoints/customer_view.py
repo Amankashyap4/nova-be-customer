@@ -10,8 +10,8 @@ from app.repositories import (
     LoginAttemptRepository,
     RegistrationRepository,
 )
-from app.repositories.safety_repository import SafetyRepository
 from app.repositories.promotion_repository import PromotionRepository
+from app.repositories.safety_repository import SafetyRepository
 from app.schema import (
     AddPinSchema,
     ConfirmTokenSchema,
@@ -33,7 +33,7 @@ from app.schema import (
     TokenLoginSchema,
     UpdatePhoneSchema,
 )
-from app.schema.promotion_schema import PromotionSchema, PromotionRequestArgSchema
+from app.schema.promotion_schema import PromotionRequestArgSchema, PromotionSchema
 from app.schema.safety_schema import SafetySchema
 from app.services import AuthService, ObjectStorage, RedisService
 from app.utils import arg_validator, auth_required, validator
@@ -56,19 +56,34 @@ obj_graph = pinject.new_object_graph(
         SafetySchema,
         PromotionController,
         PromotionRepository,
-        PromotionSchema
+        PromotionSchema,
     ],
 )
 customer_controller: CustomerController = obj_graph.provide(CustomerController)
 safety_controller: SafetyController = obj_graph.provide(SafetyController)
 promotion_controller: PromotionController = obj_graph.provide(PromotionController)
 
+
 @customer.route("/", methods=["GET"])
+@arg_validator(schema=CustomerRequestArgSchema, param="page|per_page")
 def get_customers():
     """
     ---
     get:
       description: retrieve all customers in the system
+      parameters:
+        - in: query
+          name: page
+          required: true
+          schema:
+            type: string
+          description: the page to show
+        - in: query
+          name: per_page
+          required: true
+          schema:
+            type: string
+          description: the total records on a page
       responses:
         '200':
           description: returns details of all customers
@@ -80,8 +95,8 @@ def get_customers():
       tags:
           - Customer
     """
-
-    result = customer_controller.index()
+    query_param = request.args
+    result = customer_controller.index(query_param)
     return handle_result(result, schema=CustomerSchema, many=True)
 
 
@@ -1663,44 +1678,44 @@ def update_promotion(promotion_id):
 @arg_validator(schema=PromotionRequestArgSchema, param="promotion_id")
 def delete_promotion(promotion_id):
     """
-      ---
-      delete:
-        description: delete promotion with id specified in path
-        parameters:
-          - in: path
-            name: promotion_id
-            required: true
-            schema:
-              type: string
-            description: the promotion id
-        responses:
-          '204':
-            description: returns Deleted
-          '400':
-            description: returns a bad request exception
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    app_exception:
-                      type: str
-                      example: ValidationException
-                    errorMessage:
-                      oneOf:
-                        - type: object
-                          properties:
-                            order_id:
-                              type: array
-                              items:
-                                type: str
-                                example: Not a valid UUID
-                  example:
-                    app_exception: ValidationException
-                    errorMessage:
-                      order_id: ["Not a valid UUID"]
-        tags:
-            - Promotion
-      """
+    ---
+    delete:
+      description: delete promotion with id specified in path
+      parameters:
+        - in: path
+          name: promotion_id
+          required: true
+          schema:
+            type: string
+          description: the promotion id
+      responses:
+        '204':
+          description: returns Deleted
+        '400':
+          description: returns a bad request exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ValidationException
+                  errorMessage:
+                    oneOf:
+                      - type: object
+                        properties:
+                          order_id:
+                            type: array
+                            items:
+                              type: str
+                              example: Not a valid UUID
+                example:
+                  app_exception: ValidationException
+                  errorMessage:
+                    order_id: ["Not a valid UUID"]
+      tags:
+          - Promotion
+    """
     result = promotion_controller.delete(promotion_id)
     return handle_result(result, schema=PromotionSchema)

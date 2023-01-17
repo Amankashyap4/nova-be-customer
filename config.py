@@ -33,6 +33,7 @@ class Config:
 
     # REDIS
     REDIS_SERVER = os.getenv("REDIS_SERVER")
+    REDIS_PORT = os.getenv("REDIS_PORT")
     REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 
     # KAFKA

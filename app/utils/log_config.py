@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from logging.handlers import SMTPHandler
@@ -8,16 +9,46 @@ from flask import has_request_context, request
 from config import Config
 
 
+def get_full_class_name(obj):
+    module = obj.__class__.__module__
+    if module is None or module == str.__class__.__module__:
+        return obj.__class__.__name__
+    return module + "." + obj.__class__.__name__
+
+
+def message_struct(
+    module, method, error, calling_method=None, calling_module=None, exc_class=None
+):
+    return {
+        "exception_class": exc_class,
+        "module": module,
+        "method": method,
+        "calling module": calling_module,
+        "calling method": calling_method,
+        "error": error,
+    }
+
+
+def log_message_struct(record):
+    return {
+        Config.APP_NAME: {
+            record.levelname: {
+                "timestamp": record.asctime,
+                "remote address": record.remote_addr,
+                "requested url": record.url,
+                "message": record.message,
+            }
+        }
+    }
+
+
 class MailHandler(SMTPHandler):
     def emit(self, record):
         """
         Emit a record.
         Format the record and send it to the specified addressees.
         """
-        try:
-            Thread(target=self.send_mail, kwargs={"record": record}).start()
-        except Exception:
-            self.handleError(record)
+        Thread(target=self.send_mail, kwargs={"record": record}).start()
 
     def send_mail(self, record):
         try:
@@ -28,7 +59,7 @@ class MailHandler(SMTPHandler):
             port = self.mailport
             if not port:
                 port = smtplib.SMTP_PORT
-            smtp = smtplib.SMTP(self.mailhost, port, timeout=self.timeout)
+            smtp = smtplib.SMTP(self.mailhost, port, timeout=30)
             msg = EmailMessage()
             msg["From"] = self.fromaddr
             msg["To"] = ",".join(self.toaddrs)
@@ -52,64 +83,51 @@ class RequestFormatter(logging.Formatter):
         if has_request_context():
             record.url = request.url
             record.remote_addr = request.remote_addr
-            record.method = request.method
         else:
             record.url = None
             record.remote_addr = None
-            record.method = None
-        return super().format(record)
-
-
-def get_full_class_name(obj):
-    module = obj.__class__.__module__
-    if module is None or module == str.__class__.__module__:
-        return obj.__class__.__name__
-    return module + "." + obj.__class__.__name__
-
-
-def message_struct(
-    module, method, error, calling_method=None, calling_module=None, exc_class=None
-):
-    return {
-        "exception_class": exc_class,
-        "module": module,
-        "method": method,
-        "calling module": calling_module,
-        "calling method": calling_method,
-        "error": error,
-    }
+        super().format(record)
+        return json.dumps(log_message_struct(record), indent=2)
 
 
 def log_config():
     return {
         "version": 1,
-        "disable_existing_loggers": True,
-        "root": {
-            "level": "ERROR",
-            "handlers": ["console", "error_file", "consumer"],
-        },
+        "disable_existing_loggers": False,
         "loggers": {
+            "root": {
+                "level": "ERROR",
+                "handlers": [
+                    "console_handler",
+                    "error_file_handler",
+                    "critical_mail_handler",
+                ],
+            },
             "gunicorn.error": {
-                "handlers": ["console", "email", "error_file"],
+                "handlers": [
+                    "console_handler",
+                    "error_file_handler",
+                    "error_mail_handler",
+                ],
                 "level": "ERROR",
                 "propagate": False,
             },
             "gunicorn.access": {
-                "handlers": ["access_file"],
+                "handlers": ["access_file_handler"],
                 "level": "INFO",
                 "propagate": False,
             },
         },
         "handlers": {
-            "console": {
+            "console_handler": {
                 "level": "ERROR",
                 "class": "logging.StreamHandler",
-                "formatter": "custom_formatter",
+                "formatter": "error_formatter",
                 "stream": "ext://sys.stdout",
             },
-            "email": {
+            "error_mail_handler": {
                 "()": "app.utils.log_config.MailHandler",
-                "formatter": "custom_formatter",
+                "formatter": "error_formatter",
                 "level": "ERROR",
                 "mailhost": (Config.MAIL_SERVER, Config.MAIL_SERVER_PORT),
                 "fromaddr": Config.DEFAULT_MAIL_SENDER_ADDRESS,
@@ -121,31 +139,31 @@ def log_config():
                 ),
                 "secure": (),
             },
-            "error_file": {
+            "error_file_handler": {
                 "class": "logging.handlers.TimedRotatingFileHandler",
-                "formatter": "custom_formatter",
-                "level": "DEBUG",
+                "formatter": "error_formatter",
+                "level": "ERROR",
                 "filename": "gunicorn.error.log",
                 "when": "D",
                 "interval": 30,
-                "backupCount": 1,
+                "backupCount": 2,
             },
-            "access_file": {
+            "access_file_handler": {
                 "class": "logging.handlers.TimedRotatingFileHandler",
-                "formatter": "access",
+                "formatter": "access_formatter",
                 "filename": "gunicorn.access.log",
                 "when": "D",
                 "interval": 30,
-                "backupCount": 1,
+                "backupCount": 2,
             },
-            "consumer": {
+            "critical_mail_handler": {
                 "()": "app.utils.log_config.MailHandler",
-                "formatter": "consumer",
+                "formatter": "error_formatter",
                 "level": "CRITICAL",
                 "mailhost": (Config.MAIL_SERVER, Config.MAIL_SERVER_PORT),
                 "fromaddr": Config.DEFAULT_MAIL_SENDER_ADDRESS,
                 "toaddrs": Config.ADMIN_MAIL_ADDRESSES,
-                "subject": f"{Config.CONSUMER_LOG_SUBJECT} {datetime.utcnow().date()}",
+                "subject": f"{Config.APP_LOG_SUBJECT} {datetime.utcnow().date()}",
                 "credentials": (
                     Config.DEFAULT_MAIL_SENDER_ADDRESS,
                     Config.DEFAULT_MAIL_SENDER_PASSWORD,
@@ -154,16 +172,13 @@ def log_config():
             },
         },
         "formatters": {
-            "access": {
+            "access_formatter": {
                 "format": "%(message)s",
             },
-            "custom_formatter": {
+            "error_formatter": {
                 "()": "app.utils.log_config.RequestFormatter",
-                "format": "log_date: [%(asctime)s]\n%(remote_addr)s made a %(method)s request to %(url)s %(levelname)s in %(module)s \n%(levelname)s : %(message)s",  # noqa
+                "format": "%(levelname)s%(asctime)s%(message)s%(remote_addr)s%(url)s",
                 "datefmt": "%Y-%m-%d %H:%M:%S",
-            },
-            "consumer": {
-                "format": "log_date: [%(asctime)s]\n%(message)s",
             },
         },
     }

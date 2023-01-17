@@ -16,7 +16,7 @@ def validator(schema):
         def view_wrapper(*args, **kwargs):
             errors = schema().validate(request.json)
             if errors:
-                raise AppException.ValidationException(context=errors)
+                raise AppException.ValidationException(error_message=errors)
 
             return func(*args, **kwargs)
 
@@ -34,12 +34,15 @@ def arg_validator(schema, param):
 
         @wraps(func)
         def view_wrapper(*args, **kwargs):
+            if request.view_args:
+                request_parameters: dict = request.view_args
+            else:
+                request_parameters: dict = request.args
             errors = schema().validate(
-                {arg: request.view_args.get(arg) for arg in param.split("|")}
+                {arg: request_parameters.get(arg) for arg in param.split("|")}
             )
-
             if errors:
-                raise AppException.ValidationException(context=errors)
+                raise AppException.ValidationException(error_message=errors)
 
             return func(*args, **kwargs)
 
@@ -65,20 +68,6 @@ def keycloak_fields(username, obj_data):
                 auth_service_field[index] = auth_service_field[index].capitalize()
         obj_fields["".join(auth_service_field)] = obj_data.get(field)
     return obj_fields
-
-
-def extract_valid_data(obj_data: dict, obj_validator):
-    """
-    This function extract data from an object given a validator
-    :param obj_data: object data you want to validate
-    :param obj_validator: pre-define data structure for data validation
-    :return: valid data structure
-    """
-
-    valid_data = dict()
-    for field in obj_validator:
-        valid_data[field] = obj_data.get(field)
-    return valid_data
 
 
 def split_full_name(full_name: str):

@@ -17,7 +17,6 @@ from app.repositories import (
     LoginAttemptRepository,
     RegistrationRepository,
 )
-from app.repositories.safety_repository import SafetyRepository
 from app.repositories.promotion_repository import PromotionRepository
 from app.repositories.safety_repository import SafetyRepository
 from app.schema import CustomerSchema
@@ -27,10 +26,14 @@ from config import Config
 from tests.utils.mock_auth_service import MockAuthService
 from tests.utils.mock_ceph_storage_service import MockStorageService
 
-from .utils.test_data import CustomerTestData, KeycloakTestData, SafetyTestData,PromotionTestData
+from .utils.test_data import (
+    CustomerTestData,
+    KeycloakTestData,
+    PromotionTestData,
+    SafetyTestData,
+)
 from .utils.test_event_subscription_data import EventSubscriptionTestData
 from .utils.test_login_attempt_data import LoginAttemptTestData
-
 
 
 class BaseTestCase(TestCase):
@@ -50,9 +53,7 @@ class BaseTestCase(TestCase):
         self.customer_repository = CustomerRepository(
             redis_service=redis_service, customer_schema=self.customer_schema
         )
-        self.safety_repository = SafetyRepository(
-            safety_schema=self.safety_schema
-        )
+        self.safety_repository = SafetyRepository(safety_schema=self.safety_schema)
         self.promotion_repository = PromotionRepository(
             promotion_schema=self.promotion_schema
         )
@@ -120,6 +121,9 @@ class BaseTestCase(TestCase):
         )
         self.addCleanup(kafka_event_patcher.stop)
         kafka_event_patcher.start()
+        bug_report = patch("app.utils.log_config.MailHandler.send_mail")
+        self.addCleanup(bug_report.stop)
+        bug_report.start()
 
     def setUp(self):
         """
@@ -133,9 +137,7 @@ class BaseTestCase(TestCase):
         self.login_attempt_model = LoginAttemptModel(
             **self.login_attempt_test_data.existing_attempt
         )
-        self.safety_model = SafetyModel(
-            **self.safety_test_data.create_safety
-        )
+        self.safety_model = SafetyModel(**self.safety_test_data.create_safety)
         self.promotion_model = PromotionModel(
             **self.promotion_test_data.existing_promotion
         )
