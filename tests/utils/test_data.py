@@ -170,3 +170,24 @@ class Contact_Us_TestData:
     @property
     def update_contact_data(self):
         return {"email": "email@abc"}
+
+
+class FaqTestData:
+    @property
+    def create_faq(self):
+        return {
+            "question": "string",
+            "answer": "string",
+        }
+
+    @property
+    def existing_faq(self):
+        return {
+            "id": uuid.uuid4(),
+            "question": "string",
+            "answer": "string",
+        }
+
+    @property
+    def update_faq(self):
+        return {"question": "question1", "answer": "answer1"}
