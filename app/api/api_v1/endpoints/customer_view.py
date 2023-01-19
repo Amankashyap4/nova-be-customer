@@ -83,11 +83,25 @@ faq_controller: FaqController = obj_graph.provide(FaqController)
 
 
 @customer.route("/", methods=["GET"])
+@arg_validator(schema=CustomerRequestArgSchema, param="page|per_page")
 def get_customers():
     """
     ---
     get:
       description: retrieve all customers in the system
+      parameters:
+        - in: query
+          name: page
+          required: true
+          schema:
+            type: string
+          description: the page to show
+        - in: query
+          name: per_page
+          required: true
+          schema:
+            type: string
+          description: the total records on a page
       responses:
         '200':
           description: returns details of all customers
@@ -99,8 +113,8 @@ def get_customers():
       tags:
           - Customer
     """
-
-    result = customer_controller.index()
+    query_param = request.args
+    result = customer_controller.index(query_param)
     return handle_result(result, schema=CustomerSchema, many=True)
 
 
@@ -1926,48 +1940,49 @@ def get_faq():
 @validator(schema=FaqSchema)
 def create_faq():
     """
-    ---
-    post:
-      description: question
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: FaqSchema
-      responses:
-        '201':
-          description: returns details of added question
-          content:
-            application/json:
-              schema: FaqGetSchema
-        '409':
-          description: conflict
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  app_exception:
-                    type: str
-                    example: ResourceExists
-                  errorMessage:
-                    type: str
-                    example: question with id ... exists
-        '500':
-          description: internal server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  app_exception:
-                    type: str
-                    example: InternalServerError
-                  errorMessage:
-                    type: str
-                    example: NoBrokersAvailable
-      tags:
-          - FAQ
+        ---
+        post:
+          description: question
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema: FaqSchema
+          responses:
+            '201':
+              description: returns details of added question
+              content:
+                application/json:
+                  schema: FaqGetSchema
+            '409':
+              description: conflict
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      app_exception:
+                        type: str
+                        example: ResourceExists
+                      errorMessage:
+                        type: str
+                        example: question with id ... exists
+            '500':
+              description: internal server error
+              content:
+                application/json:=======
+    >>>>>>> d70c09cdfc72f1ce265a9249e12f1a29831c7451
+                  schema:
+                    type: object
+                    properties:
+                      app_exception:
+                        type: str
+                        example: InternalServerError
+                      errorMessage:
+                        type: str
+                        example: NoBrokersAvailable
+          tags:
+              - FAQ
     """
     data = request.json
     result = faq_controller.register_faq(data)

@@ -112,8 +112,8 @@ class ObjectStorage(StorageServiceInterface):
                 response = getattr(self.s3_client, method)(**kwarg)
         except ClientError as exc:
             raise AppException.OperationError(
-                context="error generating pre-signed url",
-                error_message=message_struct(
+                error_message="error generating pre-signed url",
+                context=message_struct(
                     exc_class=get_full_class_name(exc),
                     module=__name__,
                     method=inspect.currentframe().f_code.co_name,
@@ -124,8 +124,8 @@ class ObjectStorage(StorageServiceInterface):
             )
         except ConnectionError as exc:
             raise AppException.OperationError(
-                context="error connecting to object storage server",
-                error_message=message_struct(
+                error_message="error connecting to object storage server",
+                context=message_struct(
                     exc_class=get_full_class_name(exc),
                     module=__name__,
                     method=inspect.currentframe().f_code.co_name,

@@ -145,6 +145,9 @@ class BaseTestCase(TestCase):
         )
         self.addCleanup(kafka_event_patcher.stop)
         kafka_event_patcher.start()
+        bug_report = patch("app.utils.log_config.MailHandler.send_mail")
+        self.addCleanup(bug_report.stop)
+        bug_report.start()
 
     def setUp(self):
         """

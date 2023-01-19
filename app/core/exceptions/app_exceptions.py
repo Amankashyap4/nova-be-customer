@@ -1,23 +1,31 @@
+from typing import Union
+
 from flask import Response, current_app, json
 from sqlalchemy.exc import DBAPIError
 from werkzeug.exceptions import HTTPException
 
 
 class AppExceptionCase(Exception):
-    def __init__(self, status_code: int, context, error_message):
+    def __init__(
+        self,
+        status_code: int,
+        error_message: Union[str, dict, None],
+        context: Union[str, dict],
+    ):
         self.exception_case = self.__class__.__name__
         self.status_code = status_code
-        self.context = context
         self.error_message = error_message
+        self.context = context
         if self.context:
-            current_app.logger.error(context)
-        if self.error_message:
-            current_app.logger.info(f"{error_message}\n")
+            current_app.logger.critical(self.context)
+        else:
+            if self.error_message:
+                current_app.logger.error(self.error_message)
 
     def __str__(self):
         return (
             f"<AppException {self.exception_case} - "
-            + f"status_code = {self.status_code} - context = {self.context}"
+            + f"status_code = {self.status_code} - error_message = {self.context}"
         )
 
 
@@ -35,7 +43,9 @@ def app_exception_handler(exc):
             status=exc.code,
         )
     return Response(
-        json.dumps({"app_exception": exc.exception_case, "errorMessage": exc.context}),
+        json.dumps(
+            {"app_exception": exc.exception_case, "errorMessage": exc.error_message}
+        ),
         status=exc.status_code,
         mimetype="application/json",
     )
@@ -47,90 +57,96 @@ class AppException:
         Generic Exception to catch failed operations
         """
 
-        def __init__(self, context, error_message=None):
-
+        def __init__(
+            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
+        ):
             status_code = 400
-            AppExceptionCase.__init__(self, status_code, context, error_message)
+            AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class InternalServerError(AppExceptionCase):
         """
         Generic Exception to catch failed operations
         """
 
-        def __init__(self, context, error_message=None):
-
+        def __init__(
+            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
+        ):
             status_code = 500
-            AppExceptionCase.__init__(self, status_code, context, error_message)
+            AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class ResourceExists(AppExceptionCase):
         """
         Resource Creation Failed Exception
         """
 
-        def __init__(self, context, error_message=None):
-
+        def __init__(
+            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
+        ):
             status_code = 400
-            AppExceptionCase.__init__(self, status_code, context, error_message)
+            AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class NotFoundException(AppExceptionCase):
-        def __init__(self, context, error_message=None):
+        def __init__(
+            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
+        ):
             """
             Resource does not exist
             """
             status_code = 404
-            AppExceptionCase.__init__(self, status_code, context, error_message)
+            AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class Unauthorized(AppExceptionCase):
-        def __init__(self, context, status_code=401, error_message=None):
+        def __init__(
+            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
+        ):
             """
             Unauthorized
             :param context: extra dictionary object to give the error more context
             """
-            AppExceptionCase.__init__(self, status_code, context, error_message)
+            status_code = 401
+            AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class ValidationException(AppExceptionCase):
         """
         Resource Creation Failed Exception
         """
 
-        def __init__(self, context, error_message=None):
-
+        def __init__(
+            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
+        ):
             status_code = 400
-            AppExceptionCase.__init__(self, status_code, context, error_message)
+            AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class KeyCloakAdminException(AppExceptionCase):
-        def __init__(self, context=None, status_code=400, error_message=None):
-            """
-            Key Cloak Error. Error with regards to Keycloak authentication
-            :param context: extra data to give the error more context
-            """
-
-            AppExceptionCase.__init__(self, status_code, context, error_message)
+        def __init__(
+            self,
+            status_code: int,
+            error_message: Union[str, dict, None],
+            context: Union[str, dict] = None,
+        ):
+            status_code = status_code
+            AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class BadRequest(AppExceptionCase):
-        def __init__(self, context, error_message=None):
+        def __init__(
+            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
+        ):
             """
             Bad Request
 
             :param context:
             """
             status_code = 400
-            AppExceptionCase.__init__(self, status_code, context, error_message)
+            AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class ExpiredTokenException(AppExceptionCase):
-        def __init__(self, context, error_message=None):
+        def __init__(
+            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
+        ):
             """
             Expired Token
             :param context:
             """
 
             status_code = 400
-            AppExceptionCase.__init__(self, status_code, context, error_message)
-
-    class ServiceRequestException(AppExceptionCase):
-        def __init__(self, error_message=None, context="Service not available"):
-            """
-            Service is not available
-            """
-            status_code = 500
-            AppExceptionCase.__init__(self, status_code, context, error_message)
+            AppExceptionCase.__init__(self, status_code, error_message, context)

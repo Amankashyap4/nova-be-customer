@@ -9,7 +9,6 @@ ASSERT_OBJECT_IS_DICT = "object data not a dict"
 
 
 class SafetyController:
-
     def __init__(
         self,
         safety_repository: SafetyRepository,
@@ -34,35 +33,24 @@ class SafetyController:
         assert isinstance(obj_data, dict), ASSERT_DICT_OBJ.format("obj_data")
 
         try:
-            result = self.safety_repository.find(
-                {
-                    "id": obj_id
-                }
-            )
+            result = self.safety_repository.find({"id": obj_id})
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
-                context="safety id does not exist "
+                error_message="safety id does not exist "
             )
-        self.safety_repository.update_by_id(
-            obj_id=result.id,
-            obj_in=obj_data
-        )
+        self.safety_repository.update_by_id(obj_id=result.id, obj_in=obj_data)
         return Result(result, 201)
 
     def delete(self, obj_id: str):
         assert obj_id, ASSERT_OBJ.format("obj_id")
 
         try:
-            result = self.safety_repository.find(
-                {
-                    "id": obj_id
-                }
-            )
+            result = self.safety_repository.find({"id": obj_id})
         except AppException.NotFoundException:
             raise AppException.NotFoundException(
-                context="safety id does not exist "
+                error_message="safety id does not exist "
             )
 
-        self.safety_repository.delete(obj_id=result.id)
+        self.safety_repository.delete_by_id(obj_id=result.id)
 
         return Result(None, 204)

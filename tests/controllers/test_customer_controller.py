@@ -13,7 +13,7 @@ from tests.base_test_case import BaseTestCase
 class TestCustomerController(BaseTestCase):
     @pytest.mark.controller
     def test_index(self):
-        result = self.customer_controller.index()
+        result = self.customer_controller.index(query_param={})
         self.assertIsInstance(result, Result)
         self.assert200(result)
         self.assertIsInstance(result.value, list)

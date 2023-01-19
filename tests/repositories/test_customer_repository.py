@@ -38,6 +38,6 @@ class TestCustomerRepository(BaseTestCase):
 
     @pytest.mark.repository
     def test_delete(self):
-        result = self.customer_repository.delete(self.customer_model.id)
+        result = self.customer_repository.delete_by_id(self.customer_model.id)
         self.assertIsNone(result)
         self.assertEqual(CustomerModel.query.count(), 0)

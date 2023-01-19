@@ -24,3 +24,10 @@ class ServiceEventPublishing(enum.Enum):
      for more info concerning each event
 
     """
+
+
+def extract_valid_data(obj_data: dict, validator: dict):
+    valid_data = dict()
+    for field in validator:
+        valid_data[field] = obj_data.get(field)
+    return valid_data

@@ -112,9 +112,11 @@ class CustomerRequestArgSchema(CustomerSchema):
     )
     customer_id = fields.UUID()
     user_id = fields.UUID()
+    page = fields.Integer()
+    per_page = fields.Integer()
 
     class Meta:
-        fields = ["phone_number", "customer_id", "user_id"]
+        fields = ["phone_number", "customer_id", "user_id", "page", "per_page"]
 
 
 class RetailerSignUpCustomerSchema(CustomerSchema):
