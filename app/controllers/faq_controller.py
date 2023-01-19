@@ -44,8 +44,10 @@ class FaqController:
         try:
             result = self.faq_repository.find({"id": obj_id})
         except AppException.NotFoundException:
-            raise AppException.NotFoundException(context="faq id does not exist ")
+            raise AppException.NotFoundException(
+                error_message="promotion id does not exist"
+            )
 
-        self.faq_repository.delete(obj_id=result.id)
+        self.faq_repository.delete_by_id(obj_id=result.id)
 
         return Result(None, 204)

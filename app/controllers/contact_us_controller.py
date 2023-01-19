@@ -45,8 +45,10 @@ class ContactUsController:
         try:
             result = self.contact_us_repository.find({"id": obj_id})
         except AppException.NotFoundException:
-            raise AppException.NotFoundException(context="contact_us id does not exist ")
+            raise AppException.NotFoundException(
+                error_message="contact_us id does not exist"
+            )
 
-        self.contact_us_repository.delete(obj_id=result.id)
+        self.contact_us_repository.delete_by_id(obj_id=result.id)
 
         return Result(None, 204)

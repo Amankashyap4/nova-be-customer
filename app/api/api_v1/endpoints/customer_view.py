@@ -1940,49 +1940,48 @@ def get_faq():
 @validator(schema=FaqSchema)
 def create_faq():
     """
-        ---
-        post:
-          description: question
-          requestBody:
-            required: true
-            content:
-              application/json:
-                schema: FaqSchema
-          responses:
-            '201':
-              description: returns details of added question
-              content:
-                application/json:
-                  schema: FaqGetSchema
-            '409':
-              description: conflict
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                      app_exception:
-                        type: str
-                        example: ResourceExists
-                      errorMessage:
-                        type: str
-                        example: question with id ... exists
-            '500':
-              description: internal server error
-              content:
-                application/json:=======
-    >>>>>>> d70c09cdfc72f1ce265a9249e12f1a29831c7451
-                  schema:
-                    type: object
-                    properties:
-                      app_exception:
-                        type: str
-                        example: InternalServerError
-                      errorMessage:
-                        type: str
-                        example: NoBrokersAvailable
-          tags:
-              - FAQ
+    ---
+    post:
+      description: question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: FaqSchema
+      responses:
+        '201':
+          description: returns details of added question
+          content:
+            application/json:
+              schema: FaqGetSchema
+        '409':
+          description: conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: ResourceExists
+                  errorMessage:
+                    type: str
+                    example: question with id ... exists
+        '500':
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  errorMessage:
+                    type: str
+                    example: NoBrokersAvailable
+      tags:
+          - FAQ
     """
     data = request.json
     result = faq_controller.register_faq(data)
