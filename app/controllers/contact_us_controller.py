@@ -37,7 +37,7 @@ class ContactUsController:
         except AppException.NotFoundException:
             raise AppException.NotFoundException(context="contact_us id does not exist ")
         self.contact_us_repository.update_by_id(obj_id=result.id, obj_in=obj_data)
-        return Result(result, 201)
+        return Result(result, 200)
 
     def delete(self, obj_id: str):
         assert obj_id, ASSERT_OBJ.format("obj_id")

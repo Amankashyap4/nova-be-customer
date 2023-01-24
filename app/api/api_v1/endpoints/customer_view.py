@@ -1832,7 +1832,7 @@ def update_contact_us(contact_id):
             type: string
             description: the contact id
       responses:
-        '201':
+        '200':
           description: returns details updated contact-us
           content:
             application/json:
@@ -2008,7 +2008,7 @@ def update_faq(faq_id):
             type: string
             description: the faq id
       responses:
-        '201':
+        '200':
           description: returns details updated question
           content:
             application/json:

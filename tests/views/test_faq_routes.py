@@ -44,7 +44,7 @@ class TestFaqRoutes(BaseTestCase):
                 json=data,
             )
             response_data = response.json
-            self.assertEqual(response.status_code, 201)
+            self.assertEqual(response.status_code, 200)
             self.assertTrue(response_data)
             self.assertIsInstance(response_data, dict)
 
