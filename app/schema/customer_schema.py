@@ -61,12 +61,9 @@ class CustomerSchema(Schema):
 
 class CustomerUpdateSchema(CustomerSchema):
     email = fields.Email()
-    profile_image = fields.String(
-        validate=validate.OneOf(["jpeg", "jpg", "png", "null"])
-    )
 
     class Meta:
-        fields = ["email", "profile_image"]
+        fields = ["email"]
 
 
 class CustomerSignUpSchema(CustomerSchema):

@@ -25,11 +25,9 @@ class CustomerTestData:
     @property
     def existing_customer_history(self):
         return {
-            "phone_number": "0500000000",
-            "email": "test@example.com",
+            "value": "test@example.com",
             "customer_id": uuid.uuid4(),
             "action": "phone_update",
-            "status": "active",
             "valid_from": datetime.datetime.utcnow().date(),
             "valid_to": datetime.datetime.utcnow().date(),
         }
@@ -78,7 +76,7 @@ class CustomerTestData:
 
     @property
     def update_customer(self):
-        return {"email": "customer@update.com", "profile_image": "jpg"}
+        return {"email": "customer@update.com"}
 
     @property
     def cust_deposit(self):

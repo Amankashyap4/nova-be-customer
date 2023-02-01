@@ -166,6 +166,25 @@ class TestCustomerRoutes(BaseTestCase):
             )
 
     @pytest.mark.views
+    @mock.patch("app.services.keycloak_service.AuthService.update_user")
+    def test_set_profile_image(self, mock_update_user):
+        mock_update_user.return_value = self.auth_service.update_user(
+            self.customer_test_data.update_customer
+        )
+        with self.client:
+            response = self.client.patch(
+                url_for(
+                    "customer.set_profile_image", customer_id=self.customer_model.id
+                ),
+                headers=self.headers,
+            )
+            response_data = response.json
+            self.assertStatus(response, 200)
+            self.assertIsInstance(response_data, dict)
+            self.assertIsNotNone(response_data.get("id"))
+            self.assertIn("pre_signed_post", response_data)
+
+    @pytest.mark.views
     def test_find_customer(self):
         with self.client:
             response = self.client.get(
