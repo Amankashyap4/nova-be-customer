@@ -524,6 +524,76 @@ def update_customer(customer_id):
     return handle_result(result, schema=CustomerSchema)
 
 
+@customer.route("/accounts/profile-image/<string:customer_id>", methods=["PATCH"])
+@auth_required()
+@arg_validator(schema=CustomerRequestArgSchema, param="customer_id")
+def set_profile_image(customer_id):
+    """
+    ---
+    patch:
+      description: update customer with id specified in path
+      parameters:
+        - in: path
+          name: customer_id
+          required: true
+          schema:
+            type: string
+          description: customer id
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: returns an updated customer information
+          content:
+            application/json:
+              schema: CustomerSchema
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: Unauthorized
+                  errorMessage:
+                    type: str
+                    example: Missing authentication token
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: NotFoundException
+                  errorMessage:
+                    type: str
+                    example: user does not exist
+        '500':
+          description: returns an internal server error exception
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_exception:
+                    type: str
+                    example: InternalServerError
+                  error_message:
+                    type: str
+                    example: keycloak server connection error
+      tags:
+          - Customer
+    """
+
+    result = customer_controller.set_profile_image(customer_id)
+    return handle_result(result, schema=CustomerSchema)
+
+
 @customer.route("/accounts/<string:customer_id>", methods=["GET"])
 @auth_required()
 @arg_validator(schema=CustomerRequestArgSchema, param="customer_id")

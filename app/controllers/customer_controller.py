@@ -254,10 +254,6 @@ class CustomerController(Notifier):
         assert obj_id, ASSERT_OBJECT_ID
         assert obj_data, ASSERT_OBJECT_IS_DICT
 
-        profile_ext = obj_data.get("profile_image")
-        if profile_ext not in [None, "null"]:
-            obj_data["profile_image"] = f"{obj_id}.{profile_ext}"
-
         try:
             customer = self.customer_repository.update_by_id(obj_id, obj_data)
         except AppException.NotFoundException:
@@ -267,14 +263,32 @@ class CustomerController(Notifier):
 
         user_data = keycloak_fields(obj_id, obj_data)
         self.auth_service.update_user(user_data)
+        if customer.profile_image:
+            # generate ceph server url to retrieve profile image
+            customer.profile_image = self.object_storage.download_object(
+                f"customer/{obj_id}"
+            )
+
+        return Result(customer, 200)
+
+    def set_profile_image(self, obj_id):
+        assert obj_id, ASSERT_OBJECT_ID
+
+        try:
+            customer = self.customer_repository.find_by_id(obj_id)
+        except AppException.NotFoundException:
+            raise AppException.NotFoundException(
+                error_message=f"{OBJECT} with id {obj_id} does not exists",
+            )
 
         # generate ceph server url to save profile image
-        customer.pre_signed_post = self.object_storage.save_object(
-            f"customer/{customer.profile_image}"
-        )
+        customer.pre_signed_post = self.object_storage.save_object(f"customer/{obj_id}")
+
+        self.update(obj_id, {"profile_image": obj_id})
+
         # generate ceph server url to retrieve profile image
         customer.profile_image = self.object_storage.download_object(
-            f"customer/{customer.profile_image}"
+            f"customer/{obj_id}"
         )
 
         return Result(customer, 200)

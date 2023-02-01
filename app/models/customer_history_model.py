@@ -16,10 +16,8 @@ class CustomerHistoryModel(db.Model):
 
     id: str
     customer_id: str
-    phone_number: str
-    email: str
     action: str
-    status: str
+    value: str
     valid_from: datetime
     valid_to: datetime
     created: datetime
@@ -29,10 +27,8 @@ class CustomerHistoryModel(db.Model):
     customer_id = db.Column(
         db.GUID(), db.ForeignKey("customers.id"), nullable=False, index=True
     )
-    phone_number = db.Column(db.String(), nullable=False)
-    email = db.Column(db.String(), nullable=True)
     action = db.Column(db.String(), nullable=False)
-    status = db.Column(db.String(), nullable=False)
+    value = db.Column(db.String(), nullable=True)
     valid_from = db.Column(db.DateTime(timezone=True), nullable=False)
     valid_to = db.Column(db.DateTime(timezone=True), nullable=True)
     created = db.Column(

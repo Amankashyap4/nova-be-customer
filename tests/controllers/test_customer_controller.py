@@ -161,6 +161,19 @@ class TestCustomerController(BaseTestCase):
         self.assert404(not_found.exception)
 
     @pytest.mark.controller
+    def test_set_profile_image(self):
+        result = self.customer_controller.set_profile_image(str(self.customer_model.id))
+        self.assert200(result)
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, Result)
+        self.assertIsInstance(result.value, CustomerModel)
+        self.assertTrue(hasattr(result.value, "pre_signed_post"))
+        with self.assertRaises(AppException.NotFoundException) as not_found:
+            self.customer_controller.set_profile_image(obj_id=uuid.uuid4())
+        self.assertTrue(not_found.exception)
+        self.assert404(not_found.exception)
+
+    @pytest.mark.controller
     def test_add_pin(self):
         result = self.customer_controller.update(
             self.customer_model.id, {"auth_token": "auth_token"}
