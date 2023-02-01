@@ -1,3 +1,4 @@
+from .customer_history_repository import CustomerHistoryRepository
 from .customer_repository import CustomerRepository
 from .login_attempt_repository import LoginAttemptRepository
 from .registration_repository import RegistrationRepository
