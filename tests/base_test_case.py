@@ -6,10 +6,14 @@ from flask_testing import TestCase
 
 from app import APP_ROOT, create_app, db
 from app.controllers import CustomerController
+from app.controllers.contact_us_controller import ContactUsController
+from app.controllers.faq_controller import FaqController
 from app.controllers.promotion_controller import PromotionController
 from app.controllers.safety_controller import SafetyController
 from app.events import EventSubscriptionHandler
 from app.models import CustomerHistoryModel, CustomerModel, LoginAttemptModel
+from app.models.contact_us_model import ContactUsModel
+from app.models.faq_model import FaqModel
 from app.models.promotion_model import PromotionModel
 from app.models.safety_model import SafetyModel
 from app.repositories import (
@@ -17,9 +21,13 @@ from app.repositories import (
     LoginAttemptRepository,
     RegistrationRepository,
 )
+from app.repositories.contact_us_repository import ContactUsRepository
+from app.repositories.faq_repository import FaqRepository
 from app.repositories.promotion_repository import PromotionRepository
 from app.repositories.safety_repository import SafetyRepository
 from app.schema import CustomerSchema
+from app.schema.contact_us_schema import ContactUsGetSchema
+from app.schema.faq_schema import FaqSchema
 from app.schema.promotion_schema import PromotionSchema
 from app.schema.safety_schema import SafetySchema
 from config import Config
@@ -27,7 +35,9 @@ from tests.utils.mock_auth_service import MockAuthService
 from tests.utils.mock_ceph_storage_service import MockStorageService
 
 from .utils.test_data import (
+    Contact_Us_TestData,
     CustomerTestData,
+    FaqTestData,
     KeycloakTestData,
     PromotionTestData,
     SafetyTestData,
@@ -50,6 +60,8 @@ class BaseTestCase(TestCase):
         self.customer_schema = CustomerSchema()
         self.safety_schema = SafetySchema()
         self.promotion_schema = PromotionSchema()
+        self.contact_us_schema = ContactUsGetSchema()
+        self.faq_schema = FaqSchema()
         self.customer_repository = CustomerRepository(
             redis_service=redis_service, customer_schema=self.customer_schema
         )
@@ -57,6 +69,10 @@ class BaseTestCase(TestCase):
         self.promotion_repository = PromotionRepository(
             promotion_schema=self.promotion_schema
         )
+        self.contact_us_repository = ContactUsRepository(
+            contact_us_schema=self.contact_us_schema
+        )
+        self.faq_repository = FaqRepository(faq_schema=self.faq_schema)
         self.login_attempt_repository = LoginAttemptRepository()
         self.registration_repository = RegistrationRepository()
         self.auth_service = MockAuthService()
@@ -74,12 +90,20 @@ class BaseTestCase(TestCase):
         self.promotion_controller = PromotionController(
             promotion_repository=self.promotion_repository,
         )
+        self.contact_us_controller = ContactUsController(
+            contact_us_repository=self.contact_us_repository,
+        )
+        self.faq_controller = FaqController(
+            faq_repository=self.faq_repository,
+        )
         self.event_subscription_handler = EventSubscriptionHandler(
             customer_controller=self.customer_controller
         )
         self.customer_test_data = CustomerTestData()
         self.safety_test_data = SafetyTestData()
         self.promotion_test_data = PromotionTestData()
+        self.faq_test_data = FaqTestData()
+        self.contact_us_test_data = Contact_Us_TestData()
         self.keycloak_test_data = KeycloakTestData()
         self.login_attempt_test_data = LoginAttemptTestData()
         self.event_subscription_test_data = EventSubscriptionTestData()
@@ -141,9 +165,15 @@ class BaseTestCase(TestCase):
         self.promotion_model = PromotionModel(
             **self.promotion_test_data.existing_promotion
         )
+        self.contact_us_model = ContactUsModel(
+            **self.contact_us_test_data.existing_contact_us
+        )
+        self.faq_model = FaqModel(**self.faq_test_data.existing_faq)
         db.session.add(self.customer_model)
         db.session.add(self.safety_model)
         db.session.add(self.promotion_model)
+        db.session.add(self.contact_us_model)
+        db.session.add(self.faq_model)
         db.session.add(self.customer_history_model)
         db.session.add(self.login_attempt_model)
         db.session.commit()

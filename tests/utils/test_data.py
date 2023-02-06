@@ -139,3 +139,53 @@ class PromotionTestData:
     @property
     def update_promotion(self):
         return {"promotion": [{"id": uuid.uuid4(), "image": "image"}]}
+
+
+class Contact_Us_TestData:
+    @property
+    def create_contact_us(self):
+        return {
+            "email": "string",
+            "name": "string",
+            "subject": "string",
+            "compose_email": "string",
+        }
+
+    @property
+    def existing_contact_us(self):
+        return {
+            "id": uuid.uuid4(),
+            "email": "string",
+            "name": "string",
+            "subject": "string",
+            "compose_email": "string",
+        }
+
+    @property
+    def update_contact_us(self):
+        return {"email": "email@abc"}
+
+    @property
+    def update_contact_data(self):
+        return {"email": "email@abc"}
+
+
+class FaqTestData:
+    @property
+    def create_faq(self):
+        return {
+            "question": "string",
+            "answer": "string",
+        }
+
+    @property
+    def existing_faq(self):
+        return {
+            "id": uuid.uuid4(),
+            "question": "string",
+            "answer": "string",
+        }
+
+    @property
+    def update_faq(self):
+        return {"question": "question1", "answer": "answer1"}
