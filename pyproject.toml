@@ -48,6 +48,7 @@ pylint = "^2.13.9"
 locust = "^2.10.1"
 py-healthcheck = "^1.10.1"
 tomli = "2.0.1"
+tox = "^4.4.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "7.1.3"
