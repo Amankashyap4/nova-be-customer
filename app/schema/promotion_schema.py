@@ -10,3 +10,9 @@ class PromotionSchema(Schema):
 class PromotionRequestArgSchema(Schema):
     promotion_id = fields.UUID()
 
+
+class PromotionGetSchema(Schema):
+    id = fields.UUID()
+    tittle = fields.String()
+    description = fields.String(allow_none=True)
+    image = fields.String(allow_none=True)

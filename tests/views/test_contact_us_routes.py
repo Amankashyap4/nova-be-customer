@@ -12,7 +12,7 @@ class TestContactUsRoutes(BaseTestCase):
     @pytest.mark.views
     def test_get_contact_us(self):
         with self.client:
-            response = self.client.get(url_for("customer.get_contact_us"))
+            response = self.client.get(url_for("contact_us.get_contact_us"))
             self.assert200(response)
             self.assertIsInstance(response.json, list)
             self.assertIsInstance(response.json[0], dict)
@@ -21,7 +21,7 @@ class TestContactUsRoutes(BaseTestCase):
     def test_create_contact_us(self):
         with self.client:
             response = self.client.post(
-                url_for("customer.create_contact_us"),
+                url_for("contact_us.create_contact_us"),
                 json=self.contact_us_test_data.create_contact_us,
             )
             response_data = response.json
@@ -38,7 +38,7 @@ class TestContactUsRoutes(BaseTestCase):
         with self.client:
             response = self.client.patch(
                 url_for(
-                    "customer.update_contact_us",
+                    "contact_us.update_contact_us",
                     contact_id=self.contact_us_model.id,
                 ),
                 headers=self.headers,
@@ -55,7 +55,7 @@ class TestContactUsRoutes(BaseTestCase):
             self.contact_us_model.id = self.contact_us_model.id
             response = self.client.delete(
                 url_for(
-                    "customer.delete_contact_us",
+                    "contact_us.delete_contact_us",
                     contact_id=self.contact_us_model.id,
                 ),
                 headers=self.headers,

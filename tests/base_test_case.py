@@ -65,14 +65,10 @@ class BaseTestCase(TestCase):
         self.customer_repository = CustomerRepository(
             redis_service=redis_service, customer_schema=self.customer_schema
         )
-        self.safety_repository = SafetyRepository(safety_schema=self.safety_schema)
-        self.promotion_repository = PromotionRepository(
-            promotion_schema=self.promotion_schema
-        )
-        self.contact_us_repository = ContactUsRepository(
-            contact_us_schema=self.contact_us_schema
-        )
-        self.faq_repository = FaqRepository(faq_schema=self.faq_schema)
+        self.safety_repository = SafetyRepository()
+        self.promotion_repository = PromotionRepository()
+        self.contact_us_repository = ContactUsRepository()
+        self.faq_repository = FaqRepository()
         self.login_attempt_repository = LoginAttemptRepository()
         self.registration_repository = RegistrationRepository()
         self.auth_service = MockAuthService()

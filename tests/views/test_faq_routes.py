@@ -12,7 +12,7 @@ class TestFaqRoutes(BaseTestCase):
     @pytest.mark.views
     def test_get_faq(self):
         with self.client:
-            response = self.client.get(url_for("customer.get_faq"))
+            response = self.client.get(url_for("faq.get_faq"))
             self.assert200(response)
             self.assertIsInstance(response.json, list)
             self.assertIsInstance(response.json[0], dict)
@@ -21,7 +21,7 @@ class TestFaqRoutes(BaseTestCase):
     def test_create_faq(self):
         with self.client:
             response = self.client.post(
-                url_for("customer.create_faq"),
+                url_for("faq.create_faq"),
                 json=self.faq_test_data.create_faq,
             )
             response_data = response.json
@@ -37,7 +37,7 @@ class TestFaqRoutes(BaseTestCase):
         with self.client:
             response = self.client.patch(
                 url_for(
-                    "customer.update_faq",
+                    "faq.update_faq",
                     faq_id=self.faq_model.id,
                 ),
                 headers=self.headers,
@@ -54,7 +54,7 @@ class TestFaqRoutes(BaseTestCase):
             self.faq_model.id = self.faq_model.id
             response = self.client.delete(
                 url_for(
-                    "customer.delete_faq",
+                    "faq.delete_faq",
                     faq_id=self.faq_model.id,
                 ),
                 headers=self.headers,
