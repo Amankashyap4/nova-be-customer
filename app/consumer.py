@@ -61,7 +61,7 @@ if __name__ == "__main__":
             RegistrationRepository,
         )
         from app.schema import CustomerSchema
-        from app.services import AuthService, ObjectStorage, RedisService
+        from app.services import AuthService, CephObjectStorage, RedisService
 
         for msg in consumer:
             data = json.loads(msg.value)
@@ -77,7 +77,7 @@ if __name__ == "__main__":
                     LoginAttemptRepository,
                     AuthService,
                     CustomerSchema,
-                    ObjectStorage,
+                    CephObjectStorage,
                 ],
             )
             customer_controller = obj_graph.provide(CustomerController)
