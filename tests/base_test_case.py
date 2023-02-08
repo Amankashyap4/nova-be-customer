@@ -32,7 +32,7 @@ from app.schema.promotion_schema import PromotionSchema
 from app.schema.safety_schema import SafetySchema
 from config import Config
 from tests.utils.mock_auth_service import MockAuthService
-from tests.utils.mock_ceph_storage_service import MockStorageService
+from tests.utils.mock_ceph_storage_service import MockCephObjectStorage
 
 from .utils.test_data import (
     Contact_Us_TestData,
@@ -72,13 +72,13 @@ class BaseTestCase(TestCase):
         self.login_attempt_repository = LoginAttemptRepository()
         self.registration_repository = RegistrationRepository()
         self.auth_service = MockAuthService()
-        self.object_storage = MockStorageService()
+        self.ceph_object_storage = MockCephObjectStorage()
         self.customer_controller = CustomerController(
             customer_repository=self.customer_repository,
             registration_repository=self.registration_repository,
             login_attempt_repository=self.login_attempt_repository,
             auth_service=self.auth_service,
-            object_storage=self.object_storage,
+            ceph_object_storage=self.ceph_object_storage,
         )
         self.safety_controller = SafetyController(
             safety_repository=self.safety_repository,
@@ -185,11 +185,14 @@ class BaseTestCase(TestCase):
         file_path = os.path.join(APP_ROOT, file)
         os.remove(file_path)
 
+    # noinspection PyMethodMayBeStatic
     def dummy_kafka_method(self, topic, value):
         return True
 
+    # noinspection PyMethodMayBeStatic
     def utc_side_effect(self, args):
         return args
 
+    # noinspection PyMethodMayBeStatic
     def randint(self, *args):
         return "666666"

@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
-from app.services import ObjectStorage
+from app.services import CephObjectStorage
 
 
 @dataclass
-class MockStorageService(ObjectStorage):
-    def save_object(self, obj_name):
+class MockCephObjectStorage(CephObjectStorage):
+    def pre_signed_post(self, obj_id: str):
         pre_signed_post = {
             "url": "https://server.url:port/bucket-name",
             "fields": {
@@ -17,11 +17,11 @@ class MockStorageService(ObjectStorage):
         }
         return pre_signed_post
 
-    def download_object(self, obj_name):
+    def pre_signed_get(self, obj_id: str):
         pre_signed_get = "https://server.url:port/bucket-name/46fe38d8-70ef-44ea-9c91-f77a67bc1c6d.png?AWSAccessKeyId=S63I9MN2UB43276SLAEY&Signature=paF1YlruiylCOadaZvXp2%2BYI5z4%3D&Expires=1653652111"  # noqa
         return pre_signed_get
 
-    def get_object(self, obj_name):
+    def view(self, obj_id: str):
         obj = {
             "ETag": "7e76d20a375c0259e21e985a5478bbac",
             "Key": "customer/46fe38d8-70ef-44ea-9c91-f77a67bc1c6d.jpeg",
@@ -32,7 +32,7 @@ class MockStorageService(ObjectStorage):
         }
         return obj
 
-    def list_objects(self, directory_name=None):
+    def list(self):
         obj_list = [
             {
                 "ETag": "7e76d20a375c0259e21e985a5478bbac",

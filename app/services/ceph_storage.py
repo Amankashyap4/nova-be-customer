@@ -12,7 +12,7 @@ from config import Config
 
 
 @dataclass
-class ObjectStorage(StorageServiceInterface):
+class CephObjectStorage(StorageServiceInterface):
     """
     This class is an intermediary between this service and the object storage service
     i.e ceph storage server.
@@ -28,81 +28,83 @@ class ObjectStorage(StorageServiceInterface):
         config=boto3_config,
     )
 
-    def save_object(self, obj_key):
-        if self.validate_object_key(obj_key):
-            response = self.object_storage_request(
-                method="generate_presigned_post",
-                kwarg={"Bucket": Config.CEPH_BUCKET, "Key": obj_key},
-            )
-            return response
+    def pre_signed_post(self, obj_id: str):
+        assert obj_id, "missing id of object"
+
+        response = self.object_storage_request(
+            method="generate_presigned_post",
+            kwarg={"Bucket": Config.CEPH_BUCKET, "Key": obj_id},
+        )
+
+        return response
+
+    def pre_signed_get(self, obj_id: str):
+        assert obj_id, "missing id of object"
+
+        response = self.object_storage_request(
+            method="generate_presigned_url",
+            arg="get_object",
+            kwarg={"Params": {"Bucket": Config.CEPH_BUCKET, "Key": obj_id}},
+        )
+
+        return response
+
+    def save(self, obj_id: str, obj_path: str):
+        assert obj_id, "missing id of object"
+        assert obj_path, "missing path of object"
+
+        response = self.object_storage_request(
+            method="put_object",
+            kwarg={
+                "Body": open(obj_path, "rb"),
+                "Bucket": Config.CEPH_BUCKET,
+                "Key": obj_id,
+            },
+        )
+
+        return response
+
+    def download(self, obj_id: str):
+        assert obj_id, "missing id of object"
+
+        self.object_storage_request(
+            method="download_file",
+            kwarg={"Bucket": Config.CEPH_BUCKET, "Key": obj_id, "Filename": obj_id},
+        )
+
         return None
 
-    def download_object(self, obj_key):
-        if self.validate_object_key(obj_key):
-            response = self.object_storage_request(
-                method="generate_presigned_url",
-                arg="get_object",
-                kwarg={
-                    "Params": {
-                        "Bucket": Config.CEPH_BUCKET,
-                        "Key": obj_key,
-                    }
-                },
-            )
-            return response
-        return None
+    def view(self, obj_id: str):
+        assert obj_id, "missing id of object"
 
-    def create_object(self, object_path, obj_key):
-        if self.validate_object_key(obj_key):
-            response = self.object_storage_request(
-                method="put_object",
-                kwarg={
-                    "Body": open(object_path, "rb"),
-                    "Bucket": Config.CEPH_BUCKET,
-                    "Key": obj_key,
-                },
-            )
-            return response
-        return None
-
-    def get_object(self, obj_key):
         response = self.object_storage_request(
             method="list_objects", kwarg={"Bucket": Config.CEPH_BUCKET}
         )
         contents = response.get("Contents")
         for obj in contents:
-            if obj_key == obj.get("Key"):
+            if obj_id == obj.get("Key"):
                 return obj
-        return {}
 
-    def list_objects(self, directory_name=None):
+        return None
+
+    def list(self):
+
         response = self.object_storage_request(
             method="list_objects", kwarg={"Bucket": Config.CEPH_BUCKET}
         )
         contents = response.get("Contents")
-        if contents:
-            if directory_name:
-                obj_list = [obj for obj in contents if directory_name in obj.get("Key")]
-                return obj_list
-            else:
-                return contents
-        return []
 
-    def delete_object(self, obj_key):
-        if self.validate_object_key(obj_key):
-            response = self.object_storage_request(
-                method="delete_object",
-                kwarg={"Bucket": Config.CEPH_BUCKET, "Key": obj_key},
-            )
-            return response
-        return None
+        return contents if contents else None
 
-    # noinspection PyMethodMayBeStatic
-    def validate_object_key(self, key):
-        key = key.split("/")[-1]
-        if key not in ["None", "null"]:
-            return key
-        return None
+    def delete(self, obj_id):
+        assert obj_id, "missing id of object to delete"
+
+        response = self.object_storage_request(
+            method="delete_object",
+            kwarg={"Bucket": Config.CEPH_BUCKET, "Key": obj_id},
+        )
+
+        return response
 
     def object_storage_request(self, method, kwarg: dict, arg=None):
         try:
@@ -112,7 +114,7 @@ class ObjectStorage(StorageServiceInterface):
                 response = getattr(self.s3_client, method)(**kwarg)
         except ClientError as exc:
             raise AppException.OperationError(
-                error_message="error generating pre-signed url",
+                error_message="ceph operation error",
                 context=message_struct(
                     exc_class=get_full_class_name(exc),
                     module=__name__,

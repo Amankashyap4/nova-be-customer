@@ -68,7 +68,7 @@ instance/
 .webassets-cache
 *.sqlite
 *.sqlite3
-
+.python-version
 # Scrapy stuff:
 .scrapy
 
