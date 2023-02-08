@@ -18,7 +18,7 @@ from app.repositories import (
     LoginAttemptRepository,
     RegistrationRepository,
 )
-from app.services import AuthService, ObjectStorage
+from app.services import AuthService, CephObjectStorage
 from app.utils import keycloak_fields, split_full_name
 
 utc = pytz.UTC
@@ -35,13 +35,13 @@ class CustomerController(Notifier):
         registration_repository: RegistrationRepository,
         login_attempt_repository: LoginAttemptRepository,
         auth_service: AuthService,
-        object_storage: ObjectStorage,
+        ceph_object_storage: CephObjectStorage,
     ):
         self.customer_repository = customer_repository
         self.registration_repository = registration_repository
         self.login_attempt_repository = login_attempt_repository
         self.auth_service = auth_service
-        self.object_storage = object_storage
+        self.ceph_object_storage = ceph_object_storage
 
     def index(self, query_param: dict):
         result = self.customer_repository.paginate(
@@ -49,8 +49,8 @@ class CustomerController(Notifier):
             per_page=int(query_param.get("per_page", 10)),
         )
         for customer in result:
-            customer.profile_image = self.object_storage.download_object(
-                f"customer/{customer.profile_image}"
+            customer.profile_image = self.ceph_object_storage.pre_signed_get(
+                customer.profile_image
             )
         return Result(result, 200)
 
@@ -265,9 +265,7 @@ class CustomerController(Notifier):
         self.auth_service.update_user(user_data)
         if customer.profile_image:
             # generate ceph server url to retrieve profile image
-            customer.profile_image = self.object_storage.download_object(
-                f"customer/{obj_id}"
-            )
+            customer.profile_image = self.ceph_object_storage.pre_signed_get(obj_id)
 
         return Result(customer, 200)
 
@@ -282,14 +280,12 @@ class CustomerController(Notifier):
             )
 
         # generate ceph server url to save profile image
-        customer.pre_signed_post = self.object_storage.save_object(f"customer/{obj_id}")
+        customer.pre_signed_post = self.ceph_object_storage.pre_signed_post(obj_id)
 
         self.update(obj_id, {"profile_image": obj_id})
 
         # generate ceph server url to retrieve profile image
-        customer.profile_image = self.object_storage.download_object(
-            f"customer/{obj_id}"
-        )
+        customer.profile_image = self.ceph_object_storage.pre_signed_get(obj_id)
 
         return Result(customer, 200)
 
@@ -638,9 +634,10 @@ class CustomerController(Notifier):
             )
 
         # reminder: generate ceph server url for retrieving profile image
-        customer.profile_image = self.object_storage.download_object(
-            f"customer/{customer.profile_image}"
+        customer.profile_image = self.ceph_object_storage.pre_signed_get(
+            customer.profile_image
         )
+
         return Result(customer, 200)
 
     def password_otp_confirmation(self, obj_data):
@@ -704,8 +701,8 @@ class CustomerController(Notifier):
                 error_message=f"{OBJECT} with phone number {phone_number} does not exist"
             )
         # generate ceph server url for retrieving profile image
-        customer.profile_image = self.object_storage.download_object(
-            f"customer/{customer.profile_image}"
+        customer.profile_image = self.ceph_object_storage.pre_signed_get(
+            customer.profile_image
         )
         return Result(customer, 200)
 
@@ -838,7 +835,8 @@ class CustomerController(Notifier):
     # noinspection PyMethodMayBeStatic
     def customer_profile_images(self):
 
-        profile_images = self.object_storage.list_objects(directory_name="customer")
+        profile_images = self.ceph_object_storage.list()
+
         return Result(profile_images, 200)
 
     # noinspection PyMethodMayBeStatic
@@ -851,9 +849,8 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException(
                 error_message=f"{OBJECT} with id {obj_id} does not exist"
             )
-        profile_images = self.object_storage.get_object(
-            f"customer/{customer.profile_image}"
-        )
+        profile_images = self.ceph_object_storage.view(customer.profile_image)
+
         return Result(profile_images, 200)
 
     # reminder: below methods handles event subscription for the service

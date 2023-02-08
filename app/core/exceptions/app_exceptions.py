@@ -9,8 +9,8 @@ class AppExceptionCase(Exception):
     def __init__(
         self,
         status_code: int,
-        error_message: Union[str, dict, None],
-        context: Union[str, dict],
+        error_message: Union[any, None],
+        context: Union[any],
     ):
         self.exception_case = self.__class__.__name__
         self.status_code = status_code
@@ -57,9 +57,7 @@ class AppException:
         Generic Exception to catch failed operations
         """
 
-        def __init__(
-            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
-        ):
+        def __init__(self, error_message: Union[any, None], context: Union[any] = None):
             status_code = 400
             AppExceptionCase.__init__(self, status_code, error_message, context)
 
@@ -68,9 +66,7 @@ class AppException:
         Generic Exception to catch failed operations
         """
 
-        def __init__(
-            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
-        ):
+        def __init__(self, error_message: Union[any, None], context: Union[any] = None):
             status_code = 500
             AppExceptionCase.__init__(self, status_code, error_message, context)
 
@@ -79,16 +75,12 @@ class AppException:
         Resource Creation Failed Exception
         """
 
-        def __init__(
-            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
-        ):
+        def __init__(self, error_message: Union[any, None], context: Union[any] = None):
             status_code = 400
             AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class NotFoundException(AppExceptionCase):
-        def __init__(
-            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
-        ):
+        def __init__(self, error_message: Union[any, None], context: Union[any] = None):
             """
             Resource does not exist
             """
@@ -96,9 +88,7 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class Unauthorized(AppExceptionCase):
-        def __init__(
-            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
-        ):
+        def __init__(self, error_message: Union[any, None], context: Union[any] = None):
             """
             Unauthorized
             :param context: extra dictionary object to give the error more context
@@ -111,9 +101,7 @@ class AppException:
         Resource Creation Failed Exception
         """
 
-        def __init__(
-            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
-        ):
+        def __init__(self, error_message: Union[any, None], context: Union[any] = None):
             status_code = 400
             AppExceptionCase.__init__(self, status_code, error_message, context)
 
@@ -121,16 +109,14 @@ class AppException:
         def __init__(
             self,
             status_code: int,
-            error_message: Union[str, dict, None],
-            context: Union[str, dict] = None,
+            error_message: Union[any, None],
+            context: Union[any] = None,
         ):
             status_code = status_code
             AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class BadRequest(AppExceptionCase):
-        def __init__(
-            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
-        ):
+        def __init__(self, error_message: Union[any, None], context: Union[any] = None):
             """
             Bad Request
 
@@ -140,9 +126,7 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, error_message, context)
 
     class ExpiredTokenException(AppExceptionCase):
-        def __init__(
-            self, error_message: Union[str, dict, None], context: Union[str, dict] = None
-        ):
+        def __init__(self, error_message: Union[any, None], context: [Union] = None):
             """
             Expired Token
             :param context:

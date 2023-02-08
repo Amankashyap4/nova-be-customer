@@ -21,7 +21,7 @@ def auth_required(authorized_roles=None):
         @wraps(func)
         def view_wrapper(*args, **kwargs):
             authorization_header = request.headers.get("Authorization")
-            if not authorization_header:
+            if not authorization_header or len(authorization_header.split()) < 2:
                 raise AppException.Unauthorized("Missing authentication token")
             token = authorization_header.split()[1]
             payload = decode_token(config=Config, token=token)
@@ -32,7 +32,7 @@ def auth_required(authorized_roles=None):
                     return func(*args, **kwargs)
             else:
                 return func(*args, **kwargs)
-            raise AppException.Unauthorized(context="operation unauthorized")
+            raise AppException.Unauthorized(error_message="operation unauthorized")
 
         return view_wrapper
 
@@ -50,11 +50,11 @@ def decode_token(config, token):
         )
         return payload
     except ExpiredSignatureError as e:
-        raise AppException.ExpiredTokenException(context=e.args)
+        raise AppException.ExpiredTokenException(error_message=e.args)
     except InvalidTokenError as e:
-        raise AppException.OperationError(context=e.args)
+        raise AppException.OperationError(error_message=e.args)
     except PyJWTError as e:
-        raise AppException.OperationError(context=e.args)
+        raise AppException.OperationError(error_message=e.args)
 
 
 def authorized_clients(config, payload):

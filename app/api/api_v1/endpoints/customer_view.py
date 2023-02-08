@@ -31,8 +31,7 @@ from app.schema import (
     TokenLoginSchema,
     UpdatePhoneSchema,
 )
-
-from app.services import AuthService, ObjectStorage, RedisService
+from app.services import AuthService, CephObjectStorage, RedisService
 from app.utils import arg_validator, auth_required, validator
 
 customer = Blueprint("customer", __name__)
@@ -46,7 +45,7 @@ obj_graph = pinject.new_object_graph(
         LoginAttemptRepository,
         AuthService,
         RedisService,
-        ObjectStorage,
+        CephObjectStorage,
         CustomerSchema,
     ],
 )

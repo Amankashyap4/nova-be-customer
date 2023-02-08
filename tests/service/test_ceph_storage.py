@@ -3,70 +3,55 @@ from unittest import mock
 import pytest
 
 from app.core.exceptions import AppException
-from app.services import ObjectStorage
+from app.services import CephObjectStorage
 from tests.utils.mock_response import MockSideEffects
 
 SERVER_URL = "localhost:8000"
 
 
 class TestCephStorage(MockSideEffects):
-    _ceph_storage = ObjectStorage()
+    _ceph_storage = CephObjectStorage()
 
     @pytest.mark.service
-    def test_save_object(self):
-        result = self._ceph_storage.save_object("object")
+    def test_pre_signed_post(self):
+        result = self._ceph_storage.pre_signed_post("object")
         self.assertIsInstance(result, dict)
         self.assertIn("url", result)
         self.assertIn("fields", result)
-        result = self._ceph_storage.save_object("null")
-        self.assertIsNone(result)
 
     @pytest.mark.service
-    def test_download_object(self):
-        result = self._ceph_storage.download_object("object")
+    def test_pre_signed_get(self):
+        result = self._ceph_storage.pre_signed_get("object")
         self.assertIsInstance(result, str)
-        result = self._ceph_storage.download_object("null")
-        self.assertIsNone(result)
 
     @pytest.mark.service
-    @mock.patch("app.services.ceph_storage.ObjectStorage.s3_client.list_objects")
-    def test_get_object(self, mock_list_object):
+    @mock.patch("app.services.ceph_storage.CephObjectStorage.s3_client.list_objects")
+    def test_view(self, mock_list_object):
         mock_list_object.side_effect = self.boto3_list_objects
-        result = self._ceph_storage.get_object("customer/obj_key")
+        result = self._ceph_storage.view("customer/obj_key")
         self.assertIsInstance(result, dict)
         self.assertIn("Key", result)
-        result = self._ceph_storage.get_object("customer/null")
-        self.assertEqual(result, {})
 
     @pytest.mark.service
-    @mock.patch("app.services.ceph_storage.ObjectStorage.s3_client.list_objects")
-    def test_list_objects(self, mock_list_object):
+    @mock.patch("app.services.ceph_storage.CephObjectStorage.s3_client.list_objects")
+    def test_list(self, mock_list_object):
         mock_list_object.side_effect = self.boto3_list_objects
-        result = self._ceph_storage.list_objects()
+        result = self._ceph_storage.list()
         self.assertIsInstance(result, list)
         self.assertNotEqual(result, [])
 
     @pytest.mark.service
-    @mock.patch("app.services.ceph_storage.ObjectStorage.s3_client.delete_object")
-    def test_delete_object(self, mock_delete_object):
+    @mock.patch("app.services.ceph_storage.CephObjectStorage.s3_client.delete_object")
+    def test_delete(self, mock_delete_object):
         mock_delete_object.return_value = None
-        result = self._ceph_storage.delete_object("customer/obj_key")
+        result = self._ceph_storage.delete("customer/obj_key")
         self.assertIsNone(result)
-        result = self._ceph_storage.delete_object("customer/null")
+        result = self._ceph_storage.delete("customer/null")
         self.assertIsNone(result)
-
-    @pytest.mark.service
-    def test_validate_object_key(self):
-        result = self._ceph_storage.validate_object_key("obj_key")
-        self.assertIsNotNone(result)
-        self.assertEqual(result, "obj_key")
-        result = self._ceph_storage.validate_object_key("null")
-        self.assertIsNone(result)
-        self.assertNotEqual(result, "obj_key")
 
     @pytest.mark.service
     @mock.patch(
-        "app.services.ceph_storage.ObjectStorage.s3_client.generate_presigned_post"
+        "app.services.ceph_storage.CephObjectStorage.s3_client.generate_presigned_post"
     )
     def test_object_storage_request(self, object_request):
         object_request.side_effect = self.boto3_request
