@@ -24,3 +24,8 @@ from .customer_schema import (
     RetailerSignUpCustomerSchema,
     UpdatePhoneSchema,
 )
+
+from .faq_schema import *
+from .contact_us_schema import *
+from .promotion_schema import *
+from .safety_schema import *

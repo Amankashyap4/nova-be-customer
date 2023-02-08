@@ -1,1 +1,5 @@
 from .customer_controller import CustomerController
+from .promotion_controller import PromotionController
+from .faq_controller import FaqController
+from .safety_controller import SafetyController
+from .contact_us_controller import ContactUsController

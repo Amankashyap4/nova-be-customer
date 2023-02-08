@@ -1,3 +1,7 @@
 from .customer_repository import CustomerRepository
 from .login_attempt_repository import LoginAttemptRepository
 from .registration_repository import RegistrationRepository
+from .contact_us_repository import ContactUsRepository
+from .faq_repository import FaqRepository
+from .promotion_repository import PromotionRepository
+from .safety_repository import SafetyRepository

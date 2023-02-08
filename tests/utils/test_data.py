@@ -117,6 +117,10 @@ class SafetyTestData:
             "image": "image1",
         }
 
+    @property
+    def update_safety_data(self):
+        return {"image": "image"}
+
 
 class PromotionTestData:
     @property
@@ -140,6 +144,9 @@ class PromotionTestData:
     def update_promotion(self):
         return {"promotion": [{"id": uuid.uuid4(), "image": "image"}]}
 
+    @property
+    def update_promotion_data(self):
+        return {"image": "image"}
 
 class Contact_Us_TestData:
     @property
