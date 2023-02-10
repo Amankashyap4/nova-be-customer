@@ -19,7 +19,7 @@ from app.repositories import (
     RegistrationRepository,
 )
 from app.services import AuthService, CephObjectStorage
-from app.utils import keycloak_fields, split_full_name
+from app.utils import split_full_name
 
 utc = pytz.UTC
 OBJECT = "customer"
@@ -261,8 +261,10 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException(
                 error_message=f"{OBJECT} with id {obj_id} does not exists",
             )
-
-        user_data = keycloak_fields(obj_id, obj_data)
+        # reminder: update account details in auth server i.e keycloak
+        user_data = self.auth_service.auth_service_field(
+            account_id=obj_id, obj_data=obj_data
+        )
         self.auth_service.update_user(user_data)
         if customer.profile_image:
             # generate ceph server url to retrieve profile image
@@ -603,7 +605,9 @@ class CustomerController(Notifier):
         self.customer_repository.update_by_id(
             customer_id, {"phone_number": phone_number}
         )
-        user_data = keycloak_fields(customer_id, {"phone_number": phone_number})
+        user_data = self.auth_service.auth_service_field(
+            account_id=customer_id, obj_data={"phone_number": phone_number}
+        )
         self.auth_service.update_user(user_data)
         customer_name = split_full_name(customer.full_name)
         self.notify(
