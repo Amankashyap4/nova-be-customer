@@ -25,7 +25,7 @@ class AppExceptionCase(Exception):
     def __str__(self):
         return (
             f"<AppException {self.exception_case} - "
-            + f"status_code = {self.status_code} - error_message = {self.context}"
+            + f"status_code = {self.status_code} - error_message = {self.error_message}"
         )
 
 
