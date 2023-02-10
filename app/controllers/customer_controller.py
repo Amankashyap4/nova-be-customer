@@ -49,9 +49,10 @@ class CustomerController(Notifier):
             per_page=int(query_param.get("per_page", 10)),
         )
         for customer in result:
-            customer.profile_image = self.ceph_object_storage.pre_signed_get(
-                customer.profile_image
-            )
+            if customer.profile_image:
+                customer.profile_image = self.ceph_object_storage.pre_signed_get(
+                    customer.profile_image
+                )
         return Result(result, 200)
 
     def register(self, obj_data):

@@ -1,10 +1,18 @@
-import json
-
-from app.core.exceptions import AppException, HTTPException
+from app.core.exceptions import HTTPException
 from app.core.repository import SQLBaseRepository
 from app.models import CustomerModel
 from app.schema import CustomerSchema
 from app.services import RedisService
+
+from .cache_object import (
+    cache_list_of_object,
+    cache_object,
+    deserialize_cached_object,
+    deserialize_list_of_cached_object,
+)
+
+SINGLE_RECORD_CACHE_KEY = "customer_{}"
+ALL_RECORDS_CACHE_KEY = "all_customers"
 
 
 class CustomerRepository(SQLBaseRepository):
@@ -22,12 +30,20 @@ class CustomerRepository(SQLBaseRepository):
 
     def index(self):
         try:
-            all_cache_data = self.redis_service.get("all_customers")
-            if all_cache_data:
-                deserialized_objects = self.deserialize_list_of_object(all_cache_data)
+            list_of_cached_object = self.redis_service.get("all_customers")
+            if list_of_cached_object:
+                deserialized_objects = deserialize_list_of_cached_object(
+                    obj_data=list_of_cached_object,
+                    obj_schema=self.customer_schema,
+                    obj_model=self.model,
+                )
                 return deserialized_objects
-            server_data = super().index()
-            self.serialize_list_of_object(server_data)
+            server_data = cache_list_of_object(
+                obj_data=super().index(),
+                obj_schema=self.customer_schema,
+                redis_instance=self.redis_service,
+                cache_key=ALL_RECORDS_CACHE_KEY,
+            )
             return server_data
         except HTTPException:
             return super().index()
@@ -35,19 +51,40 @@ class CustomerRepository(SQLBaseRepository):
     def create(self, data):
         server_data = super().create(self.customer_schema.load(data, unknown="include"))
         try:
-            obj_data = self.serialize_object(server_data.id, server_data)
-            self.serialize_list_of_object(super().index())
+            obj_data = cache_object(
+                obj_data=server_data,
+                obj_schema=self.customer_schema,
+                redis_instance=self.redis_service,
+                cache_key=SINGLE_RECORD_CACHE_KEY.format(server_data),
+            )
+            _ = cache_list_of_object(
+                obj_data=super().index(),
+                obj_schema=self.customer_schema,
+                redis_instance=self.redis_service,
+                cache_key=ALL_RECORDS_CACHE_KEY,
+            )
             return obj_data
         except HTTPException:
             return server_data
 
     def get_by_id(self, obj_id):
         try:
-            cache_data = self.redis_service.get(f"customer_{obj_id}")
-            if cache_data:
-                deserialized_object = self.deserialize_object(cache_data)
+            cached_object = self.redis_service.get(
+                SINGLE_RECORD_CACHE_KEY.format(obj_id)
+            )
+            if cached_object:
+                deserialized_object = deserialize_cached_object(
+                    obj_data=cached_object,
+                    obj_model=self.model,
+                    obj_schema=self.customer_schema,
+                )
                 return deserialized_object
-            object_data = self.serialize_object(obj_id, super().find_by_id(obj_id))
+            object_data = cache_object(
+                obj_data=super().find_by_id(obj_id),
+                obj_schema=self.customer_schema,
+                redis_instance=self.redis_service,
+                cache_key=SINGLE_RECORD_CACHE_KEY.format(obj_id),
+            )
             return object_data
         except HTTPException:
             return super().find_by_id(obj_id)
@@ -57,11 +94,23 @@ class CustomerRepository(SQLBaseRepository):
             obj_id, self.customer_schema.load(obj_in, unknown="include")
         )
         try:
-            cache_data = self.redis_service.get(f"customer_{obj_id}")
-            if cache_data:
-                self.redis_service.delete(f"customer_{obj_id}")
-            object_data = self.serialize_object(obj_id, server_data)
-            self.serialize_list_of_object(super().index())
+            cached_object = self.redis_service.get(
+                SINGLE_RECORD_CACHE_KEY.format(obj_id)
+            )
+            if cached_object:
+                self.redis_service.delete(SINGLE_RECORD_CACHE_KEY.format(obj_id))
+            object_data = cache_object(
+                obj_data=server_data,
+                obj_schema=self.customer_schema,
+                redis_instance=self.redis_service,
+                cache_key=SINGLE_RECORD_CACHE_KEY.format(server_data.id),
+            )
+            _ = cache_list_of_object(
+                obj_data=super().index(),
+                obj_schema=self.customer_schema,
+                redis_instance=self.redis_service,
+                cache_key=ALL_RECORDS_CACHE_KEY,
+            )
             return object_data
         except HTTPException:
             return super().update_by_id(obj_id, obj_in)
@@ -69,73 +118,15 @@ class CustomerRepository(SQLBaseRepository):
     def delete(self, obj_id):
         server_data = super().delete(obj_id)
         try:
-            cache_data = self.redis_service.get(f"customer_{obj_id}")
-            if cache_data:
-                self.redis_service.delete(f"customer_{obj_id}")
-            self.serialize_list_of_object(super().index())
+            cached_data = self.redis_service.get(SINGLE_RECORD_CACHE_KEY.format(obj_id))
+            if cached_data:
+                self.redis_service.delete(SINGLE_RECORD_CACHE_KEY.format(obj_id))
+            _ = cache_list_of_object(
+                obj_data=super().index(),
+                obj_schema=self.customer_schema,
+                redis_instance=self.redis_service,
+                cache_key=ALL_RECORDS_CACHE_KEY,
+            )
             return server_data
         except HTTPException:
             return super().delete(obj_id)
-
-    def cache_record(self, key):
-        try:
-            cache_data = self.redis_service.get(key)
-        except HTTPException:
-            raise AppException.NotFoundException(
-                context="error connecting to redis server",
-            )
-        else:
-            if not cache_data:
-                raise AppException.NotFoundException(
-                    context=f"record with key {key} not available in cache"
-                )
-            return cache_data
-
-    def serialize_object(self, obj_id, obj_data: dict):
-        """
-        This method handles the conversion of a CustomerModel object to type String to be
-         saved in cache.
-        :param obj_id: id of object you want to save in cache
-        :param obj_data: the object you want to typecast
-        :return: CustomerModel object
-        """
-
-        serialize_data = self.customer_schema.dumps(obj_data)
-        self.redis_service.set(f"customer_{obj_id}", serialize_data)
-        return obj_data
-
-    def serialize_list_of_object(self, obj_list):
-        """
-        This method handles the conversion of list of CustomerModel objects to type
-        String to be saved in cache.
-        :param obj_list: list of customer objects
-        :return: None
-        """
-        serialize_all_data = self.customer_schema.dumps(obj_list, many=True)
-        self.redis_service.set("all_customers", serialize_all_data)
-
-    def deserialize_object(self, obj_data: str):
-        """
-        This method handles the conversion of a customer record of type String saved in
-        cache to CustomerModel object.
-        :param obj_data: the object you want to typecast
-        :return: CustomerModel object
-        """
-
-        deserialize_data = self.customer_schema.loads(json.dumps(obj_data))
-        return self.model(**deserialize_data)
-
-    def deserialize_list_of_object(self, obj_data: str):
-        """
-        This method handles the conversion of list of customer records of type String
-        saved in cache to list of CustomerModel objects.
-        :param obj_data: the object you want to typecast
-        :return: list of CustomerModel objects
-        """
-
-        deserialize_object_data = self.customer_schema.loads(
-            json.dumps(obj_data), many=True
-        )
-        for count, value in enumerate(deserialize_object_data):
-            deserialize_object_data[count] = self.model(**value)
-        return deserialize_object_data
