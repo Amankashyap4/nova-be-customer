@@ -30,7 +30,7 @@ class CustomerRepository(SQLBaseRepository):
 
     def index(self):
         try:
-            list_of_cached_object = self.redis_service.get("all_customers")
+            list_of_cached_object = self.redis_service.get(ALL_RECORDS_CACHE_KEY)
             if list_of_cached_object:
                 deserialized_objects = deserialize_list_of_cached_object(
                     obj_data=list_of_cached_object,

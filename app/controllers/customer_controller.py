@@ -635,9 +635,10 @@ class CustomerController(Notifier):
             )
 
         # reminder: generate ceph server url for retrieving profile image
-        customer.profile_image = self.ceph_object_storage.pre_signed_get(
-            customer.profile_image
-        )
+        if customer.profile_image:
+            customer.profile_image = self.ceph_object_storage.pre_signed_get(
+                customer.profile_image
+            )
 
         return Result(customer, 200)
 
@@ -702,9 +703,10 @@ class CustomerController(Notifier):
                 error_message=f"{OBJECT} with phone number {phone_number} does not exist"
             )
         # generate ceph server url for retrieving profile image
-        customer.profile_image = self.ceph_object_storage.pre_signed_get(
-            customer.profile_image
-        )
+        if customer.profile_image:
+            customer.profile_image = self.ceph_object_storage.pre_signed_get(
+                customer.profile_image
+            )
         return Result(customer, 200)
 
     # noinspection PyMethodMayBeStatic
