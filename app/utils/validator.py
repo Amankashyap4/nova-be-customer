@@ -51,25 +51,6 @@ def arg_validator(schema, param):
     return validate_args
 
 
-def keycloak_fields(username, obj_data):
-    """
-    This function converts object fields to fields used by keycloak
-    :param username: username of object
-    :param obj_data: object fields you want to convert
-    :return: object data with fields converted to keycloak format
-    """
-
-    obj_fields = {"username": username}
-
-    for field in obj_data:
-        auth_service_field = field.split("_")
-        for index in range(len(auth_service_field)):
-            if index > 0:
-                auth_service_field[index] = auth_service_field[index].capitalize()
-        obj_fields["".join(auth_service_field)] = obj_data.get(field)
-    return obj_fields
-
-
 def split_full_name(full_name: str):
     object_name = dict()
     if full_name:

@@ -19,7 +19,7 @@ from app.repositories import (
     RegistrationRepository,
 )
 from app.services import AuthService, CephObjectStorage
-from app.utils import keycloak_fields, split_full_name
+from app.utils import split_full_name
 
 utc = pytz.UTC
 OBJECT = "customer"
@@ -49,9 +49,10 @@ class CustomerController(Notifier):
             per_page=int(query_param.get("per_page", 10)),
         )
         for customer in result:
-            customer.profile_image = self.ceph_object_storage.pre_signed_get(
-                customer.profile_image
-            )
+            if customer.profile_image:
+                customer.profile_image = self.ceph_object_storage.pre_signed_get(
+                    customer.profile_image
+                )
         return Result(result, 200)
 
     def register(self, obj_data):
@@ -260,8 +261,10 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException(
                 error_message=f"{OBJECT} with id {obj_id} does not exists",
             )
-
-        user_data = keycloak_fields(obj_id, obj_data)
+        # reminder: update account details in auth server i.e keycloak
+        user_data = self.auth_service.auth_service_field(
+            account_id=obj_id, obj_data=obj_data
+        )
         self.auth_service.update_user(user_data)
         if customer.profile_image:
             # generate ceph server url to retrieve profile image
@@ -602,7 +605,9 @@ class CustomerController(Notifier):
         self.customer_repository.update_by_id(
             customer_id, {"phone_number": phone_number}
         )
-        user_data = keycloak_fields(customer_id, {"phone_number": phone_number})
+        user_data = self.auth_service.auth_service_field(
+            account_id=customer_id, obj_data={"phone_number": phone_number}
+        )
         self.auth_service.update_user(user_data)
         customer_name = split_full_name(customer.full_name)
         self.notify(
@@ -634,9 +639,10 @@ class CustomerController(Notifier):
             )
 
         # reminder: generate ceph server url for retrieving profile image
-        customer.profile_image = self.ceph_object_storage.pre_signed_get(
-            customer.profile_image
-        )
+        if customer.profile_image:
+            customer.profile_image = self.ceph_object_storage.pre_signed_get(
+                customer.profile_image
+            )
 
         return Result(customer, 200)
 
@@ -701,9 +707,10 @@ class CustomerController(Notifier):
                 error_message=f"{OBJECT} with phone number {phone_number} does not exist"
             )
         # generate ceph server url for retrieving profile image
-        customer.profile_image = self.ceph_object_storage.pre_signed_get(
-            customer.profile_image
-        )
+        if customer.profile_image:
+            customer.profile_image = self.ceph_object_storage.pre_signed_get(
+                customer.profile_image
+            )
         return Result(customer, 200)
 
     # noinspection PyMethodMayBeStatic
