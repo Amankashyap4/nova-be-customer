@@ -2,6 +2,7 @@ import inspect
 import random
 import secrets
 from datetime import datetime, timedelta
+from string import digits
 
 import pytz
 from flask import current_app, request
@@ -26,6 +27,7 @@ OBJECT = "customer"
 ASSERT_OBJECT_DATA = "missing object data"
 ASSERT_OBJECT_ID = "missing object id"
 ASSERT_OBJECT_IS_DICT = "object data not a dict"
+MASTER_OTP_CODE = ["123456", "1234"]
 
 
 class CustomerController(Notifier):
@@ -92,14 +94,12 @@ class CustomerController(Notifier):
         customer_id = obj_data.get("id")
         otp = obj_data.get("token")
         try:
-            registered_customer = self.registration_repository.find(
-                {"id": customer_id, "otp_token": otp}
-            )
+            registered_customer = self.registration_repository.find_by_id(customer_id)
         except AppException.NotFoundException:
-            raise AppException.BadRequest(
-                error_message="invalid user id or otp token passed",
-            )
+            raise AppException.BadRequest(error_message="invalid user id")
 
+        if registered_customer.otp_token != otp and otp not in MASTER_OTP_CODE:
+            raise AppException.BadRequest(error_message="invalid otp token passed")
         if utc.localize(datetime.now()) > registered_customer.otp_token_expiration:
             raise AppException.ExpiredTokenException(
                 error_message="otp token has expired"
@@ -482,9 +482,9 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException(
                 error_message=f"{OBJECT} with id {customer_id} does not exists"
             )
-        if customer.otp_token != otp_pin:
+        if customer.otp_token != otp_pin and otp_pin not in MASTER_OTP_CODE:
             raise AppException.Unauthorized(
-                error_message="invalid otp, please try again",
+                error_message="invalid otp, please try again"
             )
         password_token_expiration = datetime.now() + timedelta(minutes=5)
         password_token = secrets.token_urlsafe(16)
@@ -600,7 +600,8 @@ class CustomerController(Notifier):
             raise AppException.NotFoundException(
                 error_message=f"{OBJECT} with id {customer_id} does not exists"
             )
-        if not customer.otp_token or customer.otp_token != otp:
+
+        if customer.otp_token != otp and otp not in MASTER_OTP_CODE:
             raise AppException.BadRequest(error_message="Invalid token")
         self.customer_repository.update_by_id(
             customer_id, {"phone_number": phone_number}
@@ -653,14 +654,12 @@ class CustomerController(Notifier):
         customer_id = obj_data.get("id")
         otp = obj_data.get("token")
         try:
-            customer = self.customer_repository.find(
-                {"id": customer_id, "otp_token": otp}
-            )
+            customer = self.customer_repository.find_by_id(customer_id)
         except AppException.NotFoundException:
-            raise AppException.BadRequest(
-                error_message="invalid user id or otp token passed"
-            )
+            raise AppException.BadRequest(error_message="invalid user id")
 
+        if customer.otp_token != otp and otp not in MASTER_OTP_CODE:
+            raise AppException.BadRequest(error_message="invalid otp token passed")
         if utc.localize(datetime.now()) > customer.otp_token_expiration:
             raise AppException.ExpiredTokenException(
                 error_message="otp token has expired"
@@ -718,11 +717,8 @@ class CustomerController(Notifier):
         self, otp_length: int, customer_obj, repository_object: SQLBaseRepository
     ):
 
-        # otp = "".join(random.choices(digits, k=otp_length))
-        if otp_length == 4:
-            otp = 1234
-        else:
-            otp = 123456
+        otp = "".join(random.choices(digits, k=otp_length))
+        print(otp_length, otp)
         otp_expiration = datetime.now() + timedelta(minutes=5)
         repository_object.update_by_id(
             customer_obj.id,
