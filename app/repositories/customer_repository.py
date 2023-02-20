@@ -55,7 +55,7 @@ class CustomerRepository(SQLBaseRepository):
                 obj_data=server_data,
                 obj_schema=self.customer_schema,
                 redis_instance=self.redis_service,
-                cache_key=SINGLE_RECORD_CACHE_KEY.format(server_data),
+                cache_key=SINGLE_RECORD_CACHE_KEY.format(server_data.id),
             )
             _ = cache_list_of_object(
                 obj_data=super().index(),

@@ -720,9 +720,9 @@ class CustomerController(Notifier):
 
         # otp = "".join(random.choices(digits, k=otp_length))
         if otp_length == 4:
-            otp = 6666
+            otp = 1234
         else:
-            otp = 666666
+            otp = 123456
         otp_expiration = datetime.now() + timedelta(minutes=5)
         repository_object.update_by_id(
             customer_obj.id,
