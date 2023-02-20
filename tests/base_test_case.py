@@ -110,11 +110,11 @@ class BaseTestCase(TestCase):
         )
         self.addCleanup(self.redis_patcher.stop)
         self.redis = self.redis_patcher.start()
-        self.randint_patcher = patch(
-            "app.controllers.customer_controller.random.randint", self.randint
+        self.random_choices_patcher = patch(
+            "app.controllers.customer_controller.random.choices", self.random_choices
         )
-        self.addCleanup(self.randint_patcher.stop)
-        self.randint_patcher.start()
+        self.addCleanup(self.random_choices_patcher.stop)
+        self.random_choices_patcher.start()
         jwt_decode = patch("app.utils.auth.jwt.decode")
         self.addCleanup(jwt_decode.stop)
         jwt_decode.start()
@@ -194,5 +194,5 @@ class BaseTestCase(TestCase):
         return args
 
     # noinspection PyMethodMayBeStatic
-    def randint(self, *args):
-        return "666666"
+    def random_choices(self, *args, **kwargs):
+        return "123456"

@@ -9,6 +9,9 @@ from app.core.exceptions import AppException
 from app.models import CustomerModel, RegistrationModel
 from tests.base_test_case import BaseTestCase
 
+OTP_CODE = "123456"
+PIN = "1234"
+
 
 class TestCustomerController(BaseTestCase):
     @pytest.mark.controller
@@ -259,7 +262,7 @@ class TestCustomerController(BaseTestCase):
             obj_data={"id": self.customer_model.id}
         )
         self.assertIsNotNone(self.customer_model.otp_token)
-        self.assertEqual(self.customer_model.otp_token, "666666")
+        self.assertEqual(self.customer_model.otp_token, OTP_CODE)
         with self.assertRaises(AppException.NotFoundException) as not_found_exc:
             self.customer_controller.change_password_request(
                 obj_data={"id": uuid.uuid4()}
@@ -273,16 +276,16 @@ class TestCustomerController(BaseTestCase):
             phone_number=self.customer_model.phone_number
         ).first()
         self.assertIsNotNone(result.pin)
-        self.assertTrue(result.verify_pin("1234"))
-        data = {"customer_id": result.id, "old_pin": "1234", "new_pin": "0000"}
+        self.assertTrue(result.verify_pin(PIN))
+        data = {"customer_id": result.id, "old_pin": PIN, "new_pin": "0000"}
         change_password = self.customer_controller.change_password(data)
         self.assertIsInstance(change_password, Result)
         self.assertEqual(change_password.status_code, 200)
-        self.assertFalse(result.verify_pin("1234"))
+        self.assertFalse(result.verify_pin(PIN))
         self.assertTrue(result.verify_pin("0000"))
         with self.assertRaises(AppException.NotFoundException) as not_found_exc:
             self.customer_controller.change_password(
-                {"customer_id": uuid.uuid4(), "old_pin": "1234", "new_pin": "0000"}
+                {"customer_id": uuid.uuid4(), "old_pin": PIN, "new_pin": "0000"}
             )
         self.assertTrue(not_found_exc.exception)
         self.assert404(not_found_exc.exception)
@@ -295,7 +298,7 @@ class TestCustomerController(BaseTestCase):
         data = self.customer_test_data.add_information.copy()
         data["id"] = register.value.get("id")
         token = self.customer_controller.confirm_token(
-            {"id": register.value.get("id"), "token": "666666"}
+            {"id": register.value.get("id"), "token": OTP_CODE}
         )
         data = self.customer_test_data.add_information.copy()
         data["id"] = register.value.get("id")
@@ -329,7 +332,7 @@ class TestCustomerController(BaseTestCase):
         data = self.customer_test_data.add_information.copy()
         data["id"] = register.value.get("id")
         token = self.customer_controller.confirm_token(
-            {"id": register.value.get("id"), "token": "666666"}
+            {"id": register.value.get("id"), "token": OTP_CODE}
         )
         data = self.customer_test_data.add_information.copy()
         data["id"] = register.value.get("id")
@@ -398,7 +401,7 @@ class TestCustomerController(BaseTestCase):
 
     @pytest.mark.controller
     def test_change_phone(self):
-        data = {"customer_id": "id", "phone_number": "0244444444", "token": "666666"}
+        data = {"customer_id": "id", "phone_number": "0244444444", "token": OTP_CODE}
         reset_phone_request = self.customer_controller.change_phone_request(
             self.customer_test_data.existing_customer
         )
@@ -407,7 +410,7 @@ class TestCustomerController(BaseTestCase):
         self.assert200(reset_phone)
         self.assertIn("detail", reset_phone.value)
         with self.assertRaises(AppException.BadRequest) as expired_token:
-            data["token"] = "1234"
+            data["token"] = "12345"
             self.customer_controller.change_phone(data)
         self.assertTrue(expired_token.exception)
         self.assert400(expired_token.exception)
@@ -438,7 +441,7 @@ class TestCustomerController(BaseTestCase):
         data = self.customer_test_data.add_information.copy()
         data["id"] = register.value.get("id")
         token = self.customer_controller.confirm_token(
-            {"id": register.value.get("id"), "token": "666666"}
+            {"id": register.value.get("id"), "token": OTP_CODE}
         )
         data = self.customer_test_data.add_information.copy()
         data["id"] = register.value.get("id")
@@ -460,7 +463,7 @@ class TestCustomerController(BaseTestCase):
         self.assertIn("token", confirm_otp.value)
         with self.assertRaises(AppException.ExpiredTokenException) as expired_otp:
             result.otp_token_expiration = datetime.now() + timedelta(seconds=1)
-            result.otp_token = "666666"
+            result.otp_token = OTP_CODE
             sleep(1)
             self.customer_controller.password_otp_confirmation(data)
         self.assertTrue(expired_otp.exception)
