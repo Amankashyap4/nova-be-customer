@@ -19,13 +19,13 @@ from app.models.safety_model import SafetyModel
 from app.repositories import (
     CustomerRepository,
     LoginAttemptRepository,
-    RegistrationRepository,
+    RegistrationRepository, OwnedOtherBrandCylinderRepository,
 )
 from app.repositories.contact_us_repository import ContactUsRepository
 from app.repositories.faq_repository import FaqRepository
 from app.repositories.promotion_repository import PromotionRepository
 from app.repositories.safety_repository import SafetyRepository
-from app.schema import CustomerSchema
+from app.schema import CustomerSchema, OwnedOtherBrandCylinderGetSchema
 from app.schema.contact_us_schema import ContactUsGetSchema
 from app.schema.faq_schema import FaqSchema
 from app.schema.promotion_schema import PromotionSchema
@@ -62,6 +62,7 @@ class BaseTestCase(TestCase):
         self.promotion_schema = PromotionSchema()
         self.contact_us_schema = ContactUsGetSchema()
         self.faq_schema = FaqSchema()
+        self.owned_otherbrand_cylinder_schema = OwnedOtherBrandCylinderGetSchema()
         self.customer_repository = CustomerRepository(
             redis_service=redis_service, customer_schema=self.customer_schema
         )
@@ -69,6 +70,7 @@ class BaseTestCase(TestCase):
         self.promotion_repository = PromotionRepository()
         self.contact_us_repository = ContactUsRepository()
         self.faq_repository = FaqRepository()
+        self.owned_otherbrand_cylinder_repository = OwnedOtherBrandCylinderRepository()
         self.login_attempt_repository = LoginAttemptRepository()
         self.registration_repository = RegistrationRepository()
         self.auth_service = MockAuthService()

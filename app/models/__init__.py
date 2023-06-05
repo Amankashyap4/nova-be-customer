@@ -1,4 +1,5 @@
 from .customer_history_model import CustomerHistoryModel
 from .customer_model import CustomerModel
+from .customer_owned_other_brand_cylinders_model import OwnedOtherBrandCylindersModel
 from .login_attempt_model import LoginAttemptModel
 from .registration_model import RegistrationModel

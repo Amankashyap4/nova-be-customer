@@ -27,5 +27,6 @@ from .customer_schema import (
 
 from .faq_schema import *
 from .contact_us_schema import *
+from .owned_otherbrand_cylinder_schema import OwnedOtherBrandCylinderRequestArgSchema,OwnedOtherBrandCylinderPostSchema,OwnedOtherBrandCylinderGetSchema
 from .promotion_schema import *
 from .safety_schema import *

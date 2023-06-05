@@ -1,4 +1,4 @@
-from .endpoints import customer, file_manager,faq,safety,promotion,contact_us
+from .endpoints import customer, file_manager,faq,safety,promotion,contact_us,owned_otherbrand_cylinder
 
 def init_app(app):
     """
@@ -13,3 +13,4 @@ def init_app(app):
     app.register_blueprint(safety, url_prefix="/api/v1/safetys")
     app.register_blueprint(contact_us, url_prefix="/api/v1/contactus")
     app.register_blueprint(file_manager, url_prefix="/api/v1/customer/filemanager/files")
+    app.register_blueprint(owned_otherbrand_cylinder, url_prefix="/api/v1/owned_otherbrand_cylinder")

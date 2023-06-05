@@ -1,5 +1,6 @@
 from .customer_repository import CustomerRepository
 from .login_attempt_repository import LoginAttemptRepository
+from .owned_otherbrand_cylinder_repository import OwnedOtherBrandCylinderRepository
 from .registration_repository import RegistrationRepository
 from .contact_us_repository import ContactUsRepository
 from .faq_repository import FaqRepository
