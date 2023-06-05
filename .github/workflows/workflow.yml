@@ -6,9 +6,9 @@ name: Build and Push to Docker Registry
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ develop ]
+    branches: [ main ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -23,7 +23,7 @@ jobs:
         python-version: [3.9]
         poetry-version: [1.1.12]
     # The type of runner that the job will run on
-    runs-on: self-hosted
+    runs-on: ubuntu-latest #self-hosted
     timeout-minutes: 20
     env:
       DB_NAME: test
@@ -58,7 +58,7 @@ jobs:
           poetry run python -m pytest -v tests
   docker:
     needs: build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest #self-hosted
     timeout-minutes: 10
 
     steps:
@@ -68,7 +68,7 @@ jobs:
         id: docker_meta
         uses: docker/metadata-action@v3
         with:
-          images: registry.digitalocean.com/quantum-private-registry/nova-be-customer
+          images: hexafold/nova-be-customer #registry.digitalocean.com/quantum-private-registry/nova-be-customer
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}
