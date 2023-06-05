@@ -69,9 +69,9 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: hexafold/nova-be-customer #registry.digitalocean.com/quantum-private-registry/nova-be-customer
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}
+          tags: develop #|
+          #  type=ref,event=branch
+          #  type=sha,prefix={{branch}}
 
       - name: Login to Docker
         uses: docker/login-action@v1
@@ -87,5 +87,5 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ${{ steps.docker_meta.outputs.tags }}
+          tags: develop #${{ steps.docker_meta.outputs.tags }}
           file: ./Dockerfile
