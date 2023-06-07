@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest #self-hosted
     timeout-minutes: 20
     env:
-    #  DB_NAME: test
+      DB_NAME: test
       FLASK_ENV: testing
       SECRET_KEY: samplesecretkey
     # Steps represent a sequence of tasks that will be executed as part of the job
